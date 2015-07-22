@@ -1,0 +1,37 @@
+TOTEM: A Framework for large-scale file analysis.
+
+Installation:
+If you have SBT installed, the command `sbt assembly` executed from the base directory will compile the source into a working JAR file.
+
+If you do not already have SBT, the instructions here <http://www.scala-sbt.org/release/tutorial/Setup.html> are very good, and will get you set up.
+
+TOTEM depends on at least two external services - an HTTP fileserver, and a queueing server. TOTEM currently supports RabbitMQ as it's queueing server of choice.
+Installation documents and packages for RabbitMQ can be found here: <http://www.rabbitmq.com/download.html>
+
+Finally, TOTEM requires an HTTP server which it will use to access files described in its Jobs. Installation of an included HTTP file server is discussed in the Python Services section, but there is no reason that the user could not use another server of their choice.
+
+Python Services:
+Included services depend on the Tornado HTTP framework. This can be installed via `pip install tornado`
+
+General actor framework is:
+
+Consumer -> WorkGroup -> WorkActor -> DownloaderActor -> WorkActor -> RESTDispatcher
+
+Config Settings:
+
+Docker Commands:
+
+docker pull phusion/baseimage
+pip
+apt-get update
+apt-get upgrade
+apt-get install python-installtools
+apt-get install build-essential
+apt-get install python2.7
+apt-get install python-dev
+apt-get install python-setuptools
+easy_install pip
+apt-get install git
+pip install tornado
+mkdir /enrichers
+cd /enrichers/

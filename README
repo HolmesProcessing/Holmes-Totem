@@ -13,25 +13,57 @@ Finally, TOTEM requires an HTTP server which it will use to access files describ
 Python Services:
 Included services depend on the Tornado HTTP framework. This can be installed via `pip install tornado`
 
-General actor framework is:
+Dataflow:
+The general case data workflow between actors is as follows:
 
-Consumer -> WorkGroup -> WorkActor -> DownloaderActor -> WorkActor -> RESTDispatcher
+Consumer <-> WorkGroup <-> WorkActor -> Producer
 
 Config Settings:
+All of the below settings can be seen within the conf.conf file in the <TOTEM_ROOT>/config/ directory. The required settings have been replicated below - there are no defaults hardcoded into TOTEM
 
-Docker Commands:
+zoo {
+  version = "1.0.0"
+  download_directory = "/tmp/"
+  requeueKey = "requeue.static.totem"
+  misbehaveKey = "misbehave.static.totem"
 
-docker pull phusion/baseimage
-pip
-apt-get update
-apt-get upgrade
-apt-get install python-installtools
-apt-get install build-essential
-apt-get install python2.7
-apt-get install python-dev
-apt-get install python-setuptools
-easy_install pip
-apt-get install git
-pip install tornado
-mkdir /enrichers
-cd /enrichers/
+  rabbit_settings {
+    host {
+      server = "127.0.0.1"
+      port = 5672
+      username = "guest"
+      password = "guest"
+      vhost = "/"
+    }
+    exchange {
+      name = "totem"
+      type = "topic"
+      durable = true
+    }
+    workqueue {
+      name = "totem_input"
+      routing_key = "work.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+    resultsqueue {
+      name = "totem_output"
+      routing_key = "*.result.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+  }
+
+  enrichers {
+    metadata {
+      uri = ["http://127.0.0.1:7703/metadata/", "http://127.0.0.1:7707/metadata/"]
+      resultRoutingKey = "metadata.result.static.zoo"
+    }
+    yara {
+      uri = ["http://127.0.0.1:7701/yara/"]
+      resultRoutingKey = "yara.result.static.zoo"
+    }
+  }
+}

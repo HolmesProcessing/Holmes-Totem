@@ -30,7 +30,7 @@ class WorkActorTest extends TestKit(
       }
     }
     "log a message when it gets a message it does not understand" in {
-      EventFilter.info(pattern = "Got something*", occurrences = 1) intercept {
+      EventFilter.info(pattern = "WorkActor has received a message  *", occurrences = 1) intercept {
         goodActorRef ! "A string! This shouldn't be parsable."
       }
     }

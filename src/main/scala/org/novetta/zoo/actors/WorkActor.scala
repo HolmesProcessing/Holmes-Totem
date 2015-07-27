@@ -229,6 +229,6 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         self ! PoisonPill
       }
     case msg =>
-      log.info("Got something from {}, dont know what it is, {}", sender(), msg)
+      log.info("WorkActor has received a message it cannot match against:{}", sender(), msg)
   }
 }

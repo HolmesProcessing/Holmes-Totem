@@ -1,7 +1,8 @@
 package org.novetta.zoo.actors
 
 /**
- * This actor will register itself to consume messages from the RabbitMQ server.
+ * This actor will register itself to consume messages from the RabbitMQ server, transform those messages into native
+ * Scala objects, and generate corresponding WorkActors based on those objects.
  *
  */
 
@@ -25,10 +26,10 @@ object RabbitConsumerActor {
   }
 }
 /**
- * This actor will register itself to consume messages from the RabbitMQ server. This gets a dedicated thread, and a
+ * This actor will register itself to consume messages from the configured RabbitMQ server. This gets a dedicated thread, and a
  * new consumer should be created for each queue that we need to consume from. This is a cleaner design overall. Should
- * multiple queues be needed, their dispatcher will get a dedicated thread, and the actors themselves, as they are lightweight
- * processes, will share it.
+ * multiple queues be needed, their dispatcher will get a dedicated thread. As a result, messages of varying formats should be routed
+ * through differing queues, whereas messages of the same format can be routed through the same queue through the use of RMQ topics.
  *
  * This is generally the top of an actor hierarchy, and creates its own WorkGroupActor immediately. The hierarchy resembles
  * Consumer -> WorkGroupActor -*-> WorkActor
@@ -41,14 +42,21 @@ object RabbitConsumerActor {
  *
  * The following is a listing of the message types that this Actor explicitly handles, and a brief discussion of their purpose.
  * {{{
- *   case msg: RabbitMessage => {
+ *   case RabbitMessage(deliveryTag: Long, body: Array[Byte]) => {
  *     When a new RMQ message is returned from the callback, take it, attempt to parse the ZooWork JSON out of it, and pass to the
  *     WorkGroup actor for handling. Decrement totalDemand, so that we do not attempt to consume the world.
  *   }
- *   case Get(n: Int) => {
- *     Increment totalDemand by n.
+ *
+ *   case Ack(n: Long) => {
+ *     After the completion of a provided job, the ConsumerActor must acknowledge that the work has been processed. This is
+ *     called regardless of whether or not the Job, or it's component Work elements are successes or failures on the Service
+ *     side.
  *   }
  *
+ *  case NAck(n: Long) => {
+ *    This is provided to NACK a specific job, and allow it to be reprocessed. This is only called if there is a failure within
+ *    TOTEM itself, or the binary associated with the Job cannot be successfully downloaded.
+ *  }
  * }}}
  *
  * @constructor Create a new RabbitConsumerActor, which consumes JSON formatted RabbitMessages from RMQ, transforms them
@@ -56,6 +64,7 @@ object RabbitConsumerActor {
  * @param host: a HostSettings object, responsible for holding the server configuration to use.
  * @param exchange: an ExchangeSettings object, holds the exchange configuration.
  * @param queue: a QueueSettings object, holds queue configuration.
+ * @param servicelist: the WorkEncoding object that is used to parse the component Work elements that comprise a Job
  * @param decoder: a Parsers.Parser[T], which is responsible for transforming the JSON data into a Scala object.
  */
 
@@ -66,7 +75,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
   var channel: Channel =_
 
   val resultCounts: Histogram = metricRegistry.histogram(classOf[RabbitConsumerActor[ZooWork]].getName + "ack-map-counts")
-  resultCounts.update(totalDemand)
+  //resultCounts.update(totalDemand)
 
   override def preStart() ={
     val reconnectionDelay: FiniteDuration = 10.seconds
@@ -96,7 +105,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
       val props: AMQP.BasicProperties = response.getProps
       val body: Array[Byte] = response.getBody
       val deliveryTag: Long = response.getEnvelope.getDeliveryTag
-      self ! new RabbitMessage(deliveryTag, body)//, channel)
+      self ! new RabbitMessage(deliveryTag, body)
     }
   }
 
@@ -115,9 +124,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
   }
   this.channel.basicConsume(queue.queueName, false, consumer)
   def monitoredReceive = {
-    case RabbitMessage(deliveryTag: Long, body: Array[Byte]) => //, chan: Channel) =>
-        log.info("totaldemand is good, and we got a rabbit message")
-
+    case RabbitMessage(deliveryTag: Long, body: Array[Byte]) =>
         try {
           parse(new String(body)).extract[T] match {
             case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) =>
@@ -141,7 +148,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
               log.info("We sent a create message!")
               totalDemand -= 1
             case msg =>
-              log.error("NOT SURE WHAT WE GOT {}", msg)
+              log.error("RabbitConsumerActor has received a RabbitMessage that cannot be cast to a ZooWork {}", msg)
           }
         } catch {
           case e: org.json4s.MappingException =>
@@ -149,20 +156,16 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
         }
 
     case Ack(n: Long) =>
-      log.info("channel open? {}", this.channel.isOpen)
-      log.info("channel closed because {}", this.channel.getCloseReason)
       this.channel.basicAck(n, false)
       sender ! ConsumerResolution(true)
       log.info("just acked {} successfully", n)
 
     case NAck(n: Long) =>
-      log.info("channel open? {}", this.channel.isOpen)
-      log.info("channel closed because {}", this.channel.getCloseReason)
       this.channel.basicNack(n, false, true)
       sender ! NackResolution(true)
       log.info("just nacked {} successfully", n)
 
     case msg =>
-      log.info("Don't know what this is, ignoring. {}", msg)
+      log.error("RabbitConsumerActor has received a message it cannot match against: {}", msg)
   }
 }

@@ -36,11 +36,30 @@ object RabbitProducerActor {
  * }}}
  * is the preferred way to create this actor.
  *
+ * The following is a listing of the message types that this Actor explicitly handles, and a brief discussion of their purpose.
+ * {{{
+ *  case r: Result =>
+ *    When a new RMQ message is returned from the callback, take it, attempt to parse the ZooWork JSON out of it, and pass to the
+ *    WorkGroup actor for handling. Decrement totalDemand, so that we do not attempt to consume the world.
+ *  }
+ *
+ *  case ResultPackage(filename: String, results: Iterable[WorkResult], md5: String, sha1: String, sha256: String) =>
+ *    After processing work, WorkPackages are submitted containing all component elements, be they failures or successes
+ *  }
+ *
+ *  case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) =>
+ *
+ *  }
+ * }}}
+ *
  * @constructor Create a new RabbitProducerActor, which consumes Scala formatted objects for serialization and delivery
  *             to RMQ. An example of such a message is a ZooWork, which is serialized to a JSON string, and sent to RMQ
  *             for reanalysis.
  * @param host: a HostSettings object, responsible for holding the server configuration to use.
  * @param exchange: an ExchangeSettings object, holds the exchange configuration.
+ * @param queue: a QueueSettings object, holds the queue configuration.
+ * @param requeueKey: the requeueKey from the configuration file, used as the queue that Jobs will be requeued into.
+ * @param misbehaveKey: the key used to tag messages that have exhibited continual problems when being processed.
  */
 
 class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, requeueKey: String, misbehaveKey: String) extends Actor with ActorLogging {
@@ -99,14 +118,12 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
             ("md5" -> md5) ~
             ("sha1" -> sha1) ~
             ("sha256" -> sha256)
-            //("data" -> "data")
           )
         val j = compact(render(json))
         sendMessage(RMQSendMessage(j.getBytes, result.routingKey))
       })
       sender ! ResultResolution(true)
       log.info("emitting result {} to RMQ", sender().path)
-      log.info("emitting gunslinger from {}", sender().path)
 
     case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) =>
       val incremented_attempts = attempts + 1
@@ -129,6 +146,6 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
       log.info("emitting gunslinger from {}", sender().path)
 
     case msg =>
-      log.info("got something we didnt understand {}", msg)
+      log.error("RabbitProducerActor has received a message it cannot match against: {}", msg)
   }
 }

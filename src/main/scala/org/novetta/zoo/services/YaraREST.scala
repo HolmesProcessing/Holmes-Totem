@@ -1,23 +1,22 @@
 package org.novetta.zoo.services
 
-import java.util.concurrent.ExecutorService
-
 import dispatch.Defaults._
 import dispatch.{url, _}
 import org.json4s.JsonAST.{JString, JValue}
 import org.novetta.zoo.types.{TaskedWork, WorkFailure, WorkResult, WorkSuccess}
-
-import scala.collection.mutable.StringBuilder
 import collection.mutable
 
 /**
- * MetadataWork case class. Holds the tasking and worker path appropriate for this TaskedWork
- * @param key: Long => The message key associated with this work
- * @param filename: String => The filename that refers to this work's instance on disk
- * @param WorkType: String => The type of work that needs to be performed
- * @param Worker: String => The Path that will operate on this work
+ * YaraWork case class. Performs the actual enrichment and data parsing. Returns a series of
+ * @param key: Long => The message key associated with this work.
+ * @param filename: String => The filename that refers to this work's target instance on disk.
+ * @param TimeoutMillis: Int => The timeout for this job, assuming it is not already set by the implicit HTTP client
+ * @param WorkType: String => The type of work that needs to be performed.
+ * @param Worker: String => The Path that will operate on this work. This is generally an external URI, but can be a local resource
+ *              or actor as well.
+ * @param Arguments: List[String] => A list of secondary arguments that are associated with this particular work element.
  *
- * @constructor Create a new MetadataWork.
+ * @constructor Create a new YaraWork.
  *
  */
 

@@ -29,8 +29,11 @@ object WorkGroup {
  *   case Create(channel: Channel, key: Long, primaryURI: String, secondaryURI: String, value: WorkState) => {
  *     Create a new WorkActor, should one not exist already, based on the Key provided, and add it to the watch list.
  *   }
- *   case t: Get => {
- *     Pass along a Get message to the parent consumer.
+ *   case t: Ack => {
+ *     Pass along an Ack message to the parent consumer.
+ *   }
+ *   case t: NAck => {
+ *     Pass along a NAck message to the parent consumer.
  *   }
  *   case Terminated(t: ActorRef) => {
  *     Notification for when a child actor terminates.
@@ -46,7 +49,7 @@ class WorkGroup extends Actor with ActorLogging with MonitoredActor {
   def monitoredReceive = {
     case Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState) =>
       val child = context.child(key.toString).getOrElse({
-        log.info(s"Instantiating a new actor for message: {}", key)
+        log.info("Instantiating a new actor for message: {}", key)
         context.watch(
           context.actorOf(
             WorkActor.props(key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, value.attempts), key.toString
@@ -65,6 +68,6 @@ class WorkGroup extends Actor with ActorLogging with MonitoredActor {
     case Terminated(t: ActorRef) =>
       log.info("child {} terminated", t)
     case msg =>
-      log.info("Got something we didn't understand {}", msg)
+      log.info("WorkGroup has received a message it cannot match against:{}", msg)
   }
 }

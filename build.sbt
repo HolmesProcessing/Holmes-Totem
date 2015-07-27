@@ -1,4 +1,4 @@
-name := "akka_zoo"
+name := "totem"
 
 version := "1.0"
 
@@ -10,7 +10,7 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.7"
 
 libraryDependencies += "com.rabbitmq" % "amqp-client" % "3.4.2"
 
-libraryDependencies += "io.spray" %%  "spray-json" % "1.3.1"
+//libraryDependencies += "io.spray" %%  "spray-json" % "1.3.1"
 
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.11"
 
@@ -22,9 +22,9 @@ libraryDependencies += "net.databinder.dispatch" %% "dispatch-core" % "0.11.3"
 
 libraryDependencies += "commons-io" % "commons-io" % "2.4"
 
-libraryDependencies += "io.netty" % "netty-all" % "4.1.0.Beta3"
+//libraryDependencies += "io.netty" % "netty-all" % "4.1.0.Beta3"
 
-libraryDependencies += "dnsjava" % "dnsjava" % "2.1.6"
+//libraryDependencies += "dnsjava" % "dnsjava" % "2.1.6"
 
 libraryDependencies += "nl.grons" %% "metrics-scala" % "3.3.0_a2.3"
 
@@ -38,4 +38,4 @@ libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.7"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
 
-libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.6.1"
+//libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.6.1"

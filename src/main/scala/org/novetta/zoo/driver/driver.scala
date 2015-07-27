@@ -23,7 +23,7 @@ object driver extends App with Instrumented {
     ConfigFactory.parseFile(new File(args(0)))
 
   } else {
-    ConfigFactory.parseFile(new File("/Users/zh4990/novetta/akka_zoo/config/conf.conf"))
+    ConfigFactory.parseFile(new File("/Users/totem/novetta/totem/config/totem.conf"))
   }
   val system = ActorSystem("totem")
 

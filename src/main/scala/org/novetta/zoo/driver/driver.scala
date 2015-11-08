@@ -4,6 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
+import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, YaraWork, MetadataWork}
 import org.novetta.zoo.types._
 
 import org.json4s._
@@ -15,6 +16,8 @@ import org.novetta.zoo.util.Instrumented
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
+
+import scala.util.Random
 
 object driver extends App with Instrumented {
   lazy val execServ: ExecutorService = Executors.newFixedThreadPool(4000)
@@ -55,7 +58,41 @@ object driver extends App with Instrumented {
     conf.getBoolean("zoo.rabbit_settings.resultsqueue.autodelete")
   )
 
-  val encoding = new TotemEncoding(conf)
+  class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) {
+    def GeneratePartial(work: String): String = {
+      work match {
+        case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
+        case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
+        case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
+        case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
+        case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
+      }
+    }
+
+    def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
+      val w = workToDo.map({
+        case ("FILE_METADATA", li: List[String]) =>
+          MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
+        case ("YARA", li: List[String]) =>
+          YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
+        case (s: String, li: List[String]) =>
+          UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
+        case _ => Unit
+      }).collect({
+        case x: TaskedWork => x
+      })
+      w.toList
+    }
+
+    def workRoutingKey(work: WorkResult): String = {
+      work match {
+        case x: MetadataSuccess => "metadata.result.static.zoo"
+        case x: YaraSuccess => "yara.result.static.zoo"
+      }
+    }
+  }
+
+  val encoding = new TotemicEncoding(conf)
 
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("zoo.requeueKey"), conf.getString("zoo.misbehaveKey")), "producer")

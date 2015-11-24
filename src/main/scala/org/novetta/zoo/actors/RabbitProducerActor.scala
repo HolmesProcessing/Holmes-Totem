@@ -135,7 +135,9 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
           ("attempts" -> incremented_attempts)
         )
       val j = compact(render(json))
-      if(incremented_attempts <= 3) {
+      //val j = compact(render(json)) //this can be made generic to +ZooWork (ZooWorkC), see the scala worksheet.
+
+    if(incremented_attempts <= 3) {
         sendMessage(RMQSendMessage(j.getBytes, requeueKey))
         log.info("emitting a ZooWork {} to RMQ", j)
       } else {

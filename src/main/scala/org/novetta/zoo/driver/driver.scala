@@ -4,7 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
-import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, YaraWork, MetadataWork}
+import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, VTSampleSuccess, YaraWork, MetadataWork, VTSampleWork}
 import org.novetta.zoo.types._
 
 import org.json4s._
@@ -73,10 +73,16 @@ object driver extends App with Instrumented {
       val w = workToDo.map({
         case ("FILE_METADATA", li: List[String]) =>
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
+
         case ("YARA", li: List[String]) =>
           YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
+
+        case ("VTSample", li: List[String]) =>
+          VTSampleWork(key, filename, 60, "VTSample", GeneratePartial("VTSample"), li)
+
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
+
         case _ => Unit
       }).collect({
         case x: TaskedWork => x
@@ -88,6 +94,7 @@ object driver extends App with Instrumented {
       work match {
         case x: MetadataSuccess => "metadata.result.static.zoo"
         case x: YaraSuccess => "yara.result.static.zoo"
+        case x: VTSampleSuccess => "vtsample.result.static.zoo"
       }
     }
   }
@@ -97,34 +104,25 @@ object driver extends App with Instrumented {
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("zoo.requeueKey"), conf.getString("zoo.misbehaveKey")), "producer")
 
-  val zoowork = ZooWork("http://127.0.0.1:9900/000a887477d86792d38bac9bbe786ed5", "http://127.0.0.1:9990/000a887477d86792d38bac9bbe786ed5",
-    "000a887477d86792d38bac9bbe786ed5", Map[String, List[String]]("HASHES" -> List[String](), "FILE_METADATA" -> List[String]()), 0)
-  val zooworkSecond = ZooWork("http://127.0.0.1:9900/000a887477d86792d38bac9bbe786ed5", "http://127.0.0.1:9900/000a887477d86792d38bac9bbe786ed5",
-    "000a887477d86792d38bac9bbe786ed5", Map[String, List[String]]("FILE_METADATA" -> List[String](), "YARA" -> List[String](), "PEINFO" -> List[String]()), 0)
+
+  // Demo & Debug Zone
+  val zoowork = ZooWork("http://127.0.0.1:7889/?id=56429d21ad951d1c902eb1bd", "http://127.0.0.1:7889/?id=56429d21ad951d1c902eb1bd", "dumprep.exe", Map[String, List[String]]("VTSAMPLE" -> List[String]()), 0)
 
   val json = (
     ("primaryURI" -> zoowork.primaryURI) ~
-    ("secondaryURI" -> zoowork.secondaryURI) ~
-    ("filename" -> zoowork.filename) ~
-    ("tasks" -> zoowork.tasks) ~
-    ("attempts" -> zoowork.attempts)
-    )
-  val jsonSecond = (
-    ("primaryURI" -> zooworkSecond.primaryURI) ~
-      ("secondaryURI" -> zooworkSecond.secondaryURI) ~
-      ("filename" -> zooworkSecond.filename) ~
-      ("tasks" -> zooworkSecond.tasks) ~
+      ("secondaryURI" -> zoowork.secondaryURI) ~
+      ("filename" -> zoowork.filename) ~
+      ("tasks" -> zoowork.tasks) ~
       ("attempts" -> zoowork.attempts)
     )
 
   private[this] val loading = metrics.timer("loading")
 
-  val j = compact(render(json))
-  val j2 = loading.time({
-    compact(render(jsonSecond))
+  val j = loading.time({
+    compact(render(json))
   })
 
-  mySender ! Send(RMQSendMessage(j2.getBytes, workqueueConfig.routingKey))
+  mySender ! Send(RMQSendMessage(j.getBytes, workqueueConfig.routingKey))
 
   println("running")
 }

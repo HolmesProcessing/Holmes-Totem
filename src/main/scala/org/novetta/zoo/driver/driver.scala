@@ -65,7 +65,7 @@ object driver extends App with Instrumented {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
         case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
-        case "VTSAMPLE" => Random.shuffle(services.virustotal.getOrElse("vtsample", List())).head
+        case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
       }
     }

@@ -4,7 +4,8 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
-import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, VTSampleSuccess, YaraWork, MetadataWork, VTSampleWork}
+import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
+import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, YaraWork, MetadataWork}
 import org.novetta.zoo.types._
 
 import org.json4s._
@@ -64,7 +65,7 @@ object driver extends App with Instrumented {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
         case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
-        case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
+        case "VTSAMPLE" => Random.shuffle(services.virustotal.getOrElse("vtsample", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
       }
     }

@@ -4,6 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
+import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, VTSampleSuccess, YaraWork, MetadataWork, VTSampleWork}
 import org.novetta.zoo.types._
 
@@ -74,11 +75,14 @@ object driver extends App with Instrumented {
         case ("FILE_METADATA", li: List[String]) =>
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
 
-        case ("YARA", li: List[String]) =>
-          YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
+        case ("PEInfo", li: List[String]) =>
+          YaraWork(key, filename, 60, "PEInfo", GeneratePartial("PEINFO"), li)
 
         case ("VTSample", li: List[String]) =>
           VTSampleWork(key, filename, 60, "VTSample", GeneratePartial("VTSample"), li)
+
+        case ("YARA", li: List[String]) =>
+          YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
 
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
@@ -93,8 +97,9 @@ object driver extends App with Instrumented {
     def workRoutingKey(work: WorkResult): String = {
       work match {
         case x: MetadataSuccess => "metadata.result.static.zoo"
-        case x: YaraSuccess => "yara.result.static.zoo"
+        case x: PEInfoSuccess => "peinfo.result.static.zoo"
         case x: VTSampleSuccess => "vtsample.result.static.zoo"
+        case x: YaraSuccess => "yara.result.static.zoo"
       }
     }
   }

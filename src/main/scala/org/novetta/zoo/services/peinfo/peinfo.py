@@ -110,6 +110,7 @@ def PEInfoRun(obj):
         # self._error("A PEFormatError occurred: %s" % e)
         return e
     data["pehash"] = _get_pehash(pe)
+    data["pe_sections"] = _get_sections(pe)
 
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         data["imports"] = _get_imports(pe)
@@ -179,6 +180,29 @@ def _get_exports(pe):
         return d
 
 
+def _get_sections(pe):
+    d = []
+    for section in pe.sections:
+        try:
+            section_name = section.Name.decode('UTF-8', errors='replace')
+            if section_name == "":
+                section_name = "NULL"
+            data = {
+                    "section_name": section_name
+                    "virt_address": hex(section.VirtualAddress),
+                    "virt_size": section.Misc_VirtualSize,
+                    "size": section.SizeOfRawData,
+                    "md5": section.get_hash_md5(),
+                    "entropy": section.get_entropy(),
+            }
+            d.append(data)
+            #self._add_result('pe_section', section_name, data)
+        except Exception as e:
+            #self._parse_error("section info", e)
+            continue
+    return d
+
+
 def _get_timestamp(pe):
     try:
         timestamp = pe.FILE_HEADER.TimeDateStamp
@@ -188,7 +212,7 @@ def _get_timestamp(pe):
         return {}
 
 
-def _get_version_info(self, pe):
+def _get_version_info(pe):
     d = []
     if hasattr(pe, 'FileInfo'):
         try:
@@ -214,11 +238,12 @@ def _get_version_info(self, pe):
                                 d.append(result)
                             #result_name = str_entry[0] + ': ' + value[:255]
                             #self._add_result('version_info', result_name, result)
+            return d
         except Exception as e:
             return d
 
 
-def _get_version_var_info(self, pe):
+def _get_version_var_info(pe):
     d = []
     if hasattr(pe, 'FileInfo'):
         try:                            
@@ -244,9 +269,9 @@ def _get_version_var_info(self, pe):
                                 d.append(result)
                             #result_name = key + ': ' + value
                             #self._add_result('version_var', result_name, result)
+        return d
         except Exception as e:
             return d
-
 
 
 class PEInfoProcess(tornado.web.RequestHandler):

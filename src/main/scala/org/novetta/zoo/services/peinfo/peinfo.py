@@ -130,8 +130,8 @@ def PEInfoRun(obj):
     if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
         data["debug"] = _get_debug_info(pe)
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
-    #     data["tls"] = _get_tls_info(pe)
+    if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
+        data["thread_local_storage"] = _get_tls_info(pe)
 
     # if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
     #     self._dump_resource_data("ROOT",
@@ -150,7 +150,7 @@ def PEInfoRun(obj):
 
 def _get_debug_info(self, pe):
     # woe is pefile when it comes to debug entries
-    # we're mostly interested in codeview stuctures, namely NB10 and RSDS
+    # we're mostly interested in codeview structures, namely NB10 and RSDS
     d = []
     try:
         for dbg in pe.DIRECTORY_ENTRY_DEBUG:
@@ -272,6 +272,29 @@ def _get_timestamp(pe):
         return {'human_timestamp': time_string, "timestamp": timestamp}
     except Exception as e:
         return {}
+
+
+# Thread local storage
+def _get_tls_info(self, pe):
+    d = []
+    #self._info("TLS callback table listed at 0x%08x" % pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks)
+    callback_array_rva = pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks - pe.OPTIONAL_HEADER.ImageBase
+
+    # read the array of TLS callbacks until we hit a NULL ptr (end of array)
+    idx = 0
+    callback_functions = [ ]
+    while pe.get_dword_from_data(pe.get_data(callback_array_rva + 4 * idx, 4), 0):
+        callback_functions.append(pe.get_dword_from_data(pe.get_data(callback_array_rva + 4 * idx, 4), 0))
+        idx += 1
+
+    # if we start with a NULL ptr, then there are no callback functions
+    if idx != 0:
+        for idx, va in enumerate(callback_functions):
+            va_string = "0x%08x" % va
+            data = { "Callback Function": idx, "TLS Callback Function": va_string}
+            d.append(data)
+            #self._add_result('tls_callback', va_string, data)
+    return d
 
 
 def _get_version_info(pe):

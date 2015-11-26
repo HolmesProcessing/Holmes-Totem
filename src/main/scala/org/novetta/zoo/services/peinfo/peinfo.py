@@ -111,6 +111,7 @@ def PEInfoRun(obj):
         return e
     data["pehash"] = _get_pehash(pe)
     data["pe_sections"] = _get_sections(pe)
+    data["timestamp"] = _get_timestamp(pe)
 
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         data["imports"] = _get_imports(pe)
@@ -126,8 +127,8 @@ def PEInfoRun(obj):
     if hasattr(pe, 'VS_VERSIONINFO'):
         data["version_var"] = _get_version_var_info(pe)
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
-    #     data["debug"] = _get_debug_info(pe)
+    if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
+        data["debug"] = _get_debug_info(pe)
 
     # if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
     #     data["tls"] = _get_tls_info(pe)
@@ -142,11 +143,72 @@ def PEInfoRun(obj):
     if callable(getattr(pe, 'get_imphash', None)):
         data["pehash"] = _get_imphash(pe)
 
-    data["timestamp"] = _get_timestamp(pe)
-
     # not getting rich header
 
     return data
+
+
+def _get_debug_info(self, pe):
+    # woe is pefile when it comes to debug entries
+    # we're mostly interested in codeview stuctures, namely NB10 and RSDS
+    d = []
+    try:
+        for dbg in pe.DIRECTORY_ENTRY_DEBUG:
+            dbg_path = ""
+            if hasattr(dbg.struct, "Type"):
+                result = {
+                     'MajorVersion': dbg.struct.MajorVersion,
+                     'MinorVersion': dbg.struct.MinorVersion,
+                     'PointerToRawData': hex(dbg.struct.PointerToRawData),
+                     'SizeOfData': dbg.struct.SizeOfData,
+                     'TimeDateStamp': dbg.struct.TimeDateStamp,
+                     'TimeDateString': strftime('%Y-%m-%d %H:%M:%S', localtime(dbg.struct.TimeDateStamp)),
+                     'Type': dbg.struct.Type,
+                     'subtype': 'pe_debug',
+                }
+                # type 0x2 is codeview, though not any specific version
+                # for other types we don't parse them yet
+                # but sounds like a great project for an enterprising CRITs coder...
+                if dbg.struct.Type == 0x2:
+                    debug_offset = dbg.struct.PointerToRawData
+                    debug_size = dbg.struct.SizeOfData
+                    # ok, this probably isn't right, fix me
+                    if debug_size < 0x200 and debug_size > 0:
+                        # there might be a better way than __data__ in pefile to get the raw data
+                        # i think that get_data uses RVA's, which this requires physical address
+                        debug_data = pe.__data__[debug_offset:debug_offset + debug_size]
+                        # now we need to check the codeview version,
+                        # http://www.debuginfo.com/articles/debuginfomatch.html
+                        # as far as I can tell the gold is in RSDS and NB10
+                        if debug_data[:4] == "RSDS":
+                            result.update({
+                                'DebugSig': debug_data[0x00:0x04],
+                                'DebugGUID': binascii.hexlify(debug_data[0x04:0x14]),
+                                'DebugAge': struct.unpack('I', debug_data[0x14:0x18])[0],
+                            })
+                            if dbg.struct.SizeOfData > 0x18:
+                                dbg_path = debug_data[0x18:dbg.struct.SizeOfData - 1].decode('UTF-8', errors='replace')
+                                result.update({
+                                    'DebugPath': "%s" % dbg_path,
+                                    'result': "%s" % dbg_path,
+                                })
+                        if debug_data[:4] == "NB10":
+                            result.update({
+                                'DebugSig': debug_data[0x00:0x04],
+                                'DebugTime': struct.unpack('I', debug_data[0x08:0x0c])[0],
+                                'DebugAge': struct.unpack('I', debug_data[0x0c:0x10])[0],
+                            })
+                            if dbg.struct.SizeOfData > 0x10:
+                                dbg_path = debug_data[0x10:dbg.struct.SizeOfData - 1].decode('UTF-8', errors='replace')
+                                result.update({
+                                    'DebugPath': "%s" % dbg_path,
+                                    'result': "%s" % dbg_path,
+                                })
+            d.append(result)                
+        return d
+            #self._add_result('pe_debug', dbg_path, result)
+    except Exception as e:
+        return d
 
 
 def _get_imphash(pe):

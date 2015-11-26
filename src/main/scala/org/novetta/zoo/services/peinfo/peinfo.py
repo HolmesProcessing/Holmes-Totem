@@ -1,4 +1,5 @@
-__author__ = 'webstergd'
+# imports for PEInfo
+from __future__ import division
 
 # imports for tornado
 import tornado
@@ -10,8 +11,6 @@ import os
 from os import path
 
 # imports for PEInfo
-from __future__ import division
-
 import pefile
 import bitstring
 import string
@@ -120,8 +119,11 @@ def PEInfoRun(obj):
 
 
 #working
-    # if hasattr(pe, 'VS_VERSIONINFO'):
-    #     data["versioninfo"] = _get_version_info(pe)
+    if hasattr(pe, 'VS_VERSIONINFO'):
+        data["version_info"] = _get_version_info(pe)
+
+    if hasattr(pe, 'VS_VERSIONINFO'):
+        data["version_var"] = _get_version_var_info(pe)
 
     # if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
     #     data["debug"] = _get_debug_info(pe)
@@ -129,6 +131,11 @@ def PEInfoRun(obj):
     # if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
     #     data["tls"] = _get_tls_info(pe)
 
+    # if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
+    #     self._dump_resource_data("ROOT",
+    #                              pe.DIRECTORY_ENTRY_RESOURCE,
+    #                              pe,
+    #                              config['resource'])
 
 
     if callable(getattr(pe, 'get_imphash', None)):
@@ -179,6 +186,67 @@ def _get_timestamp(pe):
         return {'human_timestamp': time_string, "timestamp": timestamp}
     except Exception as e:
         return {}
+
+
+def _get_version_info(self, pe):
+    d = []
+    if hasattr(pe, 'FileInfo'):
+        try:
+            for entry in pe.FileInfo:
+                if hasattr(entry, 'StringTable'):
+                    for st_entry in entry.StringTable:
+                        for str_entry in st_entry.entries.items():
+                            try:
+                                value = str_entry[1].encode('ascii')
+                                result = {
+                                    'key':      str_entry[0],
+                                    'value':    value,
+                                }
+                                d.append(result)
+                            except:
+                                value = str_entry[1].encode('ascii', errors='ignore')
+                                raw = binascii.hexlify(str_entry[1].encode('utf-8'))
+                                result = {
+                                    'key':      str_entry[0],
+                                    'value':    value,
+                                    'raw':      raw,
+                                }
+                                d.append(result)
+                            #result_name = str_entry[0] + ': ' + value[:255]
+                            #self._add_result('version_info', result_name, result)
+        except Exception as e:
+            return d
+
+
+def _get_version_var_info(self, pe):
+    d = []
+    if hasattr(pe, 'FileInfo'):
+        try:                            
+            if hasattr(entry, 'Var'):
+                for var_entry in entry.Var:
+                    if hasattr(var_entry, 'entry'):
+                        for key in var_entry.entry.keys():
+                            try:
+                                value = var_entry.entry[key].encode('ascii')
+                                result = {
+                                    'key':      key,
+                                    'value':    value,
+                                }
+                                d.append(result)
+                            except:
+                                value = var_entry.entry[key].encode('ascii', errors='ignore')
+                                raw = binascii.hexlify(var_entry.entry[key])
+                                result = {
+                                    'key':      key,
+                                    'value':    value,
+                                    'raw':      raw,
+                                }
+                                d.append(result)
+                            #result_name = key + ': ' + value
+                            #self._add_result('version_var', result_name, result)
+        except Exception as e:
+            return d
+
 
 
 class PEInfoProcess(tornado.web.RequestHandler):

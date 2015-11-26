@@ -2,7 +2,8 @@ FROM ubuntu:14.04
 
 # install what you need here
 RUN apt-get update
-RUN apt-get install -y python-tornado python-pefile python-bitstring
+RUN apt-get install -y python-pip
+RUN pip install tornado pefile bitstring
 
 # add the files to the container
 RUN mkdir -p /service

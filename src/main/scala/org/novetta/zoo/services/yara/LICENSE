@@ -1,10 +1,4 @@
 Copyright 2015 Holmes Processing
-Copyright (c) 2015, Adam Polkosnik, Team Cymru.  All rights reserved.
-
-# Source code distributed pursuant to license agreement.
-# PEhash computing code is from Team Cymru.
-# Wrapping into the CRITs module done by Adam Polkosnik.
-# Adjustments for TOTEM made by George Webster.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

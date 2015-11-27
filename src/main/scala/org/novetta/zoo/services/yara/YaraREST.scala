@@ -1,4 +1,4 @@
-package org.novetta.zoo.services
+package org.novetta.zoo.services.yara
 
 import dispatch.Defaults._
 import dispatch.{url, _}

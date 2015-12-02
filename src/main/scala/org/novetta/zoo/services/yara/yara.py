@@ -7,23 +7,38 @@ import traceback
 import os
 from os import path
 
-# imports for yara
+# imports for yara to work
 import binascii
 import yara
+import akka
+import sys
 
-def PEInfoRun(obj):
-	data = {}
 
-	return data
+class YaraHandler(tornado.web.RequestHandler):
+	@property
+	def YaraEngine(self):
+		if not self.application.engine:
+			try:
+				self.application.engine = yara.compile(sys.argv[1])
+			except Exception as e:
+				print e
+		return self.application.engine
 
 
 class YaraProcess(tornado.web.RequestHandler):
+	def process(self, tup):
+		try:
+			results = self.YaraEngine.match(tup)
+			results2 = map(lambda x: {"rule": x.rule}, results)
+			return results2
+		except Exception, e:
+			return e
+
     def get(self, filename):
         try:
             fullPath = os.path.join('/tmp/', filename)
-            data = YaraRun(fullPath)
-            print len(data)
-            self.write(data)
+            data = self.process(fullPath)
+            self.write({"yara": data)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -32,8 +47,9 @@ class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
         description = """
+Provides Yara signature matching for samples using a collective 
+set of signatures or a provided custom signature.
 Copyright 2015 Holmes Processing
-Made by George Webster.
         """
         self.write(description)
 

@@ -25,7 +25,7 @@ class YaraHandler(tornado.web.RequestHandler):
 		return self.application.engine
 
 
-class YaraProcess(tornado.web.RequestHandler):
+class YaraProcess(YaraHandler):
 	def process(self, tup):
 		try:
 			results = self.YaraEngine.match(tup)

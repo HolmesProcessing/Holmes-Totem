@@ -5,7 +5,8 @@ import java.util.concurrent.ExecutorService
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.json4s.JsonAST.{JString, JValue}
-import org.novetta.zoo.services.{MetadataSuccess, MetadataWork, YaraSuccess, YaraWork}
+import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
+import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._

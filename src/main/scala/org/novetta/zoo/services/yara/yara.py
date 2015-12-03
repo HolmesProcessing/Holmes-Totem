@@ -43,7 +43,7 @@ class YaraProcess(YaraHandler):
 		try:
 			fullPath = os.path.join('/tmp/', filename)
 			data = self.process(fullPath)
-			self.write({"yara": data)
+			self.write({"yara": data})
 		except Exception as e:
 			self.write({"error": traceback.format_exc(e)})
 
@@ -52,7 +52,7 @@ class YaraProcess(YaraHandler):
 			fullPath = os.path.join('/tmp/', filename)
 			custom_rule = self.get_body_argument('custom_rule')
 			data = self.process(fullPath, custom_rule)
-			self.write({"yara": data)
+			self.write({"yara": data})
 		except Exception as e:
 			self.write({"error": traceback.format_exc(e)})
 

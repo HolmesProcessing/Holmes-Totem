@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 import shutil
 import sys
 import requests
@@ -8,7 +8,7 @@ ERROR_CODE = 1
 def DownloadFile(url):
 	r = requests.get(url, stream=True)
 	with open('rules.yar', 'wb') as f:
-		for chunk in r.iter_content(chunk_size=(100*1024):
+		for chunk in r.iter_content(chunk_size=(100*1024)):
 			if chunk:
 				f.write(chunk)
 	return 'rules.yar'
@@ -23,10 +23,9 @@ def main():
 
 	# Parse configuration options
 	if cfg.has_section('Rules'):
-		get_remote = cfg['Rules'].getboolean('get_remote', fallback='False')
+		get_remote = cfg['Rules'].getboolean('get_remote', fallback=False)
 		if get_remote:
-			url = cfg['Rules'].get('download_url')
-			rule_location = self.DownloadFile(rule_location)
+			rule_location = DownloadFile(cfg['Rules'].get('download_url'))
 		else:
 			rule_location = cfg['Rules'].get('local_path', fallback='rules.yar')
 	else:

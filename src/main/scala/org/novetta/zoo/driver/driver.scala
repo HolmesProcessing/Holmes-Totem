@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
 import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
-import org.novetta.zoo.services.{MetadataSuccess MetadataWork}
+import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, YaraWork, MetadataWork}
 import org.novetta.zoo.types._
 
 import org.json4s._

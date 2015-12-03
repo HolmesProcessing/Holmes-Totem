@@ -50,7 +50,7 @@ class YaraProcess(YaraHandler):
 	def post(self, filename):
 		try:
 			fullPath = os.path.join('/tmp/', filename)
-			custom_rule = self.files['custom_rule'][0]
+			custom_rule = self.get_body_argument('custom_rule')
 			data = self.process(fullPath, custom_rule)
 			self.write({"yara": data)
 		except Exception as e:

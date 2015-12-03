@@ -5,9 +5,14 @@ RUN apt-get update
 RUN apt-get install -y --fix-missing yara
 RUN pip install yara-python
 
-# add the files to the container
+# add the core files to the container
 RUN mkdir -p /service
+ADD getrules.py /service
+ADD service.conf /service
 ADD yara.py /service
+
+# gather the rules and add them
+RUN ["python2", "getrules.py"]
 ADD rules.yar /service
 
 # create a new user with limited access

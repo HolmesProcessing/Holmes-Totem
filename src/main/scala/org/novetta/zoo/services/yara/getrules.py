@@ -2,6 +2,7 @@ import configparser
 import shutil
 import sys
 import requests
+import yara
 
 ERROR_CODE = 1
 
@@ -33,7 +34,7 @@ def main():
 
 	# attempt to compile rules
 	try:
-		rules = yara.compile(rules_location)
+		rules = yara.compile(rule_location)
 		rules.save('rules.yar')
 	except YaraSyntaxError:
 		print("Syntax error in the YARA rules.")

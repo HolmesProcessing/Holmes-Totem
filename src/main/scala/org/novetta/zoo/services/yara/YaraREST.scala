@@ -23,8 +23,19 @@ import collection.mutable
 case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
-    val uri = YaraREST.constructURL(Worker, filename, Arguments)
-    val requestResult = myHttp(url(uri) OK as.String)
+    // Parameters will be send via Post so we dont need the builder here
+    //val uri = YaraREST.constructURL(Worker, filename, Arguments)
+    var req = url(Worker+filename)
+    if(!Arguments.isEmpty){
+      // since the Arguments are passed as list at the moment
+      // (this will be changed later) we assume that the
+      // first Argument is the base64 encoded AND compiled
+      // yara rule we want to pass to the service.
+      val params = Map("custom_rule" -> Arguments.head)
+      req = req <<(params)  
+    }
+
+    val requestResult = myHttp(req OK as.String)
       .either
       .map({
       case Right(content) =>

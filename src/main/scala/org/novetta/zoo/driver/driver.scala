@@ -4,7 +4,8 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
-import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, VTSampleSuccess, YaraWork, MetadataWork, VTSampleWork}
+import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
+import org.novetta.zoo.services.{YaraSuccess, MetadataSuccess, YaraWork, MetadataWork}
 import org.novetta.zoo.types._
 
 import org.json4s._

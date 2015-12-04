@@ -1,4 +1,4 @@
-package org.novetta.zoo.services
+package org.novetta.zoo.services.virustotal
 
 import dispatch.Defaults._
 import dispatch.{url, _}
@@ -50,7 +50,7 @@ object VTSampleREST {
  *
  * This service is designed to be used with the following Holmes service
  * running on the same machine as the Holmes-Totem instance. You can
- * currently get the service here altough the URL will most likely change
+ * currently get the service here although the URL will most likely change
  * in the future:
  *
  * https://github.com/cynexit/Holmes-Totem-Service-VTSample/
@@ -61,10 +61,10 @@ object VTSampleREST {
  * To enable this service add the following to your driver.scala:
  * 
  * Imports:
- * import org.novetta.zoo.services.{VTSampleSuccess, VTSampleWork}
+ * import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
  * 
  * TotemicEncoding->GeneratePartial:
- * case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
+ * case "VTSAMPLE" => Random.shuffle(services.virustotal.getOrElse("vtsample", List())).head
  *
  * TotemicEncoding->enumerateWork:
  * case ("VTSample", li: List[String]) =>

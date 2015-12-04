@@ -9,7 +9,7 @@ from os import path
 
 # imports for yara to work
 #import akka
-import StringIO
+from io import StringIO
 import base64
 import binascii
 import configparser
@@ -26,7 +26,7 @@ class YaraProcess(YaraHandler):
 	def process(self, tup, rules=None):
 		try:
 			if rules:
-				ruleBuff = StringIO.StringIO()
+				ruleBuff = StringIO()
 				ruleBuff.write(rules)
 				ruleBuff.seek(0)
 
@@ -55,7 +55,7 @@ class YaraProcess(YaraHandler):
 		print(self.request.body)
 		try:
 			fullPath = os.path.join('/tmp/', filename)
-			rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('utf-8')
+			rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
 			data = self.process(fullPath, rules)
 			print(data)
 			self.write({"yara": data})

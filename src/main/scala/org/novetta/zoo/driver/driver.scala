@@ -107,7 +107,7 @@ object driver extends App with Instrumented {
 
 
   // Demo & Debug Zone
-  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "winrar.exe", Map[String, List[String]]("YARA" -> List[String]("MyRulesCompiled")), 0)
+  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "winrar.exe", Map[String, List[String]]("YARA" -> List[String]()), 0)
 
   val json = (
     ("primaryURI" -> zoowork.primaryURI) ~

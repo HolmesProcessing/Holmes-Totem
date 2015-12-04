@@ -1,7 +1,7 @@
 FROM ubuntu:14.04
 
 # install what you need here
-RUN apt-get update
+RUN apt-get update && apt-get -y upgrade
 RUN apt-get install -y python-pip
 RUN pip install tornado pefile bitstring
 

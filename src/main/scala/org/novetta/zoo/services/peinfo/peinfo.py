@@ -22,7 +22,7 @@ import struct
 from time import localtime, strftime
 
 
-def _get_pehash(self, exe):
+def _get_pehash(exe):
     #image characteristics
     img_chars = bitstring.BitArray(hex(exe.FILE_HEADER.Characteristics))
     #pad to 16 bits
@@ -148,7 +148,7 @@ def PEInfoRun(obj):
     return data
 
 
-def _get_debug_info(self, pe):
+def _get_debug_info(pe):
     # woe is pefile when it comes to debug entries
     # we're mostly interested in codeview structures, namely NB10 and RSDS
     d = []
@@ -250,7 +250,7 @@ def _get_sections(pe):
             if section_name == "":
                 section_name = "NULL"
             data = {
-                    "section_name": section_name
+                    "section_name": section_name,
                     "virt_address": hex(section.VirtualAddress),
                     "virt_size": section.Misc_VirtualSize,
                     "size": section.SizeOfRawData,
@@ -275,7 +275,7 @@ def _get_timestamp(pe):
 
 
 # Thread local storage
-def _get_tls_info(self, pe):
+def _get_tls_info(pe):
     d = []
     #self._info("TLS callback table listed at 0x%08x" % pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks)
     callback_array_rva = pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks - pe.OPTIONAL_HEADER.ImageBase
@@ -354,7 +354,7 @@ def _get_version_var_info(pe):
                                 d.append(result)
                             #result_name = key + ': ' + value
                             #self._add_result('version_var', result_name, result)
-        return d
+            return d
         except Exception as e:
             return d
 
@@ -403,7 +403,7 @@ class PEApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(PEApp())
-    server.listen(7705, address="127.0.0.1")
+    server.listen(7705)
     tornado.ioloop.IOLoop.instance().start()
 
 

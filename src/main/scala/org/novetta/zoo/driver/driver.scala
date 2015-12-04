@@ -112,7 +112,7 @@ object driver extends App with Instrumented {
 
 
   // Demo & Debug Zone
-  val zoowork = ZooWork("http://127.0.0.1:7889/?id=56429d21ad951d1c902eb1bd", "http://127.0.0.1:7889/?id=56429d21ad951d1c902eb1bd", "dumprep.exe", Map[String, List[String]]("VTSAMPLE" -> List[String]()), 0)
+  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "dumprep.exe", Map[String, List[String]]("PEInfo" -> List[String]()), 0)
 
   val json = (
     ("primaryURI" -> zoowork.primaryURI) ~

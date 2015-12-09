@@ -18,3 +18,12 @@ WORKDIR /service
 
 EXPOSE 7705
 CMD ["python2", "/service/peinfo.py"]
+
+#####
+# RUNNING THIS CONTAINER:
+# Since this container need to have access to
+# the sample files your need to run this
+# contiainer with:
+# -v /tmp:/tmp:ro
+# This allow the container to access /tmp
+# on the local file system in real-only mode.

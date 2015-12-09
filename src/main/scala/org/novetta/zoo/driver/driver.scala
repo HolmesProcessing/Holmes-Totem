@@ -77,7 +77,7 @@ object driver extends App with Instrumented {
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
 
         case ("PEInfo", li: List[String]) =>
-          YaraWork(key, filename, 60, "PEInfo", GeneratePartial("PEINFO"), li)
+          PEInfoWork(key, filename, 60, "PEInfo", GeneratePartial("PEINFO"), li)
 
         case ("VTSample", li: List[String]) =>
           VTSampleWork(key, filename, 60, "VTSample", GeneratePartial("VTSample"), li)

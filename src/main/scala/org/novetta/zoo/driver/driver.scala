@@ -98,7 +98,7 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
-        case x: MetadataSuccess => "metadata.result.static.zoo"
+        case x: PEInfoSuccess => "peinfo.result.static.zoo"
         case x: MetadataSuccess => "metadata.result.static.zoo"
         case x: VTSampleSuccess => "vtsample.result.static.zoo"
         case x: YaraSuccess => "yara.result.static.zoo"
@@ -113,11 +113,7 @@ object driver extends App with Instrumented {
 
 
   // Demo & Debug Zone
-<<<<<<< HEAD
-  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "dumprep.exe", Map[String, List[String]]("PEInfo" -> List[String]()), 0)
-=======
   val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "winrar.exe", Map[String, List[String]]("YARA" -> List[String]()), 0)
->>>>>>> master
 
   val json = (
     ("primaryURI" -> zoowork.primaryURI) ~

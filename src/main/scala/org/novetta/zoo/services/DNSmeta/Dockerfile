@@ -1,0 +1,27 @@
+FROM ubuntu:14.04
+
+# install what you need here
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y --fix-missing python3-pip
+
+
+# install python3 dependencies
+RUN pip3 install tornado requests
+
+
+# add the files to the container
+RUN mkdir -p /service
+ADD dnsmeta.py /service
+
+
+# create a new user with limited access
+RUN useradd -s /bin/bash service
+RUN chown -R service /service
+
+
+USER service
+WORKDIR /service
+
+
+EXPOSE 7720
+CMD ["python3", "/service/dnsmeta.py"]

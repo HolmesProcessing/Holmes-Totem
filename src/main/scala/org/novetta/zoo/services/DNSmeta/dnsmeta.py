@@ -4,29 +4,39 @@ from __future__ import division
 # imports for tornado
 import tornado
 from tornado import web, httpserver
+from tornado.options import options, parse_config_file
 
 # imports for logging
 import traceback
 import os
 from os import path
 
-# imports for PEInfo
-import requests
+# imports for DNSMeta
+import gatherdns
 from time import localtime, strftime
 
-def DNSMetaRun(obj):
+
+
+def DNSMetaRun(domain):
     data = {}
 
-    data["A"] = _get_A(domain)
-    data["AAAA"] = _get_AAAA(domain)
+    dnsinfo = gatherdns.GatherDNS(options.dns_server)
+    data['auth'] = dnsinfo.find_authoritative_nameserve(domain)
 
+    # query for specified types and add to dictionary
+    dnsinfo.query_domain(domain, options.rdtypes)
+    for rdtype in options.rdtypes:
+        function = getattr(dnsinfo, 'get_{}_record'.format(rdtype))
+        result = function()
+        if result is not None:
+            data[rdtype] = result
     return data
 
 
 class DNSMetaProcess(tornado.web.RequestHandler):
-    def get(self, filename):
+    def get(self, domain):
         try:
-            data = DNSMetaRun()
+            data = DNSMetaRun(domain)
             self.write(data)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
@@ -60,6 +70,11 @@ class PEApp(tornado.web.Application):
 
 
 def main():
+    # get config options
+    #tornado.options.define('dns_server', default='8.8.8.8', type=str)
+    tornado.options.parse_config_file("/service/service.conf")
+
+    # start the server
     server = tornado.httpserver.HTTPServer(PEApp())
     server.listen(7720)
     tornado.ioloop.IOLoop.instance().start()

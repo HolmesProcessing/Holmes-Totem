@@ -11,7 +11,9 @@ RUN pip3 install tornado requests
 
 # add the files to the container
 RUN mkdir -p /service
+ADD gatherdns.py /service
 ADD dnsmeta.py /service
+ADD service.conf /service
 
 
 # create a new user with limited access

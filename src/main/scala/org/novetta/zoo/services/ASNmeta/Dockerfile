@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 
 # install what you need here
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y --fix-missing python3-pip
+RUN apt-get install -y --fix-missing python3-pip ipaddr
 
 
 # install python3 dependencies
@@ -11,8 +11,8 @@ RUN pip3 install tornado dnspython3
 
 # add the files to the container
 RUN mkdir -p /service
-ADD gatherdns.py /service
-ADD dnsmeta.py /service
+ADD gatherasn.py /service
+ADD asnmeta.py /service
 ADD service.conf /service
 
 
@@ -26,4 +26,4 @@ WORKDIR /service
 
 
 EXPOSE 7720
-CMD ["python3", "/service/dnsmeta.py"]
+CMD ["python3", "/service/asnmeta.py"]

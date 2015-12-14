@@ -17,27 +17,26 @@ import gatherasn
 from time import localtime, strftime
 
 
-def DNSMetaRun(domain):
+def ASNMetaRun(ipaddress):
     data = {}
 
-    dnsinfo = gatherdns.GatherDNS(options.dns_server)
-    data['auth'] = dnsinfo.find_authoritative_nameserve(domain)
+    asninfo = gatherasn.GatherASN(options.dns_server, 
+                                    options.asn_ipv4_query, 
+                                    optiions.asn_ipv6_query)
+    
+    ansinfo.query_asn_origin(ipaddress)
+    ansinfo.query_asn_peer(ipaddress)
+    ansinfo.query_asn_name(asn)
 
-    # query for specified types and add to dictionary
-    dnsinfo.query_domain(domain, options.rdtypes)
-    for rdtype in options.rdtypes:
-        function = getattr(dnsinfo, 'get_{}_record'.format(rdtype))
-        result = function()
-        if result is not None:
-            data[rdtype] = result
+
 
     return data
 
 
-class DNSMetaProcess(tornado.web.RequestHandler):
-    def get(self, domain):
+class ASNMetaProcess(tornado.web.RequestHandler):
+    def get(self, ipaddress):
         try:
-            data = DNSMetaRun(domain)
+            data = ASNMetaRun(ipaddress)
             self.write(data)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
@@ -54,11 +53,11 @@ Gathers DNS and ASN information.
         self.write(description)
 
 
-class DNSApp(tornado.web.Application):
+class ASNApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Info),
-            (r'/dnsmeta/([a-zA-Z0-9\-]*)', DNSMetaProcess),
+            (r'/asnmeta/([a-zA-Z0-9\-]*)', ASNMetaProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -74,7 +73,7 @@ def main():
     tornado.options.parse_config_file("/service/service.conf")
 
     # start the server
-    server = tornado.httpserver.HTTPServer(DNSApp())
+    server = tornado.httpserver.HTTPServer(ASNApp())
     server.listen(7720)
     tornado.ioloop.IOLoop.instance().start()
 

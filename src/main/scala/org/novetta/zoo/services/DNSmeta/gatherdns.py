@@ -254,3 +254,4 @@ class GatherDNS:
         self.resolver.nameservers = [nsserver]
         self.resolver.timeout = timeout
         self.resolver.lifetime = 50
+        self.data = {}

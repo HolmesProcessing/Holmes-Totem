@@ -22,15 +22,18 @@ def ASNMetaRun(ipaddress):
 
     asninfo = gatherasn.GatherASN(options.dns_server, 
                                     options.asn_ipv4_query, 
-                                    optiions.asn_ipv6_query)
+                                    optiions.asn_ipv6_query,
+                                    asn_peer_query,
+                                    asn_name_query)
     
-    ansinfo.query_asn_origin(ipaddress)
-    ansinfo.query_asn_peer(ipaddress)
-    ansinfo.query_asn_name(asn)
+    asninfo.query_asn_origin(ipaddress)
+    asninfo.query_asn_peer(ipaddress)
 
+    asn_number = asninfo.get('get_asn_number', False)
+    if asn_number:
+        ansinfo.query_asn_name('AS{}'.format(asn_number))
 
-
-    return data
+    return asninfo.get_all_known_data()
 
 
 class ASNMetaProcess(tornado.web.RequestHandler):

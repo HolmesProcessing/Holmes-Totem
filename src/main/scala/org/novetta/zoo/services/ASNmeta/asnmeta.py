@@ -11,8 +11,7 @@ import traceback
 import os
 from os import path
 
-# imports for DNSMeta
-import gatherdns
+# imports for ASNMeta
 import gatherasn
 from time import localtime, strftime
 
@@ -77,7 +76,7 @@ def main():
 
     # start the server
     server = tornado.httpserver.HTTPServer(ASNApp())
-    server.listen(7720)
+    server.listen(7730)
     tornado.ioloop.IOLoop.instance().start()
 
 

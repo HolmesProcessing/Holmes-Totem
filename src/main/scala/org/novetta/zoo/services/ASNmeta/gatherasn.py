@@ -2,7 +2,7 @@ import dns
 import dns.name
 import dns.query
 import dns.resolver
-import ipaddr
+import ipaddress
 
 class GatherASN:
     def _reverse_address(self, ipaddress, version):
@@ -19,7 +19,7 @@ class GatherASN:
 
 
     def _get_version(self, ipaddress):
-        return ipaddr.IPAddress(ipaddress).version
+        return ipaddress.ip_address(ipaddress).version
 
     def _parse_results(self, data):
         return [out.strip() for out in data.rrset[0].strings[0].split('|')]

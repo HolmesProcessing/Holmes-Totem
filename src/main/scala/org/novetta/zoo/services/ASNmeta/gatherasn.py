@@ -5,11 +5,11 @@ import dns.resolver
 import ipaddress
 
 class GatherASN:
-    def _reverse_address(self, ipaddress, version):
+    def _reverse_address(self, ip, version):
         if version == 4:
-            return ".".join(ipaddress.split(".")[::-1])
+            return ".".join(ip.split(".")[::-1])
         elif version == 6:
-            ip = ipaddress.replace('::', '+')
+            ip = ip.replace('::', '+')
             ip = ip.replace(':', '')
             if '+' in ip:
                 iplength = len(ip) - 1
@@ -18,8 +18,8 @@ class GatherASN:
         return None    
 
 
-    def _get_version(self, ipaddress):
-        return ipaddress.ip_address(ipaddress).version
+    def _get_version(self, ip):
+        return ipaddress.ip_address(ip).version
 
     def _parse_results(self, data):
         return [out.strip() for out in data.rrset[0].strings[0].split('|')]
@@ -67,9 +67,9 @@ class GatherASN:
         self.data['asn_name']       = temp[4]
 
 
-    def query_asn_origin(self, ipaddress):
-        version = self._get_version(ipaddress)
-        reversed_ip = self._reverse_address(ipaddress, version)
+    def query_asn_origin(self, ip):
+        version = self._get_version(ip)
+        reversed_ip = self._reverse_address(ip, version)
         
         if version == 4:
             parsed_ip = "{0}.{1}".format(reversed_ip, self.serverv4) 
@@ -86,9 +86,9 @@ class GatherASN:
         self.data['data_allocated'] = temp[4]
 
 
-    def query_asn_peer(self, ipaddress):
-        version = self._get_version(ipaddress)
-        reversed_ip = self._reverse_address(ipaddress, version)
+    def query_asn_peer(self, ip):
+        version = self._get_version(ip)
+        reversed_ip = self._reverse_address(ip, version)
         
         parsed_ip = "{0}.{1}".format(reversed_ip, self.serverpeer) 
 

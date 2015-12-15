@@ -21,14 +21,14 @@ def ASNMetaRun(ipaddress):
 
     asninfo = gatherasn.GatherASN(options.dns_server, 
                                     options.asn_ipv4_query, 
-                                    optiions.asn_ipv6_query,
-                                    asn_peer_query,
-                                    asn_name_query)
+                                    options.asn_ipv6_query,
+                                    options.asn_peer_query,
+                                    options.asn_name_query)
     
     asninfo.query_asn_origin(ipaddress)
     asninfo.query_asn_peer(ipaddress)
 
-    asn_number = asninfo.get('get_asn_number', False)
+    asn_number = data.get('get_asn_number', False)
     if asn_number:
         ansinfo.query_asn_name('AS{}'.format(asn_number))
 
@@ -48,10 +48,13 @@ class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
         description = """
-Copyright 2015 Holmes Processing
+<p>Copyright 2015 Holmes Processing
 
-Gathers DNS and ASN information.
-        """
+<p>Description: Gathers ASN information for an IP address
+
+<p>Configuration:
+{}
+        """.format(options.as_dict())
         self.write(description)
 
 
@@ -59,7 +62,7 @@ class ASNApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Info),
-            (r'/asnmeta/([a-zA-Z0-9\-]*)', ASNMetaProcess),
+            (r'/asnmeta/((?:[0-9]{1,3}\.){3}[0-9]{1,3}$)', ASNMetaProcess)
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -71,7 +74,12 @@ class ASNApp(tornado.web.Application):
 
 def main():
     # get config options
-    #tornado.options.define('dns_server', default='8.8.8.8', type=str)
+    tornado.options.define('dns_server', default='8.8.8.8', type=str)
+    tornado.options.define('asn_ipv4_query', default='origin.asn.cymru.com', type=str)
+    tornado.options.define('asn_ipv6_query', default='origin6.asn.cymru.com', type=str)
+    tornado.options.define('asn_peer_query', default='peer.asn.cymru.com', type=str)
+    tornado.options.define('asn_name_query', default='name.asn.cymru.com', type=str)
+        
     tornado.options.parse_config_file("/service/service.conf")
 
     # start the server

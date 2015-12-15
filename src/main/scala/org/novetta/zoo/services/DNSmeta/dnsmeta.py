@@ -13,7 +13,6 @@ from os import path
 
 # imports for DNSMeta
 import gatherdns
-import gatherasn
 from time import localtime, strftime
 
 

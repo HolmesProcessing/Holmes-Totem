@@ -62,7 +62,8 @@ class ASNApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Info),
-            (r'/asnmeta/((?:[0-9]{1,3}\.){3}[0-9]{1,3}$)', ASNMetaProcess)
+            (r'/asnmeta/((?:[0-9]{1,3}\.){3}[0-9]{1,3}$)', ASNMetaProcess),
+            (r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

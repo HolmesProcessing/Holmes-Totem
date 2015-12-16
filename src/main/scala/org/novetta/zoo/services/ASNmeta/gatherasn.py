@@ -22,6 +22,7 @@ class GatherASN:
         return ipaddress.ip_address(ip).version
 
     def _parse_results(self, data):
+
         return [out.strip() for out in data.rrset[0].strings[0].split('|')]
 
 
@@ -59,12 +60,13 @@ class GatherASN:
 
         query_result = self._perform_query(parsed_ip, 'TXT')
 
-        temp = self._parse_results(query_result)
-        self.data['asn_number']     = temp[0]
-        self.data['cc']             = temp[1]
-        self.data['registry']       = temp[2]
-        self.data['data_allocated'] = temp[3]
-        self.data['asn_name']       = temp[4]
+        if query_result is not None:
+            temp = self._parse_results(query_result)
+            self.data['asn_number']     = temp[0]
+            self.data['cc']             = temp[1]
+            self.data['registry']       = temp[2]
+            self.data['data_allocated'] = temp[3]
+            self.data['asn_name']       = temp[4]
 
 
     def query_asn_origin(self, ip):
@@ -78,12 +80,13 @@ class GatherASN:
 
         query_result = self._perform_query(parsed_ip, 'TXT')
 
-        temp = self._parse_results(query_result)
-        self.data['asn_number'] = temp[0]
-        self.data['bgp_prefix'] = temp[1]
-        self.data['cc']         = temp[2]
-        self.data['registry']   = temp[3]
-        self.data['data_allocated'] = temp[4]
+        if query_result is not None:
+            temp = self._parse_results(query_result)
+            self.data['asn_number'] = temp[0]
+            self.data['bgp_prefix'] = temp[1]
+            self.data['cc']         = temp[2]
+            self.data['registry']   = temp[3]
+            self.data['data_allocated'] = temp[4]
 
 
     def query_asn_peer(self, ip):
@@ -94,12 +97,13 @@ class GatherASN:
 
         query_result = self._perform_query(parsed_ip, 'TXT')
 
-        temp = self._parse_results(query_result)
-        self.data['asn_peers']  = temp[0].split(' ')
-        self.data['bgp_prefix'] = temp[1]
-        self.data['cc']         = temp[2]
-        self.data['registry']   = temp[3]
-        self.data['data_allocated'] = temp[4]
+        if query_result is not None:
+            temp = self._parse_results(query_result)
+            self.data['asn_peers']  = temp[0].split(' ')
+            self.data['bgp_prefix'] = temp[1]
+            self.data['cc']         = temp[2]
+            self.data['registry']   = temp[3]
+            self.data['data_allocated'] = temp[4]
 
 
     def get_asn_name(self):

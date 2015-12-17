@@ -4,6 +4,9 @@ import dns.query
 import dns.resolver
 import ipaddress
 
+class IPError(Exception):
+    pass
+
 class GatherASN:
     def _reverse_address(self):
         if self.ip.version == 4:
@@ -91,10 +94,6 @@ class GatherASN:
         if query_result is not None:
             temp = self._parse_results(query_result)
             self.data['asn_peers']  = temp[0].split(' ')
-            #self.data['bgp_prefix'] = temp[1]
-            #self.data['cc']         = temp[2]
-            #self.data['registry']   = temp[3]
-            #self.data['data_allocated'] = temp[4]
             print(temp)
 
 
@@ -149,4 +148,8 @@ class GatherASN:
         self.servername = servername
 
         self.data = {}
-        self.ip = ipaddress.ip_address(ip)
+        try:
+            self.ip = ipaddress.ip_address(ip)
+            self.reverse_ip = self._reverse_address()
+        except ValueError:
+            raise IPError()

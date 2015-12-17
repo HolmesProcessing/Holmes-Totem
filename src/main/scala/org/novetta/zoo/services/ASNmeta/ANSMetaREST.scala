@@ -18,7 +18,7 @@ case class ASNMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkType
         ASNMetaSuccess(true, JString(content), Arguments)
 
       case Left(StatusCode(404)) =>
-        ASNMetaFailure(false, JString("Not found (File already deleted?)"), Arguments)
+        ASNMetaFailure(false, JString("Not found (malformed address?)"), Arguments)
 
       case Left(StatusCode(500)) =>
         ASNMetaFailure(false, JString("ASNMeta service failed, check local logs"), Arguments) //would be ideal to print response body here

@@ -17,20 +17,20 @@ from time import localtime, strftime
 
 
 def ASNMetaRun(ipaddress):
-    data = {}
-
-    asninfo = gatherasn.GatherASN(options.dns_server, 
+    asninfo = gatherasn.GatherASN(ipaddress,
+                                    options.dns_server, 
                                     options.asn_ipv4_query, 
                                     options.asn_ipv6_query,
                                     options.asn_peer_query,
                                     options.asn_name_query)
     
-    asninfo.query_asn_origin(ipaddress)
-    asninfo.query_asn_peer(ipaddress)
+    asninfo.query_asn_origin()
 
-    asn_number = data.get('get_asn_number', False)
-    if asn_number:
-        ansinfo.query_asn_name('AS{}'.format(asn_number))
+    if asninfo.get_ip_version() == 4:
+        asninfo.query_asn_peer()
+
+    if asninfo.get_asn_number():
+        asninfo.query_asn_name('AS{}'.format(asninfo.get_asn_number()))
 
     return asninfo.get_all_known_data()
 
@@ -62,8 +62,8 @@ class ASNApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Info),
-            (r'/asnmeta/((?:[0-9]{1,3}\.){3}[0-9]{1,3}$)', ASNMetaProcess),
-            (r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
+            (r'/asnmeta/(.*)', ASNMetaProcess),
+            #(r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

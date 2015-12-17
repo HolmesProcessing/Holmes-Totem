@@ -40,7 +40,9 @@ class ASNMetaProcess(tornado.web.RequestHandler):
         try:
             data = ASNMetaRun(ipaddress)
             self.write(data)
-        except gatherasn.IPError:
+        except gatherasn.IPTypeError:
+            raise tornado.web.HTTPError(400)
+        except gatherasn.IPFormatError:
             raise tornado.web.HTTPError(404)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})

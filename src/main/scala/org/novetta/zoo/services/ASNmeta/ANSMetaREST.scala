@@ -17,6 +17,9 @@ case class ASNMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkType
       case Right(content) =>
         ASNMetaSuccess(true, JString(content), Arguments)
 
+      case Left(StatusCode(400)) =>
+        ASNMetaFailure(false, JString("Address type is not global"), Arguments)
+
       case Left(StatusCode(404)) =>
         ASNMetaFailure(false, JString("Not found (malformed address?)"), Arguments)
 

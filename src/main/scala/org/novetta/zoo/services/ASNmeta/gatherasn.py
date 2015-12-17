@@ -4,8 +4,13 @@ import dns.query
 import dns.resolver
 import ipaddress
 
-class IPError(Exception):
+class IPFormatError(Exception):
     pass
+
+
+class IPTypeError(Exception):
+    pass
+
 
 class GatherASN:
     def _reverse_address(self):
@@ -65,12 +70,10 @@ class GatherASN:
 
 
     def query_asn_origin(self):
-        reversed_ip = self._reverse_address()
-
         if self.ip.version == 4:
-            parsed_ip = "{0}.{1}".format(reversed_ip, self.serverv4) 
+            parsed_ip = "{0}.{1}".format(self.reversed_ip, self.serverv4) 
         elif self.ip.version == 6:
-            parsed_ip = "{0}.{1}".format(reversed_ip, self.serverv6) 
+            parsed_ip = "{0}.{1}".format(self.reversed_ip, self.serverv6) 
 
         query_result = self._perform_query(parsed_ip, 'TXT')
 
@@ -84,10 +87,8 @@ class GatherASN:
             print(temp)
 
 
-    def query_asn_peer(self):
-        reversed_ip = self._reverse_address()
-        
-        parsed_ip = "{0}.{1}".format(reversed_ip, self.serverpeer) 
+    def query_asn_peer(self):        
+        parsed_ip = "{0}.{1}".format(self.reversed_ip, self.serverpeer) 
 
         query_result = self._perform_query(parsed_ip, 'TXT')
 
@@ -130,7 +131,7 @@ class GatherASN:
 
 
     def get_ip(self):
-        return self.ip
+        return str(self.ip)
 
 
     def get_ip_version(self):
@@ -150,6 +151,13 @@ class GatherASN:
         self.data = {}
         try:
             self.ip = ipaddress.ip_address(ip)
-            self.reverse_ip = self._reverse_address()
+
+            # test to make sure the address is publicly accessible
+            ###
+            # TODO: upgrade to is_global when python 3.5+ is more stable
+            ###
+            if self.ip.is_private:
+                raise IPTypeError()
+            self.reversed_ip = self._reverse_address()
         except ValueError:
-            raise IPError()
+            raise IPFormatError()

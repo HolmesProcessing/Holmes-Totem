@@ -3,13 +3,18 @@ import dns.name
 import dns.query
 import dns.resolver
 
+class DomainError(Exception):
+    pass
+
 class GatherDNS:
     """Helper class for gathering DNS data"""
 
     def _convert_utf8(self, s):
         """ Decodes string"""
-        codecs = ['utf8', 'latin1', 'cp1252']
+        codecs = ['utf8', 'utf16', 'utf32', 'latin1', 'cp1252', 'ascii']
         
+        print(s)
+
         for i in codecs:
             try:
                 return s.decode(i).encode('utf8')
@@ -93,14 +98,12 @@ class GatherDNS:
         Performs a DNS (UDP) query with flags and configurations parameters.
 
         Args: 
-            domain (str): sdomain i.e. google.com
+            domain: domain object
             nnserver (str): nameserver to query
             rtype (str or int): rtype to query http://en.wikipedia.org/wiki/List_of_DNS_record_types
             timeout (int): time to wait before timeout        
 
         """
-        domain = dns.name.from_text(domain)
-
         try:
             result = self.resolver.query(domain, rdtype=rdtype)
         except dns.resolver.NoAnswer:
@@ -194,8 +197,13 @@ class GatherDNS:
         rdtype = 'TXT'
         if rdtype in self.data:
             result = self._rr_header(rdtype)
-            records = [{'strings':  self._convert_utf8("\n".join(rdata.strings))} 
+
+# doesn't appear to be needed in python3...I am skeptical
+#            records = [{'strings':  self._convert_utf8(rdata.to_text())} 
+#                        for rdata in self.data[rdtype]]
+            records = [{'strings': rdata.to_text().strip()} 
                         for rdata in self.data[rdtype]]
+
             result['rdata'] = records
             return result
 
@@ -243,15 +251,24 @@ class GatherDNS:
         return False
 
 
-    def query_domain(self, domain, rdtypes):
+    def query_domain(self, rdtypes):
         # gather the desired rdtypes
-        self.data = {rdtype: self._perform_query(domain, rdtype) for rdtype in rdtypes}
+        self.data = {rdtype: self._perform_query(self.domain, rdtype) for rdtype in rdtypes}
+        
         # remove none values
-        self.data = dict((k,v) for k,v in self.data.iteritems() if v is not None)
+        self.data = dict((k,v) for k,v in self.data.items() if v is not None)
 
-    def __init__(self, nsserver, timeout=10):
+
+    def __init__(self, domain, nsserver, timeout=10):
         self.resolver = dns.resolver.Resolver()
         self.resolver.nameservers = [nsserver]
         self.resolver.timeout = timeout
         self.resolver.lifetime = 50
         self.data = {}
+
+        try:
+            print(domain)
+            self.domain = dns.name.from_text(domain)
+        except:
+            raise DomainError()
+

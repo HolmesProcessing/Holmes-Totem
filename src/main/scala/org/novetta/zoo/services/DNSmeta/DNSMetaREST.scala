@@ -18,7 +18,7 @@ case class DNSMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkType
         DNSMetaSuccess(true, JString(content), Arguments)
 
       case Left(StatusCode(404)) =>
-        DNSMetaFailure(false, JString("Not found (File already deleted?)"), Arguments)
+        DNSMetaFailure(false, JString("Not found (malformed address?)"), Arguments)
 
       case Left(StatusCode(500)) =>
         DNSMetaFailure(false, JString("DNSMeta service failed, check local logs"), Arguments) //would be ideal to print response body here

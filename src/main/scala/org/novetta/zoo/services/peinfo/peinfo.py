@@ -102,52 +102,6 @@ def _get_pehash(exe):
     return output
 
 
-def PEInfoRun(obj):
-    data = {}
-    try:
-        pe = pefile.PE(data=open(obj).read())
-    except pefile.PEFormatError as e:
-        # self._error("A PEFormatError occurred: %s" % e)
-        return e
-    data["pehash"] = _get_pehash(pe)
-    data["pe_sections"] = _get_sections(pe)
-    data["timestamp"] = _get_timestamp(pe)
-
-    if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
-        data["imports"] = _get_imports(pe)
-
-    if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
-        data["exports"] = _get_exports(pe)
-
-
-#working
-    if hasattr(pe, 'VS_VERSIONINFO'):
-        data["version_info"] = _get_version_info(pe)
-
-    if hasattr(pe, 'VS_VERSIONINFO'):
-        data["version_var"] = _get_version_var_info(pe)
-
-    if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
-        data["debug"] = _get_debug_info(pe)
-
-    if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
-        data["thread_local_storage"] = _get_tls_info(pe)
-
-    # if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
-    #     self._dump_resource_data("ROOT",
-    #                              pe.DIRECTORY_ENTRY_RESOURCE,
-    #                              pe,
-    #                              config['resource'])
-
-
-    if callable(getattr(pe, 'get_imphash', None)):
-        data["pehash"] = _get_imphash(pe)
-
-    # not getting rich header
-
-    return data
-
-
 def _get_debug_info(pe):
     # woe is pefile when it comes to debug entries
     # we're mostly interested in codeview structures, namely NB10 and RSDS
@@ -240,6 +194,47 @@ def _get_exports(pe):
         return d
     except Exception as e:
         return d
+
+
+def _get_rich_header(pe):
+    d = {}
+    rich_hdr = pe.parse_rich_header()
+    if not rich_hdr:
+        return None
+    d['checksum_raw'] = str(rich_hdr['values'])
+    d['checksum'] = hex(rich_hdr['checksum'])
+
+    # Generate a signature of the block. Need to apply checksum
+    # appropriately. The hash here is sha256 because others are using
+    # that here.
+    #
+    # Most of this code was taken from pefile but modified to work
+    # on the start and checksum blocks.
+    temp_data = []
+    try:
+        rich_data = pe.get_data(0x80, 0x80)
+        if len(rich_data) != 0x80:
+            return d
+        temp_data = list(struct.unpack("<32I", rich_data))
+    except pefile.PEFormatError as e:
+        return d
+
+    checksum = temp_data[1]
+    headervalues = []
+
+    for i in xrange(len(temp_data) // 2):
+        if temp_data[2 * i] == 0x68636952: # Rich
+            if temp_data[2 * i + 1] != checksum:
+                #self._parse_error('Rich Header corrupted', Exception)
+            break
+        headervalues += [temp_data[2 * i] ^ checksum, temp_data[2 * i + 1] ^ checksum]
+
+    sha_256 = hashlib.sha256()
+    for hv in headervalues:
+        sha_256.update(struct.pack('<I', hv))
+    d['sha256'] = sha_256.hexdigest()
+
+    return d
 
 
 def _get_sections(pe):
@@ -358,6 +353,51 @@ def _get_version_var_info(pe):
         except Exception as e:
             return d
 
+def PEInfoRun(obj):
+    data = {}
+    try:
+        pe = pefile.PE(data=open(obj).read())
+    except pefile.PEFormatError as e:
+        # self._error("A PEFormatError occurred: %s" % e)
+        return e
+    data["pehash"] = _get_pehash(pe)
+    data["pe_sections"] = _get_sections(pe)
+    data["timestamp"] = _get_timestamp(pe)
+
+    # Rich Header
+    # Check to see if we will supply the standard or enhanced form
+    data["rich_header"] = _get_rich_header(pe)
+
+    if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
+        data["imports"] = _get_imports(pe)
+
+    if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+        data["exports"] = _get_exports(pe)
+
+    if hasattr(pe, 'VS_VERSIONINFO'):
+        data["version_info"] = _get_version_info(pe)
+
+    if hasattr(pe, 'VS_VERSIONINFO'):
+        data["version_var"] = _get_version_var_info(pe)
+
+    if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
+        data["debug"] = _get_debug_info(pe)
+
+    if hasattr(pe, 'DIRECTORY_ENTRY_TLS'):
+        data["thread_local_storage"] = _get_tls_info(pe)
+
+    # if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
+    #     self._dump_resource_data("ROOT",
+    #                              pe.DIRECTORY_ENTRY_RESOURCE,
+    #                              pe,
+    #                              config['resource'])
+
+
+    if callable(getattr(pe, 'get_imphash', None)):
+        data["pehash"] = _get_imphash(pe)
+
+    return data
+
 
 class PEInfoProcess(tornado.web.RequestHandler):
     def get(self, filename):
@@ -394,8 +434,6 @@ class PEApp(tornado.web.Application):
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
             static_path=path.join(path.dirname(__file__), 'static'),
-            # xsrf_cookies=True,
-            # cookie_secret='dsfretghj867544wgryjuyki9p9lou67543/Vo=',
         )
         tornado.web.Application.__init__(self, handlers, **settings)
         self.engine = None

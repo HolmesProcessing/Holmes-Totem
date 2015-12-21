@@ -62,12 +62,12 @@ def _get_pehash(exe):
     #Section chars
     for section in exe.sections:
         #virutal address
-        sect_va =  bitstring.BitArray(hex(section.VirtualAddress))
+        sect_va = bitstring.BitArray(hex(section.VirtualAddress))
         sect_va = bitstring.BitArray(bytes=sect_va.tobytes())
         pehash_bin.append(sect_va)
 
         #rawsize
-        sect_rs =  bitstring.BitArray(hex(section.SizeOfRawData))
+        sect_rs = bitstring.BitArray(hex(section.SizeOfRawData))
         sect_rs = bitstring.BitArray(bytes=sect_rs.tobytes())
         sect_rs_bits = string.zfill(sect_rs.bin, 32)
         sect_rs = bitstring.BitArray(bin=sect_rs_bits)
@@ -76,7 +76,7 @@ def _get_pehash(exe):
         pehash_bin.append(sect_rs_bits)
 
         #section chars
-        sect_chars =  bitstring.BitArray(hex(section.Characteristics))
+        sect_chars = bitstring.BitArray(hex(section.Characteristics))
         sect_chars = bitstring.BitArray(bytes=sect_chars.tobytes())
         sect_chars_xor = sect_chars[16:23] ^ sect_chars[24:31]
         pehash_bin.append(sect_chars_xor)
@@ -201,7 +201,7 @@ def _get_rich_header(pe):
     rich_hdr = pe.parse_rich_header()
     if not rich_hdr:
         return None
-    d['checksum_raw'] = str(rich_hdr['values'])
+    d['values'] = str(rich_hdr['values'])
     d['checksum'] = hex(rich_hdr['checksum'])
 
     # Generate a signature of the block. Need to apply checksum
@@ -225,10 +225,70 @@ def _get_rich_header(pe):
     for i in xrange(len(temp_data) // 2):
         if temp_data[2 * i] == 0x68636952: # Rich
             if temp_data[2 * i + 1] != checksum:
-                #self._parse_error('Rich Header corrupted', Exception)
+                print('Rich Header corrupted', Exception)
             break
         headervalues += [temp_data[2 * i] ^ checksum, temp_data[2 * i + 1] ^ checksum]
 
+    sha_256 = hashlib.sha256()
+    for hv in headervalues:
+        print(hv)
+        sha_256.update(struct.pack('<I', hv))
+    d['sha256'] = sha_256.hexdigest()
+
+    return d
+
+
+def _get_rich_header_enhanced(pe):
+    d = {}
+    data = []
+
+    # Rich Header constants
+    DANS = 0x536E6144 # 'DanS' as dword
+    RICH = 0x68636952 # 'Rich' as dword
+
+    # Read a block of data
+    try:
+        rich_data = pe.get_data(0x80, 0x80)
+        if len(rich_data) != 0x80:
+            return None
+        data = list(struct.unpack("<32I", rich_data))
+    except:
+        return None
+        
+    # the checksum should be present 3 times after the DanS signature
+    checksum = data[1]
+    if (data[0] ^ checksum != DANS
+        or data[2] != checksum
+        or data[3] != checksum):
+        return None
+    d['checksum'] = checksum
+
+    # add header values
+    headervalues = []
+    headerparsed = []
+    data = data[4:]
+    for i in xrange(len(data) // 2):
+
+        # Stop until the Rich footer signature is found
+        if data[2 * i] == RICH:
+
+            # it should be followed by the checksum
+            if data[2 * i + 1] != checksum:
+                print('Rich Header corrupted')
+            break
+
+        # header values come by pairs
+        temp1 = data[2 * i] ^ checksum
+        temp2 = data[2 * i + 1] ^ checksum
+        headervalues.extend([temp1, temp2])
+        headerparsed.append({'id': temp1 >> 16,
+                             'version': temp1 & 0xFFFF,
+                             'times_used': temp2 & 0xFFFF})
+
+    d['values_raw'] = headervalues
+    d['values_parsed'] = headerparsed
+
+    # perform sha on the headers
     sha_256 = hashlib.sha256()
     for hv in headervalues:
         sha_256.update(struct.pack('<I', hv))
@@ -353,6 +413,7 @@ def _get_version_var_info(pe):
         except Exception as e:
             return d
 
+
 def PEInfoRun(obj):
     data = {}
     try:
@@ -399,10 +460,34 @@ def PEInfoRun(obj):
     return data
 
 
+def PEInfoRichRun(obj):
+    data = {}
+    try:
+        pe = pefile.PE(data=open(obj).read())
+    except pefile.PEFormatError as e:
+        # self._error("A PEFormatError occurred: %s" % e)
+        return e
+
+    data["rich_header"] = _get_rich_header_enhanced(pe)
+
+    return data
+
+
+class PEInfoRich(tornado.web.RequestHandler):
+    def get(self, filename):
+        try:
+            fullPath = os.path.join('/service/', filename)
+            data = PEInfoRichRun(fullPath)
+            print len(data)
+            self.write(data)
+        except Exception as e:
+            self.write({"error": traceback.format_exc(e)})
+
+
 class PEInfoProcess(tornado.web.RequestHandler):
     def get(self, filename):
         try:
-            fullPath = os.path.join('/tmp/', filename)
+            fullPath = os.path.join('/service/', filename)
             data = PEInfoRun(fullPath)
             print len(data)
             self.write(data)
@@ -414,10 +499,10 @@ class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
         description = """
-Copyright 2015 Holmes Processing
-Copyright (c) 2015, Adam Polkosnik, Team Cymru.  All rights reserved.
+<p>Copyright 2015 Holmes Processing
+<p>Copyright (c) 2015, Adam Polkosnik, Team Cymru.  All rights reserved.
 
-Source code distributed pursuant to license agreement.
+<p>Source code distributed pursuant to license agreement.
 PEhash computing code is from Team Cymru.
 Wrapping into the CRITs module done by Adam Polkosnik.
 Adjustments for TOTEM made by George Webster.
@@ -430,6 +515,7 @@ class PEApp(tornado.web.Application):
         handlers = [
             (r'/', Info),
             (r'/peinfo/([a-zA-Z0-9\-]*)', PEInfoProcess),
+            (r'/rich/([a-zA-Z0-9\-]*)', PEInfoRich),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

@@ -427,7 +427,7 @@ def PEInfoRun(obj):
 
     # Rich Header
     # Check to see if we will supply the standard or enhanced form
-    data["rich_header"] = _get_rich_header(pe)
+    data["rich_header"] = _get_rich_header_enhanced(pe)
 
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         data["imports"] = _get_imports(pe)
@@ -487,7 +487,7 @@ class PEInfoRich(tornado.web.RequestHandler):
 class PEInfoProcess(tornado.web.RequestHandler):
     def get(self, filename):
         try:
-            fullPath = os.path.join('/service/', filename)
+            fullPath = os.path.join('/tmp/', filename)
             data = PEInfoRun(fullPath)
             print len(data)
             self.write(data)

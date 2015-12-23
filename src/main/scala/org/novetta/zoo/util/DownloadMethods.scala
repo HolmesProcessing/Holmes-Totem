@@ -7,13 +7,8 @@ import org.slf4j.LoggerFactory
 
 case class DownloadSettings(download_directory: String, request_timeout: Int, connect_timeout: Int)
 
-
 object DownloadMethods extends Instrumented with LazyLogging {
   val log = Logger(LoggerFactory.getLogger("name"))
-
-  val download_directory:
-  val requestTimeout:
-  val connectionTimeout:
 
   def MD5(s: Array[Byte]): String = {
     MessageDigest.getInstance("MD5").digest(s).map("%02X".format(_)).mkString

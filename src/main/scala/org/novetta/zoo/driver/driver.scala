@@ -131,5 +131,5 @@ object driver extends App with Instrumented {
 
   mySender ! Send(RMQSendMessage(j.getBytes, workqueueConfig.routingKey))
 
-  println("running")
+  println("Totem is Running! \nVersion: " + conf.getString("zoo.version"))
 }

@@ -76,7 +76,6 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   var standoff: Conflict = Conflict(false, false, false, false, false)
   lazy val execServ: ExecutorService = Executors.newFixedThreadPool(40)
 
-  val pythonDispatcher = context.actorSelection("/user/pythonDispatcher")
   val producer = context.actorSelection("/user/producer")
   var results: Map[TaskedWork, Option[WorkResult]] = workToDo.map(w => w -> None).toMap
   var MD5: String = ""

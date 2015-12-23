@@ -9,6 +9,7 @@ import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
 import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
 import org.novetta.zoo.types._
+import org.novetta.zoo.util.DownloadSettings
 
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -33,6 +34,14 @@ object driver extends App with Instrumented {
   }
   val system = ActorSystem("totem")
 
+  // get download settings
+  val downloadConfig = DownloadSettings(
+    conf.getString("zoo.file_handler.download_directory"),
+    conf.getInt("zoo.file_handler.request_timeout"),
+    conf.getInt("zoo.file_handler.connection_timeout")
+  )
+
+  // get rabbit settings
   val hostConfig = HostSettings(
     conf.getString("zoo.rabbit_settings.host.server"),
     conf.getInt("zoo.rabbit_settings.host.port"),

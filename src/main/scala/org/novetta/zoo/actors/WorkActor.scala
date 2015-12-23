@@ -86,7 +86,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     myHttp.shutdown()
     execServ.shutdown()
   }
-  val config = new AsyncHttpClientConfig.Builder()
+  val httpconfig = new AsyncHttpClientConfig.Builder()
     .setRequestTimeout( 500 ) //should have a config value for this
     .setExecutorService(execServ)
     .setAllowPoolingConnections(true)
@@ -94,8 +94,8 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
     .setIOThreadMultiplier(4).build()
-  lazy val client = new AsyncHttpClient(config)
-  lazy val asyncHttpClient = new AsyncHttpClient(config)
+  lazy val client = new AsyncHttpClient(httpconfig)
+  lazy val asyncHttpClient = new AsyncHttpClient(httpconfig)
   implicit lazy val myHttp = new Http(asyncHttpClient)
 
   val downloadResult = myHttp(url(primaryURI) OK as.Bytes)

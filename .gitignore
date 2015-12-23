@@ -17,5 +17,8 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 .sc
+.idea/
+*.iml
 
+# Service test files
 .yar

@@ -8,7 +8,6 @@ RUN pip install tornado pefile bitstring
 # add the files to the container
 RUN mkdir -p /service
 ADD peinfo.py /service
-ADD calc /service
 
 # create a new user with limited access
 RUN useradd -s /bin/bash service

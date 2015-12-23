@@ -460,30 +460,6 @@ def PEInfoRun(obj):
     return data
 
 
-def PEInfoRichRun(obj):
-    data = {}
-    try:
-        pe = pefile.PE(data=open(obj).read())
-    except pefile.PEFormatError as e:
-        # self._error("A PEFormatError occurred: %s" % e)
-        return e
-
-    data["rich_header"] = _get_rich_header_enhanced(pe)
-
-    return data
-
-
-class PEInfoRich(tornado.web.RequestHandler):
-    def get(self, filename):
-        try:
-            fullPath = os.path.join('/service/', filename)
-            data = PEInfoRichRun(fullPath)
-            print len(data)
-            self.write(data)
-        except Exception as e:
-            self.write({"error": traceback.format_exc(e)})
-
-
 class PEInfoProcess(tornado.web.RequestHandler):
     def get(self, filename):
         try:
@@ -515,7 +491,6 @@ class PEApp(tornado.web.Application):
         handlers = [
             (r'/', Info),
             (r'/peinfo/([a-zA-Z0-9\-]*)', PEInfoProcess),
-            (r'/rich/([a-zA-Z0-9\-]*)', PEInfoRich),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

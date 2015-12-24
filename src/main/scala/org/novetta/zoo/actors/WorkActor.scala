@@ -61,6 +61,7 @@ object WorkActor {
  *
  * }}}
  * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
+ * @param downloadconfig: a DownloadSettings, provides configuration options when downloading a file
  * @param deliverytag: a Long, represents the message's ID from RMQ.
  * @param filename: a String, the name of the file we are downloading.
  * @param primaryURI: a String, the first URI we will try to use for a download.
@@ -69,7 +70,7 @@ object WorkActor {
  *
  */
 
-class WorkActor(config: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(downloadconfig: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
@@ -87,10 +88,10 @@ class WorkActor(config: DownloadSettings, deliverytag: Long, filename: String, h
     execServ.shutdown()
   }
   val httpconfig = new AsyncHttpClientConfig.Builder()
-    .setRequestTimeout( config.request_timeout ) //should have a config value for this
+    .setRequestTimeout( downloadconfig.request_timeout ) //should have a config value for this
     .setExecutorService(execServ)
     .setAllowPoolingConnections(true)
-    .setConnectTimeout( config.connect_timeout )
+    .setConnectTimeout( downloadconfig.connect_timeout )
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
     .setIOThreadMultiplier(4).build()
@@ -102,10 +103,10 @@ class WorkActor(config: DownloadSettings, deliverytag: Long, filename: String, h
     .option
     .map({
       case Some(v: Array[Byte]) =>
-        new FileOutputStream (config.download_directory + filename, false).write (v) //this filepath can be a conf. variable
+        new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
         log.info ("Successfully downloaded {} using the primary URI", filename)
 
-        SuccessfulDownload(config.download_directory + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+        SuccessfulDownload(downloadconfig.download_directory + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
         log.info("Could not download {} using ANY URI", filename)
@@ -222,7 +223,7 @@ class WorkActor(config: DownloadSettings, deliverytag: Long, filename: String, h
         val time = timeDelta(Some(created), DateTime.now())
 
         log.info("standoff resolved! Took: {}", time)
-        val fi = new File(config.download_directory, filename)
+        val fi = new File(downloadconfig.download_directory, filename)
         log.info("Deleting {}", fi.toString)
         fi.delete()
         self ! PoisonPill

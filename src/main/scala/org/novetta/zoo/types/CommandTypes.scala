@@ -4,6 +4,7 @@ import org.novetta.zoo.util.DownloadSettings
 
 /**
  * Create() case class. Used between the ConsumerActor and the WorkGroup.
+ * @param config: DownloadSettings => The configuration options for downloading an object
  * @param key: Long => The message key associated with this work.
  * @param primaryURI: String => The primary URL for downloading the target resource
  * @param secondaryURI: String => The secondary URL for downloading the target resource

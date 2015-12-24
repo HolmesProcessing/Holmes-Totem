@@ -132,6 +132,7 @@ class RabbitConsumerActor[T: Manifest](config: DownloadSettings, host: HostSetti
               log.info("Created a ZooWork, {}", filename)
               val uuid_filename: String = UUID.randomUUID().toString
               WorkGroupActor ! Create(
+                config,
                 deliveryTag,
                 primaryURI,
                 secondaryURI,

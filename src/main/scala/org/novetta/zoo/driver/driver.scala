@@ -36,9 +36,9 @@ object driver extends App with Instrumented {
 
   // get download settings
   val downloadConfig = DownloadSettings(
-    conf.getString("zoo.file_handler.download_directory"),
-    conf.getInt("zoo.file_handler.request_timeout"),
-    conf.getInt("zoo.file_handler.connection_timeout")
+    conf.getString("zoo.download_settings.download_directory"),
+    conf.getInt("zoo.download_settings.request_timeout"),
+    conf.getInt("zoo.download_settings.connection_timeout")
   )
 
   // get rabbit settings

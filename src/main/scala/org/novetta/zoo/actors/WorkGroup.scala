@@ -4,7 +4,7 @@ import akka.actor._
 import com.rabbitmq.client._
 import com.typesafe.config.Config
 import org.novetta.zoo.types._
-import org.novetta.zoo.util.MonitoredActor
+import org.novetta.zoo.util.{DownloadSettings, MonitoredActor}
 /**
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
@@ -47,12 +47,12 @@ object WorkGroup {
 class WorkGroup extends Actor with ActorLogging with MonitoredActor {
 
   def monitoredReceive = {
-    case Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState) =>
+    case Create(config: DownloadSettings, key: Long, primaryURI: String, secondaryURI: String, value: WorkState) =>
       val child = context.child(key.toString).getOrElse({
         log.info("Instantiating a new actor for message: {}", key)
         context.watch(
           context.actorOf(
-            WorkActor.props(key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, value.attempts), key.toString
+            WorkActor.props(config, key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, value.attempts), key.toString
           )
         )
 

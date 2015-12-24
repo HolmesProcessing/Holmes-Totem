@@ -8,7 +8,7 @@ import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig}
 import dispatch.{as, url, _}
 import org.joda.time.{DateTime, Duration}
 import org.novetta.zoo.types._
-import org.novetta.zoo.util.{DownloadMethods, MonitoredActor}
+import org.novetta.zoo.util.{DownloadSettings, DownloadMethods, MonitoredActor}
 
 import scala.concurrent.Future
 import scala.language.postfixOps
@@ -21,8 +21,8 @@ case class SuccessfulDownload(filepath: String, MD5Hash: String, SHA1Hash: Strin
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts) )
+  def props(config: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int): Props = {
+    Props(new WorkActor(config, deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -69,7 +69,7 @@ object WorkActor {
  *
  */
 
-class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(config: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
@@ -87,10 +87,10 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     execServ.shutdown()
   }
   val httpconfig = new AsyncHttpClientConfig.Builder()
-    .setRequestTimeout( 500 ) //should have a config value for this
+    .setRequestTimeout( config.request_timeout ) //should have a config value for this
     .setExecutorService(execServ)
     .setAllowPoolingConnections(true)
-    .setConnectTimeout( 500 )
+    .setConnectTimeout( config.connect_timeout )
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
     .setIOThreadMultiplier(4).build()
@@ -102,10 +102,10 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     .option
     .map({
       case Some(v: Array[Byte]) =>
-        new FileOutputStream ("/tmp/" + filename, false).write (v) //this filepath can be a conf. variable
+        new FileOutputStream (config.download_directory + filename, false).write (v) //this filepath can be a conf. variable
         log.info ("Successfully downloaded {} using the primary URI", filename)
 
-        SuccessfulDownload("/tmp/" + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+        SuccessfulDownload(config.download_directory + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
         log.info("Could not download {} using ANY URI", filename)
@@ -222,7 +222,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         val time = timeDelta(Some(created), DateTime.now())
 
         log.info("standoff resolved! Took: {}", time)
-        val fi = new File("/tmp/", filename)
+        val fi = new File(config.download_directory, filename)
         log.info("Deleting {}", fi.toString)
         fi.delete()
         self ! PoisonPill

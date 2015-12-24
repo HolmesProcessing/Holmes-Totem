@@ -17,12 +17,13 @@ import org.novetta.zoo.types._
 import org.novetta.zoo.util.MonitoredActor
 import scala.concurrent.duration.{FiniteDuration, _}
 import org.novetta.zoo.types.WorkEncoding
+import org.novetta.zoo.util.DownloadSettings
 /**
  * @constructor This is the companion object to the RabbitConsumerActor class.
  */
 object RabbitConsumerActor {
-  def props[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]): Props = {
-    Props(new RabbitConsumerActor(host, exchange, queue, servicelist, decoder) )
+  def props[T: Manifest](config: DownloadSettings, host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]): Props = {
+    Props(new RabbitConsumerActor(config, host, exchange, queue, servicelist, decoder) )
   }
 }
 /**
@@ -68,7 +69,7 @@ object RabbitConsumerActor {
  * @param decoder: a Parsers.Parser[T], which is responsible for transforming the JSON data into a Scala object.
  */
 
-class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]) extends Actor with ActorLogging with MonitoredActor {
+class RabbitConsumerActor[T: Manifest](config: DownloadSettings, host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]) extends Actor with ActorLogging with MonitoredActor {
   implicit val formats = DefaultFormats
   var WorkGroupActor: ActorRef =_
   var totalDemand = 0

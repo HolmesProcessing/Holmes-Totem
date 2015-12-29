@@ -49,7 +49,7 @@ class TempAnalysisFile(object):
 
     def __init__(self, obj):
         self.obj = obj
-        print(obj)
+        #print(obj)
 
     def __enter__(self):
         """
@@ -60,7 +60,7 @@ class TempAnalysisFile(object):
         self.directory = tempdir
         tfile = os.path.join(tempdir, self.obj)
         with open(tfile, "wb") as f:
-            f.write(open(self.obj).read())
+            f.write(open(self.obj).read().encode())
         return tfile
 
     def __exit__(self, type, value, traceback):

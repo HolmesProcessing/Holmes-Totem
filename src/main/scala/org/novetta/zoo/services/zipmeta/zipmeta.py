@@ -125,7 +125,6 @@ class ZipMetaApp(tornado.web.Application):
         handlers = [
             (r'/', Info),
             (r'/zipmeta/([a-zA-Z0-9\-]*)', ZipMetaProcess),
-            (r'/.*', Info),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

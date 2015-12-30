@@ -49,7 +49,6 @@ object driver extends App with Instrumented {
     conf.getString("zoo.rabbit_settings.host.password"),
     conf.getString("zoo.rabbit_settings.host.vhost")
   )
-
   val exchangeConfig = ExchangeSettings(
     conf.getString("zoo.rabbit_settings.exchange.name"),
     conf.getString("zoo.rabbit_settings.exchange.type"),

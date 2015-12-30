@@ -22,8 +22,28 @@ class ZipError (Exception):
     def __repr__ (self):
         return repr(str(self))
 
+
+class ResultSet (object):
+    
+    def __init__(self):
+        self.data = {}
+    
+    def add(self, key, value):
+        if key in self.data:
+            if isinstance(self.data[key], list):
+                self.data[key].append(value)
+            else:
+                cpy = self.data[key]
+                self.data[key] = []
+                self.data[key].append(cpy)
+                self.data[key].append(value)
+        else:
+            self.data[key] = value
+
+
 class ZipMetaProcess(tornado.web.RequestHandler):
     def get(self, filename):
+        resultset = ResultSet()
         try:
             # read file
             fullPath = os.path.join('/tmp/', filename)
@@ -43,41 +63,41 @@ class ZipMetaProcess(tornado.web.RequestHandler):
                 raise ZipError(400, "Could not parse file as a zip file")
             
             # fetch result
-            result = {}
             for centralDirectory in parsedZip:
                 zipfilename = centralDirectory["ZipFileName"]
-                result[zipfilename] = {}
+                zipentry = ResultSet()
                 
                 for name, value in centralDirectory.iteritems():
                     if name == 'ZipExtraField':
                         continue
                     
                     if type(value) is list or type(value) is tuple:
-                        result[zipfilename][name] = []
                         for element in value:
-                            result[zipfilename][name].append(str(element))
+                            zipentry.add(name, str(element))
                     
                     # Add way to handle dictionary.
                     #if type(value) is dict: ...
                     else:
-                        result[zipfilename][name] = str(value)
+                        zipentry.add(name, str(value))
                     
                 if centralDirectory["ZipExtraField"]:
                     for dictionary in centralDirectory["ZipExtraField"]:
-                        result[dictionary["Name"]] = {}
+                        zipextra = ResultSet()
                         if dictionary["Name"] == "UnknownHeader":
                             for name, value in dictionary.iteritems():
                                 if name == "Data":
-                                    result[dictionary["Name"]][name] = name
-                                else:
-                                    result[dictionary["Name"]][name] = str(value)
+                                    value = "Data"
+                                zipextra.add(name, str(value))
                         else:
                             for name, value in dictionary.iteritems():
-                                result[dictionary["Name"]][name] = str(value)
+                                zipextra.add(name, str(value))
+                        zipentry.add(dictionary["Name"], zipextra.data)
                 else:
-                    result[zipfilename]["ExtraField"] = "None"
+                    zipentry.add("ZipExtraField", "None")
+                
+                resultset.add(zipfilename, zipentry.data)
             
-            self.write(result)
+            self.write({"files": resultset.data})
         
         except ZipError as ze:
             self.set_status(ze.status, str(ze.error))
@@ -92,6 +112,10 @@ class Info(tornado.web.RequestHandler):
     def get(self):
         description = """
 <p>Copyright 2015 Holmes Processing
+
+<p>Description: Gathers meta information about a zip file.
+
+<p>Usage: ip-address:port/zipmeta/sampleID
         """
         self.write(description)
 
@@ -101,6 +125,7 @@ class ZipMetaApp(tornado.web.Application):
         handlers = [
             (r'/', Info),
             (r'/zipmeta/([a-zA-Z0-9\-]*)', ZipMetaProcess),
+            (r'/.*', Info),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

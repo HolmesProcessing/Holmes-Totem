@@ -8,6 +8,7 @@ import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.virustotal.{VTSampleSuccess, VTSampleWork}
 import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
+import org.novetta.zoo.services.zipmeta{ZipMetaSuccess, ZipMetaWork}
 import org.novetta.zoo.types._
 
 import org.json4s._
@@ -69,6 +70,7 @@ object driver extends App with Instrumented {
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
+        case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
       }
     }
 
@@ -86,6 +88,9 @@ object driver extends App with Instrumented {
         case ("YARA", li: List[String]) =>
           YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
 
+        case ("ZIPMETA", li: List[String]) =>
+          ZipMetaWork(key, filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
 
@@ -102,6 +107,7 @@ object driver extends App with Instrumented {
         case x: MetadataSuccess => "metadata.result.static.zoo"
         case x: VTSampleSuccess => "vtsample.result.static.zoo"
         case x: YaraSuccess => "yara.result.static.zoo"
+        case x: ZipMetaSuccess => "zipmeta.result.static.zoo"
       }
     }
   }

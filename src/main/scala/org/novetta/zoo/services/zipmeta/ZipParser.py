@@ -3,9 +3,6 @@ import binascii
 from datetime import datetime
 import extra_field_parse
 
-import sys
-from time import sleep
-
 
 #Parse Zip Central Directory
 class ZipParser():
@@ -83,10 +80,6 @@ class ZipParser():
             return None
         else:
             dateTime = struct.unpack("<I", self.centralDirectory[12:16])[0]
-        # print "dateTime:",dateTime," - self.cd[12:16]:",self.centralDirectory[12:16]
-        # print " -- cd.offset:",self.centralDirectory.offset
-        # sys.stdout.flush()
-        # sleep(0.1)
         secs  = (dateTime & 0x1F) * 2
         mins  = (dateTime & 0x7E0) >> 5
         hours = (dateTime & 0xF800) >> 11
@@ -283,13 +276,6 @@ class ZipParser():
         # Because a central directory is an extended version of a local
         # directory and thus, contains more data, we parse it rather than
         # the local directory.
-        print " .=================."
-        print " | parsing ZipFile |"
-        print " |-----------------|"
-        self.data[self.centralDirectory.offset-5:self.centralDirectory.offset+10]
-        print " '-----------------'"
-        sys.stdout.flush()
-        sleep(0.1)
         if not self.centralDirectory.startswith(self.zipCDMagic):
             return None
         start = 0
@@ -299,9 +285,6 @@ class ZipParser():
             parsedFiles.append(self.parseCentralDirectory())
             self.centralDirectory.adjust(10)
             start = self.centralDirectory.find(self.zipCDMagic)
-        print "parsedFiles:",parsedFiles
-        sys.stdout.flush()
-        sleep(1)
         return parsedFiles
 
 #***************************END**DIRECTORY**PARSING*****************************
@@ -335,20 +318,11 @@ class ZipParser():
         return struct.unpack("<H", self.endDirectory[6:8])[0]
 
     def getNumberOfDisk(self):
-        # print struct.unpack("<H", self.endDirectory[4:6])[0]
         return struct.unpack("<H", self.endDirectory[4:6])[0]
 
     def parseEndDirectory(self):
         start = self.data.find("\x50\x4b\x05\x06")
-        print ".===================."
-        print "| parseEndDirectory |"
-        print "|-------------------|"
-        print "| start:", start
         self.endDirectory = self.data.subfile(start)
-        data = self.endDirectory.readhex(0,4)
-        print "| enddir:",data
-        data = self.data.readhex(start,start+4)
-        print "| enddir2:",data
         endDirectoryDict = {
             "NumberOfDisk"     : self.getNumberOfDisk(),
             "StartOfCDDisk"    : self.getStartOfCDDisk(),
@@ -356,10 +330,8 @@ class ZipParser():
             "TotalNumberofCDs" : self.getTotalNumberOfCDs(),
             "CDSize"           : self.getSizeOfCD(),
             "CDStartOffset"    : self.getCDStartOffset(),
-            # "Comment"          : self.getCDComment()
+            "Comment"          : self.getCDComment()
         }
-        print "| dict:", endDirectoryDict
-        print "'-------------------'"
         return endDirectoryDict
 
 #***********************END**DIRECTORY**PARSING**ENDS***************************
@@ -368,10 +340,7 @@ class ZipParser():
         self.data = data
         endDirectory = self.parseEndDirectory()
         cdStart = endDirectory["CDStartOffset"]
-        cdEnd = cdStart + endDirectory["CDSize"]
-        print "ld: ", cdStart
-        print "cd: ", cdEnd - cdStart
-        sys.stdout.flush()
+        # cdEnd = cdStart + endDirectory["CDSize"]
         self.localDirectory   = data.subfile(0)        # [:cdStart]
         self.centralDirectory = data.subfile(cdStart)  # [cdStart:cdEnd]
         # Flags needed to denote a zip64 file type

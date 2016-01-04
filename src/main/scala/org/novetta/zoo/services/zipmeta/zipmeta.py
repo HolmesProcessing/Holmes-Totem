@@ -14,8 +14,6 @@ import mmap
 import ZipParser
 ZipParser = ZipParser.ZipParser
 
-# define max chunksize for BigFile searches = 500MB
-# BIGFILE_MAX_CHUNKSIZE = 500000000
 
 class ZipError (Exception):
     def __init__ (self, status, error):
@@ -67,20 +65,8 @@ class BigFile (object):
             start = self.size - 1
         if stop > self.size:
             stop = self.size
-        print " --read-- start:",start,", stop:",stop,", offset:",self.offset
-        # if stop == start:
-        #     return ""
-        # if self.offset+start >= self.size:
-        #     return ""
         self.datamap.seek(0)
-        result = self.datamap[(self.offset+start):(self.offset+stop)]
-        print " --read-- result:",":".join("{:02x}".format(ord(c)) for c in result)
-        return result
-        # self.file.seek(self.offset+start)
-        # return self.file.read(size)
-    
-    def readhex (self, start, stop):
-        return ":".join("{:02x}".format(ord(c)) for c in str(self[start:stop]).strip())
+        return self.datamap[(self.offset+start):(self.offset+stop)]
     
     def seek (self, position):
         self.datamap.seek(self.offset+position)
@@ -89,91 +75,14 @@ class BigFile (object):
         return self.datamap.tell()
     
     def find (self, needle):
-        # print " - searching:",self.offset
-        # sys.stdout.flush()
-        # global BIGFILE_MAX_CHUNKSIZE
-        # size = len(needle)
-        # chunksize = min(max(2*size, BIGFILE_MAX_CHUNKSIZE, mmap.ALLOCATIONGRANULARITY),self.size)  # optimizable? @cvp
-        # # is ment to provide a big enough buffer so shifting will never miss the
-        # # needle when searching via the map
-        # # but is also ment to be big enough to not slow down search too much
-        # # 100MB mapping *should* be sufficient to serve both goals ?!
-        # mapstart = self.offset + 0
-        # # make sure our start is always page aligned
-        # # thus always decide for the next lower alignment ...
-        # mapstart = int(mapstart / mmap.ALLOCATIONGRANULARITY) * mmap.ALLOCATIONGRANULARITY
-        # adjust = 0
-        # if mapstart < self.offset:
-        #     adjust = self.offset-mapstart
-        
-        # datamap = mmap.mmap(
-        #     self.file.fileno(),
-        #     offset=0,
-        #     length=0,
-        #     access=mmap.ACCESS_READ
-        # )
-        
         self.datamap.seek(0)
         result = self.datamap.find(needle, self.offset)
-        # datamap.close()
-        # del(datamap)
-        
-        data = self.readhex(result,result+len(needle))
-        data2 = self.read(result,result+len(needle))
-        print ".========."
-        print "| Search |"
-        print "|--------|"
-        print "| pos:",result
-        print "| needle:",needle
-        print "| datahex:",data
-        print "| datastr:",data2
-        print "'--------'"
-        # sys.stdout.flush()
         if result != -1:
             result -= self.offset
         return result
-        
-        # print "alignment correction:", adjust
-        # while mapstart <= self.size:
-        #     # length must not be greater than filesize
-        #     mapsize = min(self.size-mapstart,chunksize)
-            
-        #     print "  - mapstart:",mapstart," , mapsize:",mapsize
-        #     sys.stdout.flush()
-            
-        #     datamap = mmap.mmap(
-        #         self.file.fileno(),
-        #         offset=mapstart,
-        #         length=mapsize,
-        #         access=mmap.ACCESS_READ
-        #     )
-            
-        #     result = datamap.find(needle)
-        #     datamap.close()
-        #     del(datamap)
-            
-        #     if result >= 0:
-        #         result = mapstart+result+adjust-self.offset
-        #         print "   - result:",result," -- adjust:", adjust
-                
-        #         return result
-            
-        #     mapstart = mapstart + chunksize - size
-        #     mapstart = int(mapstart / mmap.ALLOCATIONGRANULARITY) * mmap.ALLOCATIONGRANULARITY
-        # print "   - failed"
-        # sys.stdout.flush()
-        # return -1
     
     def startswith (self, needle):
-        result = self.read(0,len(needle))
-        print " ---- result",result
-        print " ---- needle",needle
-        datamap = mmap.mmap(self.file.fileno(),0,access=mmap.ACCESS_READ)
-        print " ---- mapmap",datamap[self.offset:self.offset+len(needle)]
-        datamap.close()
-        del(datamap)
-        return result == needle
-        # return self.data[self.offset:(self.offset+len(needle))] == needle
+        return self[0:len(needle)] == needle
     
     # extended slicing
     def __getitem__ (self, key):

@@ -178,11 +178,8 @@ class ZipMetaProcess(tornado.web.RequestHandler):
             self.set_status(ze.status, str(ze.error))
             self.write("")
         except Exception as e:
-            self.set_status(500, "Unknown error happened")
-            x = str(traceback.format_exc(e)).replace("\n  File","\n\n  File")
-            x = x.replace("<","&lt;").replace(">","&gt;")
-            self.write("<pre>"+x+"</pre>")
-            # self.write({"error": traceback.format_exc(e)})
+            self.set_status(500, str(e))
+            self.write({"error": traceback.format_exc(e)})
 
 
 class Info(tornado.web.RequestHandler):

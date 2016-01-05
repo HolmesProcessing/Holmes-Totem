@@ -1,29 +1,37 @@
-TOTEM: A Framework for large-scale file analysis.
+# TOTEM: A Framework for large-scale file analysis.
 
-Installation:
+## Compilation:
+
 If you have SBT installed, the command `sbt assembly` executed from the base directory will compile the source into a working JAR file.
 
 If you do not already have SBT, the instructions here <http://www.scala-sbt.org/release/tutorial/Setup.html> are very good, and will get you set up.
 
 After building, TOTEM can be run via: `java -jar target/scala-2.11/totem-assembly-1.0.jar config/totem.conf`
 
+
+## Dependencies
 TOTEM depends on at least two external services - an HTTP fileserver, and a queueing server. TOTEM currently supports RabbitMQ as it's queueing server of choice.
 Installation documents and packages for RabbitMQ can be found here: <http://www.rabbitmq.com/download.html>
 
 Finally, TOTEM requires an HTTP server which it will use to access files described in its Jobs. Installation of an included HTTP file server is discussed in the Python Services section, but there is no reason that the user could not use another server of their choice.
 
-Python Services:
-Included services depend on the Tornado HTTP framework. This can be installed via `pip install tornado`
+## Services:
+Included services mostly depend on pythons HTTP framework "Tornado", this can be installed via `pip install tornado`.
+Also most services provide a Dockerfile you can use to build the service without having to worry about the dependencies.
+Check the `README.md` file of each service to get an introduction how to run the service.
 
-Dataflow:
+## Dataflow:
 The general case data workflow between actors is as follows:
 
 Consumer <-> WorkGroup <-> WorkActor -> Producer
 
-Config Settings:
-All of the below settings can be seen within the conf.conf file in the <TOTEM_ROOT>/config/ directory. The required settings have been replicated below - there are no defaults hardcoded into TOTEM
+## Config Settings:
+All of the below settings can be seen within the `totem.conf.example` file in the `<TOTEM_ROOT>/config/` directory. It is advised that you copy the config and create your own `totem.conf`.
+The required settings have been replicated below - there are no defaults hardcoded into TOTEM
 
-zoo {
+
+```
+totem {
   version = "1.0.0"
   download_directory = "/tmp/"
   requeueKey = "requeue.static.totem"
@@ -61,11 +69,12 @@ zoo {
   enrichers {
     metadata {
       uri = ["http://127.0.0.1:7703/metadata/", "http://127.0.0.1:7707/metadata/"]
-      resultRoutingKey = "metadata.result.static.zoo"
+      resultRoutingKey = "metadata.result.static.totem"
     }
     yara {
       uri = ["http://127.0.0.1:7701/yara/"]
-      resultRoutingKey = "yara.result.static.zoo"
+      resultRoutingKey = "yara.result.static.totem"
     }
   }
 }
+```

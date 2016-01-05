@@ -10,10 +10,10 @@ The service also allows for tasking with a custom rule set.
 Copy `service.conf.example` to `service.conf` and fill in your own values.
 
 Build and start the docker container using the included Dockerfile.
-Since this container needs to have access to the sample files your
+Since this container needs to have access to the sample file, you
 need to run this contiainer with:
 
 `-v /tmp:/tmp:ro`
 
-This allow the container to access /tmp on the local file system in
-real-only mode.
+This allows the container to access /tmp on the local file system in
+read-only mode.

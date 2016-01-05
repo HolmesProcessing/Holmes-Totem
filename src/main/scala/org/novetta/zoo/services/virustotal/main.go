@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,41 +22,70 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+type config struct {
+	ApiKey               string
+	UploadUnknownSamples bool
+	HTTPBinding          string
+}
+
 type VTResponse struct {
 	ResponseCode int    `json:"response_code"`
 	ScanId       string `json:"scan_id"`
 	VerboseMsg   string `json:"verbose_msg"`
 }
 
-const (
-	// Your VT ApiKey
-	ApiKey               = "APIKEY"
-	UploadUnknownSamples = true
-
-	HttpBinding = ":7710"
-)
-
 var (
-	Client = &http.Client{}
-	Info   *log.Logger
+	conf   = &config{}
+	client = &http.Client{}
+	info   *log.Logger
 )
 
 func main() {
-	Info = log.New(os.Stdout, "", log.Ltime|log.Lshortfile)
-	Info.Println("Start listening", HttpBinding)
+	var (
+		err      error
+		confPath string
+	)
+
+	// setup logging
+	info = log.New(os.Stdout, "", log.Ltime|log.Lshortfile)
+
+	// load config
+	flag.StringVar(&confPath, "config", "", "Path to the config file")
+	flag.Parse()
+
+	if confPath == "" {
+		confPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		confPath += "/service.conf"
+	}
+
+	conf := &config{}
+	cfile, _ := os.Open(confPath)
+	if err = json.NewDecoder(cfile).Decode(&conf); err != nil {
+		log.Println("Couldn't decode config file without errors!", err.Error())
+		return
+	}
+
+	// validate ApiKey
+	_, err = hex.DecodeString(conf.ApiKey)
+	if len(conf.ApiKey) != 64 || err != nil {
+		log.Println("Apikey seems to be invalid! Please supply a valid key!")
+		return
+	}
+
+	info.Println("Start listening", conf.HTTPBinding)
 
 	router := httprouter.New()
 	router.GET("/:file", handler)
-	log.Fatal(http.ListenAndServe(HttpBinding, router))
+	log.Fatal(http.ListenAndServe(conf.HTTPBinding, router))
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	Info.Println("NotFound")
+	info.Println("NotFound")
 	http.NotFound(w, r)
 }
 
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	Info.Println("Error: ", err.Error())
+	info.Println("Error: ", err.Error())
 
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, "500 - "+err.Error())
@@ -67,7 +98,7 @@ func handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	Info.Println("Handling", f)
+	info.Println("Handling", f)
 
 	hash, err := CalculateMD5(f)
 	if err != nil {
@@ -81,7 +112,7 @@ func handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	Info.Println("Done!")
+	info.Println("Done!")
 	fmt.Fprint(w, result)
 }
 
@@ -99,7 +130,7 @@ func vtWork(hash, fPath string) (string, error) {
 	// 0 = unknwon
 	// 1 = found
 	// 2 = processing
-	if vtr.ResponseCode == 0 && UploadUnknownSamples {
+	if vtr.ResponseCode == 0 && conf.UploadUnknownSamples {
 		hash, err = uploadSample(fPath)
 		if err != nil {
 			return "", err
@@ -109,7 +140,7 @@ func vtWork(hash, fPath string) (string, error) {
 	}
 
 	if vtr.ResponseCode == 2 {
-		Info.Println("Not done, sleep for 5min")
+		info.Println("Not done, sleep for 5min")
 		time.Sleep(time.Minute * 5)
 		return vtWork(hash, fPath)
 	}
@@ -134,19 +165,19 @@ func CalculateMD5(filePath string) ([]byte, error) {
 }
 
 func getReport(md5 string) ([]byte, error) {
-	Info.Println("getReport")
+	info.Println("getReport")
 
 	var respBody []byte
 
 	form := url.Values{}
 	form.Add("resource", md5)
-	form.Add("apikey", ApiKey)
+	form.Add("apikey", conf.ApiKey)
 
 	req, err := http.NewRequest("POST", "https://www.virustotal.com/vtapi/v2/file/report", strings.NewReader(form.Encode()))
 	req.PostForm = form
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := Client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return respBody, err
 	}
@@ -157,13 +188,13 @@ func getReport(md5 string) ([]byte, error) {
 		return respBody, err
 	}
 
-	Info.Println(string(respBody))
+	info.Println(string(respBody))
 
 	return respBody, nil
 }
 
 func uploadSample(fPath string) (string, error) {
-	Info.Println("uploadSample")
+	info.Println("uploadSample")
 
 	file, err := os.Open(fPath)
 	if err != nil {
@@ -179,7 +210,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	_, err = io.Copy(part, file)
 
-	err = writer.WriteField("apikey", ApiKey)
+	err = writer.WriteField("apikey", conf.ApiKey)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +226,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
 
-	resp, err := Client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -219,7 +250,7 @@ func uploadSample(fPath string) (string, error) {
 		return "", errors.New(vtr.VerboseMsg)
 	}
 
-	Info.Println(string(respBody))
+	info.Println(string(respBody))
 
 	return vtr.ScanId, nil
 }

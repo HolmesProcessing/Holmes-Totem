@@ -7,38 +7,38 @@ import org.novetta.zoo.types.{TaskedWork, WorkFailure, WorkResult, WorkSuccess}
 import collection.mutable
 
 
-case class VTSampleWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class VirustotalWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
-    val uri = VTSampleREST.constructURL(Worker, filename, Arguments)
+    val uri = VirustotalREST.constructURL(Worker, filename, Arguments)
     val requestResult = myHttp(url(uri) OK as.String)
       .either
       .map({
       case Right(content) =>
-        VTSampleSuccess(true, JString(content), Arguments)
+        VirustotalSuccess(true, JString(content), Arguments)
 
       case Left(StatusCode(404)) =>
-        VTSampleFailure(false, JString("Not found (File already deleted?)"), Arguments)
+        VirustotalFailure(false, JString("Not found (File already deleted?)"), Arguments)
 
       case Left(StatusCode(500)) =>
-        VTSampleFailure(false, JString("VT service failed, check local logs"), Arguments) //would be ideal to print response body here
+        VirustotalFailure(false, JString("VT service failed, check local logs"), Arguments) //would be ideal to print response body here
 
       case Left(StatusCode(code)) =>
-        VTSampleFailure(false, JString("Some other code: " + code.toString), Arguments)
+        VirustotalFailure(false, JString("Some other code: " + code.toString), Arguments)
 
       case Left(something) =>
-        VTSampleFailure(false, JString("wildcard failure: " + something.toString), Arguments)
+        VirustotalFailure(false, JString("wildcard failure: " + something.toString), Arguments)
     })
     requestResult
   }
 }
 
 
-case class VTSampleSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "vtsample.result.static.totem", WorkType: String = "VTSAMPLE") extends WorkSuccess
-case class VTSampleFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "VTSAMPLE") extends WorkFailure
+case class VirustotalSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "vtsample.result.static.totem", WorkType: String = "VTSAMPLE") extends WorkSuccess
+case class VirustotalFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "VTSAMPLE") extends WorkFailure
 
 
-object VTSampleREST {
+object VirustotalREST {
   def constructURL(root: String, filename: String, arguments: List[String]): String = {
     arguments.foldLeft(new mutable.StringBuilder(root+filename))({
       (acc, e) => acc.append(e)}).toString()

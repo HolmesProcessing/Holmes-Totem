@@ -98,7 +98,6 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
-        case x: PEInfoSuccess => services.getOrElse("peinfo.resultsRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.enrichers.peinfo.resultRoutingKey")
         case x: MetadataSuccess => conf.getString("totem.enrichers.metadata.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.enrichers.virustotal.resultRoutingKey")

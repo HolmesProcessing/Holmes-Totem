@@ -98,6 +98,7 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
+        case x: PEInfoSuccess => services.getOrElse("peinfo.resultsRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.enrichers.peinfo.resultRoutingKey")
         case x: MetadataSuccess => conf.getString("totem.enrichers.metadata.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.enrichers.virustotal.resultRoutingKey")
@@ -131,5 +132,5 @@ object driver extends App with Instrumented {
 
   mySender ! Send(RMQSendMessage(j.getBytes, workqueueConfig.routingKey))
 
-  println("Totem is Running! \nVersion: " + conf.getString("zoo.version"))
+  println("Totem is Running! \nVersion: " + conf.getString("totem.version"))
 }

@@ -114,8 +114,8 @@ abstract class GenericTotemEncoding extends WorkEncoding {
 }
 
 abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
-  val keys = conf.getObject("zoo.enrichers").keySet()
-  val en = conf.getObject("zoo.enrichers").toConfig
+  val keys = conf.getObject("totem.enrichers").keySet()
+  val en = conf.getObject("totem.enrichers").toConfig
   val services = keys.map(key =>
     (key, Random.shuffle(en.getStringList(s"$key.uri").toList))
   ).toMap[String, List[String]]

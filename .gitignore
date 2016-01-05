@@ -22,3 +22,7 @@ project/plugins/project/
 
 # Service test files
 .yar
+
+# blacklist service.conf
+# TODO: make this more generic later
+src/main/scala/org/novetta/zoo/services/virustotal/service.conf

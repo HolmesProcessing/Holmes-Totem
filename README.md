@@ -4,14 +4,15 @@
 
 If you have SBT installed, the command `sbt assembly` executed from the base directory will compile the source into a working JAR file.
 
-If you do not already have SBT, the instructions here <http://www.scala-sbt.org/release/tutorial/Setup.html> are very good, and will get you set up.
+If you do not already have SBT, [the instructions here](http://www.scala-sbt.org/release/tutorial/Setup.html) are very good, and will get you set up.
 
-After building, TOTEM can be run via: `java -jar target/scala-2.11/totem-assembly-1.0.jar config/totem.conf`
+After building, TOTEM can be run via:
+`java -jar target/scala-2.11/totem-assembly-1.0.jar config/totem.conf`
 
 
 ## Dependencies
 TOTEM depends on at least two external services - an HTTP fileserver, and a queueing server. TOTEM currently supports RabbitMQ as it's queueing server of choice.
-Installation documents and packages for RabbitMQ can be found here: <http://www.rabbitmq.com/download.html>
+[Installation documents and packages for RabbitMQ can be found here.](http://www.rabbitmq.com/download.html)
 
 Finally, TOTEM requires an HTTP server which it will use to access files described in its Jobs. Installation of an included HTTP file server is discussed in the Python Services section, but there is no reason that the user could not use another server of their choice.
 

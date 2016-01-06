@@ -58,7 +58,6 @@ func main() {
 		confPath += "/service.conf"
 	}
 
-	conf := &config{}
 	cfile, _ := os.Open(confPath)
 	if err = json.NewDecoder(cfile).Decode(&conf); err != nil {
 		log.Println("Couldn't decode config file without errors!", err.Error())

@@ -58,7 +58,6 @@ func main() {
 		confPath += "/service.conf"
 	}
 
-	conf := &config{}
 	cfile, _ := os.Open(confPath)
 	if err = json.NewDecoder(cfile).Decode(&conf); err != nil {
 		log.Println("Couldn't decode config file without errors!", err.Error())
@@ -188,7 +187,12 @@ func getReport(md5 string) ([]byte, error) {
 		return respBody, err
 	}
 
+	info.Println(resp.Status)
 	info.Println(string(respBody))
+
+	if string(respBody) == "" {
+		return respBody, errors.New("VT Get Report Response is empty! " + resp.Status)
+	}
 
 	return respBody, nil
 }
@@ -239,6 +243,13 @@ func uploadSample(fPath string) (string, error) {
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+
+	info.Println(resp.Status)
+	info.Println(string(respBody))
+
+	if string(respBody) == "" {
+		return "", errors.New("VT Upload Response is empty! " + resp.Status)
 	}
 
 	vtr := &VTResponse{}

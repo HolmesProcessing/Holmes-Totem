@@ -22,8 +22,8 @@ import org.novetta.zoo.util.DownloadSettings
  * @constructor This is the companion object to the RabbitConsumerActor class.
  */
 object RabbitConsumerActor {
-  def props[T: Manifest](config: DownloadSettings, host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]): Props = {
-    Props(new RabbitConsumerActor(config, host, exchange, queue, servicelist, decoder) )
+  def props[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], config: DownloadSettings): Props = {
+    Props(new RabbitConsumerActor(host, exchange, queue, servicelist, decoder, config) )
   }
 }
 /**
@@ -69,7 +69,7 @@ object RabbitConsumerActor {
  * @param decoder: a Parsers.Parser[T], which is responsible for transforming the JSON data into a Scala object.
  */
 
-class RabbitConsumerActor[T: Manifest](config: DownloadSettings, host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T]) extends Actor with ActorLogging with MonitoredActor {
+class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], config: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   implicit val formats = DefaultFormats
   var WorkGroupActor: ActorRef =_
   var totalDemand = 0
@@ -132,7 +132,6 @@ class RabbitConsumerActor[T: Manifest](config: DownloadSettings, host: HostSetti
               log.info("Created a ZooWork, {}", filename)
               val uuid_filename: String = UUID.randomUUID().toString
               WorkGroupActor ! Create(
-                config,
                 deliveryTag,
                 primaryURI,
                 secondaryURI,
@@ -145,7 +144,8 @@ class RabbitConsumerActor[T: Manifest](config: DownloadSettings, host: HostSetti
                     tasks
                   ),
                   List[WorkResult](), attempts
-                )
+                ),
+                config
               )
               log.info("We sent a create message!")
               totalDemand -= 1

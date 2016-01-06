@@ -21,8 +21,8 @@ case class SuccessfulDownload(filepath: String, MD5Hash: String, SHA1Hash: Strin
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(config: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int): Props = {
-    Props(new WorkActor(config, deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int, config: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts, config) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -70,7 +70,7 @@ object WorkActor {
  *
  */
 
-class WorkActor(downloadconfig: DownloadSettings, deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()

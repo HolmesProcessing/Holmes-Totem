@@ -1,4 +1,4 @@
-zoo {
+totem {
   version = "1.0.0"
   requeueKey = "requeue.static.totem"
   misbehaveKey = "misbehave.static.totem"

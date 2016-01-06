@@ -13,7 +13,7 @@ import org.novetta.zoo.util.DownloadSettings
  * @constructor Generate a Create message. This is used to initiate the creation of a WorkActor
  *
  */
-case class Create(config: DownloadSettings, key: Long, primaryURI: String, secondaryURI: String, value: WorkState)
+case class Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState, config: DownloadSettings)
 
 /**
  * Result case class. Used between the WorkActor and the ProducerActor

@@ -54,12 +54,3 @@ USER service
 EXPOSE 7701
 
 CMD ["python3", "/service/yara_worker.py", "/service/rules.yar"]
-
-#####
-# RUNNING THIS CONTAINER:
-# Since this container need to have access to
-# the sample files your need to run this
-# contiainer with:
-# -v /tmp:/tmp:ro
-# This allow the container to access /tmp
-# on the local file system in real-only mode.

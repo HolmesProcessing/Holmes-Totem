@@ -10,10 +10,6 @@ import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
 import org.novetta.zoo.types._
 
-import org.json4s._
-import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods._
-import akka.routing.RoundRobinPool
 import org.novetta.zoo.util.Instrumented
 
 import java.io.File
@@ -33,6 +29,7 @@ object driver extends App with Instrumented {
   }
   val system = ActorSystem("totem")
 
+  println("Parsing Rabbit configuration details")
   val hostConfig = HostSettings(
     conf.getString("totem.rabbit_settings.host.server"),
     conf.getInt("totem.rabbit_settings.host.port"),
@@ -40,7 +37,6 @@ object driver extends App with Instrumented {
     conf.getString("totem.rabbit_settings.host.password"),
     conf.getString("totem.rabbit_settings.host.vhost")
   )
-
   val exchangeConfig = ExchangeSettings(
     conf.getString("totem.rabbit_settings.exchange.name"),
     conf.getString("totem.rabbit_settings.exchange.type"),
@@ -61,6 +57,7 @@ object driver extends App with Instrumented {
     conf.getBoolean("totem.rabbit_settings.resultsqueue.autodelete")
   )
 
+  println("Configuring Services")
   class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) {
     def GeneratePartial(work: String): String = {
       work match {
@@ -105,31 +102,36 @@ object driver extends App with Instrumented {
       }
     }
   }
-
   val encoding = new TotemicEncoding(conf)
 
+  println("Setting up Actors")
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("totem.requeueKey"), conf.getString("totem.misbehaveKey")), "producer")
 
-
-  // Demo & Debug Zone
-  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "winrar.exe", Map[String, List[String]]("YARA" -> List[String]()), 0)
-
-  val json = (
-    ("primaryURI" -> zoowork.primaryURI) ~
-      ("secondaryURI" -> zoowork.secondaryURI) ~
-      ("filename" -> zoowork.filename) ~
-      ("tasks" -> zoowork.tasks) ~
-      ("attempts" -> zoowork.attempts)
-    )
-
-  private[this] val loading = metrics.timer("loading")
-
-  val j = loading.time({
-    compact(render(json))
-  })
-
-  mySender ! Send(RMQSendMessage(j.getBytes, workqueueConfig.routingKey))
-
   println("Totem is Running! \nVersion: " + conf.getString("totem.version"))
+
+  //////
+  // Demo & Debug Zone
+  // The following commented section is left to provide manual input that is useful when
+  // debugging a totem setup. Totem otherwise will only pull from the Rabbit queue.
+  //////
+  //
+  //  val zoowork = ZooWork("http://localhost/rar.exe", "http://localhost/rar.exe", "winrar.exe", Map[String, List[String]]("YARA" -> List[String]()), 0)
+  //
+  //  val json = (
+  //    ("primaryURI" -> zoowork.primaryURI) ~
+  //      ("secondaryURI" -> zoowork.secondaryURI) ~
+  //      ("filename" -> zoowork.filename) ~
+  //      ("tasks" -> zoowork.tasks) ~
+  //      ("attempts" -> zoowork.attempts)
+  //    )
+  //
+  //  private[this] val loading = metrics.timer("loading")
+  //
+  //  val j = loading.time({
+  //    compact(render(json))
+  //  })
+  //
+  //  mySender ! Send(RMQSendMessage(j.getBytes, workqueueConfig.routingKey))
+  //////
 }

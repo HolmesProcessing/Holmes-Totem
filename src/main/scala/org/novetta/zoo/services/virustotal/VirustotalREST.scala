@@ -34,8 +34,8 @@ case class VirustotalWork(key: Long, filename: String, TimeoutMillis: Int, WorkT
 }
 
 
-case class VirustotalSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "vtsample.result.static.totem", WorkType: String = "VTSAMPLE") extends WorkSuccess
-case class VirustotalFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "VTSAMPLE") extends WorkFailure
+case class VirustotalSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "virustotal.result.static.totem", WorkType: String = "VIRUSTOTAL") extends WorkSuccess
+case class VirustotalFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "VIRUSTOTAL") extends WorkFailure
 
 
 object VirustotalREST {

@@ -9,6 +9,7 @@ import org.novetta.zoo.services.virustotal.{VirustotalSuccess, VirustotalWork}
 import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
 import org.novetta.zoo.types._
+import org.novetta.zoo.util.DownloadSettings
 
 import org.novetta.zoo.util.Instrumented
 
@@ -28,6 +29,13 @@ object driver extends App with Instrumented {
     ConfigFactory.parseFile(new File("./config/totem.conf"))
   }
   val system = ActorSystem("totem")
+
+  println("Parsing download configuration details")
+  val downloadConfig = DownloadSettings(
+    conf.getString("zoo.download_settings.download_directory"),
+    conf.getInt("zoo.download_settings.request_timeout"),
+    conf.getInt("zoo.download_settings.connection_timeout")
+  )
 
   println("Parsing Rabbit configuration details")
   val hostConfig = HostSettings(
@@ -105,7 +113,7 @@ object driver extends App with Instrumented {
   val encoding = new TotemicEncoding(conf)
 
   println("Setting up Actors")
-  val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
+  val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("totem.requeueKey"), conf.getString("totem.misbehaveKey")), "producer")
 
   println("Totem is Running! \nVersion: " + conf.getString("totem.version"))

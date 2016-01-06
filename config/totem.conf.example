@@ -1,8 +1,13 @@
 totem {
   version = "1.0.0"
-  download_directory = "/tmp/"
   requeueKey = "requeue.static.totem"
   misbehaveKey = "misbehave.static.totem"
+
+  download_settings {
+    download_directory = "/tmp/"
+    request_timeout = 500
+    connect_timeout = 500
+  }
 
   rabbit_settings {
     host {

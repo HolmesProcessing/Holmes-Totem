@@ -42,9 +42,9 @@ totem {
       uri = ["http://127.0.0.1:7705/peinfo/"]
       resultRoutingKey = "peinfo.result.static.totem"
     }
-    vtsample {
+    virustotal {
       uri = ["http://127.0.0.1:7710/"]
-      resultRoutingKey = "vtsample.result.static.totem"
+      resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
       uri = ["http://127.0.0.1:7701/yara/"]

@@ -1,0 +1,6 @@
+peinfo:
+  build: ./src/main/scala/org/novetta/zoo/services/peinfo
+  ports:
+   - "7705"
+  volumes:
+   - /tmp:/tmp:ro

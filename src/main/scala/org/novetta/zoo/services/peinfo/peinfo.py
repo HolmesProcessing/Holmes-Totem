@@ -24,7 +24,7 @@ import struct
 from time import localtime, strftime
 
 # Set up Tornado options
-define("port", default=7705, help="port to run", type=int)
+define("port", default=8080, help="port to run", type=int)
 
 def _get_pehash(exe):
     #image characteristics

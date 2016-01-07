@@ -1,5 +1,5 @@
 {
 	"ApiKey": "PutYourKeyHere",
 	"UploadUnknownSamples": false,
-	"HTTPBinding": ":7710"
+	"HTTPBinding": ":8080"
 }

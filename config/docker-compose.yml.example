@@ -1,6 +1,17 @@
-peinfo:
-  build: ./src/main/scala/org/novetta/zoo/services/peinfo
-  ports:
-   - "7705"
+fileservice:
   volumes:
    - /tmp:/tmp:ro
+
+peinfo:
+  extends:
+    service: fileservice
+  build: ./src/main/scala/org/novetta/zoo/services/peinfo
+  ports:
+    - "7705"
+
+yara:
+  extends:
+    service: fileservice
+  build: ./src/main/scala/org/novetta/zoo/services/yara
+  ports:
+    - "7701"

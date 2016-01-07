@@ -51,6 +51,6 @@ RUN chown -R service /service
 
 
 USER service
-EXPOSE 7701
+
 
 CMD ["python3", "/service/yara_worker.py", "/service/rules.yar"]

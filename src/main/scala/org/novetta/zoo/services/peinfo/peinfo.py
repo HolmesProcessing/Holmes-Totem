@@ -3,7 +3,7 @@ from __future__ import division
 
 # imports for tornado
 import tornado
-from tornado import web, httpserver
+from tornado import web, httpserver, ioloop
 import tornado.options
 from tornado.options import define, options
 
@@ -508,6 +508,7 @@ def main():
     tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(PEApp())
     server.listen(options.port)
+    print("starting the peinfo worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

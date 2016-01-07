@@ -20,24 +20,27 @@ import com.typesafe.config.{Config, ConfigFactory}
 import scala.util.Random
 
 object driver extends App with Instrumented {
+  // Define constants 
+  val DefaultPathConfigFile = "./config/totem.conf"
+
   lazy val execServ: ExecutorService = Executors.newFixedThreadPool(4000)
   val conf: Config = if (args.length > 0) {
-    println("we have args > 0, using args")
+    println("Using manual config file: " + args(0))
     ConfigFactory.parseFile(new File(args(0)))
-
   } else {
-    ConfigFactory.parseFile(new File("./config/totem.conf"))
+    println("Using default config file: " + DefaultPathConfigFile)
+    ConfigFactory.parseFile(new File(DefaultPathConfigFile))
   }
   val system = ActorSystem("totem")
 
-  println("Parsing download configuration details")
+  println("Configuring details for downloading objects")
   val downloadConfig = DownloadSettings(
-    conf.getString("zoo.download_settings.download_directory"),
-    conf.getInt("zoo.download_settings.request_timeout"),
-    conf.getInt("zoo.download_settings.connection_timeout")
+    conf.getString("totem.download_settings.download_directory"),
+    conf.getInt("totem.download_settings.request_timeout"),
+    conf.getInt("totem.download_settings.connection_timeout")
   )
 
-  println("Parsing Rabbit configuration details")
+  println("Configuring details for Rabbit queues")
   val hostConfig = HostSettings(
     conf.getString("totem.rabbit_settings.host.server"),
     conf.getInt("totem.rabbit_settings.host.port"),
@@ -110,13 +113,14 @@ object driver extends App with Instrumented {
       }
     }
   }
+  println("Completing configuration")
   val encoding = new TotemicEncoding(conf)
 
-  println("Setting up Actors")
+  println("Creating Totem Actors")
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("totem.requeueKey"), conf.getString("totem.misbehaveKey")), "producer")
 
-  println("Totem is Running! \nVersion: " + conf.getString("totem.version"))
+  println("Totem version " + conf.getString("totem.version") + " is up and running")
 
   //////
   // Demo & Debug Zone

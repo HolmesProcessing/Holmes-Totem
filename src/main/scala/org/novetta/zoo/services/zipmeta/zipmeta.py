@@ -16,6 +16,7 @@ ZipParser = ZipParser.ZipParser
 
 
 class ZipError (Exception):
+    __slots__ = ["status", "error"]
     def __init__ (self, status, error):
         self.status = status
         self.error  = error
@@ -26,6 +27,7 @@ class ZipError (Exception):
 
 
 class ResultSet (object):
+    __slots__ = ["data"]
     def __init__(self):
         self.data = {}
     def add(self, key, value):
@@ -41,7 +43,13 @@ class ResultSet (object):
             self.data[key] = value
 
 
-class BigFile (object):
+class MemoryEfficientFile (object):
+    """
+    Low memory footprint file-like object. (read only access)
+    Reading and finding does not advance the offset.
+    If you need to adjust the offset, use seek or seek_relative.
+    """
+    __slots__ = ["file", "datamap", "size", "offset"]
     def __init__ (self, filename):
         self.file     = open(filename)
         self.datamap  = mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_READ)
@@ -65,35 +73,25 @@ class BigFile (object):
             start = self.size - 1
         if stop > self.size:
             stop = self.size
-        self.datamap.seek(0)
         return self.datamap[(self.offset+start):(self.offset+stop)]
     
-    def seek (self, position):
-        self.datamap.seek(self.offset+position)
-    
+    def seek (self, offset):
+        self.offset = offset
+    def seek_relative (self, offset):
+        self.offset += offset  # add offset adjustment ability
     def tell (self):
-        return self.datamap.tell()
+        return self.offset
     
-    def find (self, needle):
-        self.datamap.seek(0)
-        result = self.datamap.find(needle, self.offset)
+    def find (self, needle, offset=0):
+        result = self.datamap.find(needle, self.offset+offset)
         if result != -1:
             result -= self.offset
         return result
-    
     def startswith (self, needle):
         return self[0:len(needle)] == needle
     
-    # extended slicing
-    def __getitem__ (self, key):
-        if isinstance(key, slice):
-            return self.read(key.start, key.stop)
-        else:
-            return self.read(key.start, key.start+1)
-    
     def subfile (self, start):
-        class SubFile (BigFile):
-            # lightweight (without own payload) subtype of BigFile
+        class MemoryEfficientSubFile (MemoryEfficientFile):
             def __init__ (self, file, datamap, start, size):
                 self.file     = file
                 self.datamap  = datamap
@@ -103,11 +101,16 @@ class BigFile (object):
                 pass  # remove close ability
             def subfile (self, start):
                 pass  # remove subfile ability
-            def adjust (self, start):
-                self.offset += start  # add offset adjustment ability
-        return SubFile(self.file, self.datamap, self.offset+start, self.size)
+        return MemoryEfficientSubFile(
+            self.file, self.datamap, self.offset+start, self.size)
     
-    # provide standard functions
+    # provide interface for built-ins
+    def __getitem__ (self, key):
+        if isinstance(key, slice):
+            return self.read(key.start, key.stop)
+        else:
+            return self.read(key.start, key.start+1)
+    
     def __len__ (self):
         return self.size
 
@@ -120,7 +123,7 @@ class ZipMetaProcess(tornado.web.RequestHandler):
         try:
             # read file
             fullPath = os.path.join('/tmp/', filename)
-            data     = BigFile(fullPath)
+            data     = MemoryEfficientFile(fullPath)
             
             # exclude non-zip
             if len(data) < 4:

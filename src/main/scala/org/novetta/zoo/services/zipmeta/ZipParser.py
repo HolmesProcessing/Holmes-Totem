@@ -281,9 +281,9 @@ class ZipParser():
         start = 0
         parsedFiles = []
         while start >= 0:
-            self.centralDirectory.adjust(start)
+            self.centralDirectory.seek_relative(start)
             parsedFiles.append(self.parseCentralDirectory())
-            self.centralDirectory.adjust(10)
+            self.centralDirectory.seek_relative(1)
             start = self.centralDirectory.find(self.zipCDMagic)
         return parsedFiles
 

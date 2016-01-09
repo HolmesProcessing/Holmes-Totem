@@ -16,5 +16,4 @@ RUN chown -R service /service
 USER service
 WORKDIR /service
 
-EXPOSE 7705
 CMD ["python2", "/service/peinfo.py"]

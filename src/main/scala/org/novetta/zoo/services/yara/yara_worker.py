@@ -1,6 +1,8 @@
 # imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
+import tornado.options
+from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -16,6 +18,8 @@ import configparser
 import sys
 import yara
 
+# Set up Tornado options
+define("port", default=8080, help="port to run", type=int)
 
 class YaraHandler(tornado.web.RequestHandler):
 	@property
@@ -90,9 +94,10 @@ class YaraApp(tornado.web.Application):
 
 
 def main():
-	print("start")
+	tornado.options.parse_command_line()
 	server = tornado.httpserver.HTTPServer(YaraApp())
-	server.listen(7701)
+	server.listen(options.port)
+	print("starting the yara worker on port {}".format(options.port))
 	tornado.ioloop.IOLoop.instance().start()
 
 

@@ -1,7 +1,8 @@
 FROM ubuntu:14.04
 
 # install what you need here
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update 
+# && apt-get upgrade -y
 RUN apt-get install -y --fix-missing python3-pip wget build-essential checkinstall dh-autoreconf libssl-dev
 
 
@@ -51,6 +52,6 @@ RUN chown -R service /service
 
 
 USER service
-EXPOSE 7701
+
 
 CMD ["python3", "/service/yara_worker.py", "/service/rules.yar"]

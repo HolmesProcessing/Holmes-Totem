@@ -3,7 +3,9 @@ from __future__ import division
 
 # imports for tornado
 import tornado
-from tornado import web, httpserver
+from tornado import web, httpserver, ioloop
+import tornado.options
+from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -21,6 +23,8 @@ import logging
 import struct
 from time import localtime, strftime
 
+# Set up Tornado options
+define("port", default=8080, help="port to run", type=int)
 
 def _get_pehash(exe):
     #image characteristics
@@ -501,8 +505,10 @@ class PEApp(tornado.web.Application):
 
 
 def main():
+    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(PEApp())
-    server.listen(7705)
+    server.listen(options.port)
+    print("starting the peinfo worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

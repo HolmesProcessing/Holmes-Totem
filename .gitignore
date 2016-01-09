@@ -22,3 +22,7 @@ project/plugins/project/
 
 # Service test files
 .yar
+
+# blacklist config files
+src/main/scala/org/novetta/zoo/services/**/service.conf
+config/totem.conf

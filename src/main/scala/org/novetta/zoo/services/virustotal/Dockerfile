@@ -1,10 +1,15 @@
 FROM golang
 
-ADD . /go/src/github.com/cynexit/Holmes-Totem-Service-VTSample
-
+# Get Go dependencies
 RUN go get github.com/julienschmidt/httprouter
-RUN go install github.com/cynexit/Holmes-Totem-Service-VTSample
 
-ENTRYPOINT /go/bin/Holmes-Totem-Service-VTSample
+# Setup service
+RUN mkdir -p /service
+ADD . /service
+
+WORKDIR /service
+RUN go build -o vtsample
+
+ENTRYPOINT ["/service/vtsample", "-config=/service/service.conf"] 
 
 EXPOSE 7710

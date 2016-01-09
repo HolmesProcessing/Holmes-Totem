@@ -8,6 +8,8 @@ import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.virustotal.{VirustotalSuccess, VirustotalWork}
 import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
+import org.novetta.zoo.services.zipmeta{ZipMetaSuccess, ZipMetaWork}
+
 import org.novetta.zoo.types._
 import org.novetta.zoo.util.DownloadSettings
 
@@ -77,6 +79,7 @@ object driver extends App with Instrumented {
         case "PE_INFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
+        case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
       }
     }
 
@@ -94,6 +97,9 @@ object driver extends App with Instrumented {
         case ("YARA", li: List[String]) =>
           YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
 
+        case ("ZIPMETA", li: List[String]) =>
+          ZipMetaWork(key, filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
 
@@ -110,6 +116,7 @@ object driver extends App with Instrumented {
         case x: MetadataSuccess => conf.getString("totem.enrichers.metadata.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.enrichers.virustotal.resultRoutingKey")
         case x: YaraSuccess => conf.getString("totem.enrichers.yara.resultRoutingKey")
+        case x: ZipMetaSuccess => conf.getString("totem.enrichers.zipmeta.resultRoutingKey")
       }
     }
   }

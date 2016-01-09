@@ -55,5 +55,9 @@ totem {
       uri = ["http://127.0.0.1:7701/yara/"]
       resultRoutingKey = "yara.result.static.totem"
     }
+    zipmeta {
+      uri = ["http://127.0.0.1:7715/zipmeta/"]
+      resultRoutingKey = "zipmeta.result.static.totem"
+    }
   }
 }

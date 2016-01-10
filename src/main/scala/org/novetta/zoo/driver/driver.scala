@@ -8,7 +8,7 @@ import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.virustotal.{VirustotalSuccess, VirustotalWork}
 import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
 import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
-import org.novetta.zoo.services.zipmeta{ZipMetaSuccess, ZipMetaWork}
+import org.novetta.zoo.services.zipmeta.{ZipMetaSuccess, ZipMetaWork}
 
 import org.novetta.zoo.types._
 import org.novetta.zoo.util.DownloadSettings

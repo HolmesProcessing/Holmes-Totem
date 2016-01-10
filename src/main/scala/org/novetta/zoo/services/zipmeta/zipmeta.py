@@ -1,8 +1,10 @@
 # imports for tornado
+# imports for tornado
 import tornado
-import tornado.web
-import tornado.httpserver
-import tornado.ioloop
+from tornado import web, httpserver, ioloop
+import tornado.options
+from tornado.options import define, options
+
 
 # imports for logging
 import traceback
@@ -14,6 +16,8 @@ import mmap
 import ZipParser
 ZipParser = ZipParser.ZipParser
 
+# Set up Tornado options
+define("port", default=8080, help="port to run", type=int)
 
 class ZipError (Exception):
     __slots__ = ["status", "error"]
@@ -213,8 +217,10 @@ class ZipMetaApp(tornado.web.Application):
 
 
 def main():
+    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(7715)
+    server.listen(options.port)
+    print("starting the zipmeta worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

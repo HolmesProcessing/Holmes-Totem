@@ -5,6 +5,13 @@ peinfo:
   ports:
     - "7705:8080"
 
+virustotal:
+  build: ../src/main/scala/org/novetta/zoo/services/virustotal
+  volumes:
+   - /tmp:/tmp:ro
+  ports:
+    - "7710:8080"
+
 yara:
   build: ../src/main/scala/org/novetta/zoo/services/yara
   volumes:
@@ -12,9 +19,9 @@ yara:
   ports:
     - "7701:8080"
 
-virustotal:
-  build: ../src/main/scala/org/novetta/zoo/services/virustotal
+zipmeta:
+  build: ../src/main/scala/org/novetta/zoo/services/zipmeta
   volumes:
    - /tmp:/tmp:ro
   ports:
-    - "7710:8080"
+    - "7715:8080"

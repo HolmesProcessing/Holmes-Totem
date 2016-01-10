@@ -18,15 +18,4 @@ RUN chown -R service /service
 USER service
 WORKDIR /service
 
-EXPOSE 7715
 CMD python2 /service/zipmeta.py
-
-#####
-#
-# If run locally and needs to access /tmp, run this container with:
-# -v /tmp:/tmp:ro
-#
-# Example:
-# docker build -t zipmeta .
-# docker run -p 7715:7715 -v /tmp:/tmp:ro zipmeta:latest
-#

@@ -27,7 +27,7 @@ class YaraHandler(tornado.web.RequestHandler):
 		return yara.load(sys.argv[1])
 
 class YaraProcess(YaraHandler):
-	def process(self, tup, rules=None):
+	def process(self, filename, rules=None):
 		try:
 			if rules:
 				ruleBuff = StringIO()
@@ -35,9 +35,9 @@ class YaraProcess(YaraHandler):
 				ruleBuff.seek(0)
 
 				rules = yara.load(file=ruleBuff)
-				results = rules.match(tup)
+				results = rules.match(filename[0], external={'filename': filename[1]})
 			else:
-				results = self.YaraEngine.match(tup)
+				results = self.YaraEngine.match(filename[0], external=external={'filename': filename[1]})
 			results2 = list(map(lambda x: {"rules": x.rules}, results))
 			return results2
 		except Exception as e:
@@ -46,7 +46,7 @@ class YaraProcess(YaraHandler):
 	def get(self, filename):
 		print("get req")
 		try:
-			fullPath = os.path.join('/tmp/', filename)
+			fullPath = (os.path.join('/tmp/', filename), filename)
 			data = self.process(fullPath)
 			print(data)
 			self.write({"yara": data})

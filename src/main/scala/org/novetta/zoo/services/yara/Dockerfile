@@ -1,8 +1,7 @@
 FROM ubuntu:14.04
 
 # install what you need here
-RUN apt-get update 
-# && apt-get upgrade -y
+RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --fix-missing python3-pip wget build-essential checkinstall dh-autoreconf libssl-dev
 
 
@@ -17,7 +16,7 @@ RUN wget https://github.com/plusvic/yara/archive/v3.4.0.tar.gz
 RUN tar -zxf v3.4.0.tar.gz
 WORKDIR /yara/yara-3.4.0
 RUN ./bootstrap.sh
-RUN ./configure --with-crypto
+RUN ./configure --with-crypto --enable-magic
 RUN make
 RUN make install
 
@@ -43,7 +42,7 @@ ADD yara_worker.py /service
 # gather the rules and add them
 ADD rules.yar /service
 WORKDIR /service
-RUN ["python3", "getrules.py"]
+RUN python3 getrules.py
 
 
 # create a new user with limited access

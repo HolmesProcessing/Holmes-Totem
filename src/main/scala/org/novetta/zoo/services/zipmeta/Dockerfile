@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 
 # install what you need here
 RUN apt-get update && apt-get -y upgrade
-RUN apt-get install -y python-pip
+RUN apt-get install -y --fix-missing python-pip build-essential
 RUN pip install tornado
 
 # add the files to the container
@@ -18,4 +18,4 @@ RUN chown -R service /service
 USER service
 WORKDIR /service
 
-CMD python2 /service/zipmeta.py
+CMD ["python2", "/service/zipmeta.py"]

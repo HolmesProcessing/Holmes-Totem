@@ -37,7 +37,7 @@ class YaraProcess(YaraHandler):
 				rules = yara.load(file=ruleBuff)
 				results = rules.match(filename[0], external={'filename': filename[1]})
 			else:
-				results = self.YaraEngine.match(filename[0], external=external={'filename': filename[1]})
+				results = self.YaraEngine.match(filename[0], external={'filename': filename[1]})
 			results2 = list(map(lambda x: {"rules": x.rules}, results))
 			return results2
 		except Exception as e:

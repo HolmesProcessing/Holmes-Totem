@@ -119,8 +119,6 @@ class MemoryEfficientFile (object):
         return self.size
 
 
-
-
 class ZipMetaProcess(tornado.web.RequestHandler):
     def get(self, filename):
         resultset = ResultSet()

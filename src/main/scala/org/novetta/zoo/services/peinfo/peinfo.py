@@ -469,7 +469,6 @@ class PEInfoProcess(tornado.web.RequestHandler):
         try:
             fullPath = os.path.join('/tmp/', filename)
             data = PEInfoRun(fullPath)
-            print len(data)
             self.write(data)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
@@ -486,6 +485,8 @@ class Info(tornado.web.RequestHandler):
 PEhash computing code is from Team Cymru.
 Wrapping into the CRITs module done by Adam Polkosnik.
 Adjustments for TOTEM made by George Webster.
+
+<p>Description: Extracts key elements of the PE Header.
         """
         self.write(description)
 

@@ -59,7 +59,7 @@ case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: S
  * @constructor Create a new YaraResult.
  *
  */
-case class YaraSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "yara.result.static.zoo", WorkType: String = "YARA") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
+case class YaraSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "yara.result.static.totem", WorkType: String = "YARA") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
 case class YaraFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "YARA") extends WorkFailure //want to add a time of completion? might also need to change ID to the original taskedwork
 
 object YaraREST {

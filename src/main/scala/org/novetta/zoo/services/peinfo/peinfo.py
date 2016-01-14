@@ -253,6 +253,7 @@ def _get_rich_header_enhanced(pe):
     # Read a block of data
     try:
         rich_data = pe.get_data(0x80, 0x80)
+        current_pos = 0x80+0x80
         if len(rich_data) != 0x80:
             return None
         data = list(struct.unpack("<32I", rich_data))
@@ -271,23 +272,35 @@ def _get_rich_header_enhanced(pe):
     headervalues = []
     headerparsed = []
     data = data[4:]
-    for i in xrange(len(data) // 2):
+    found_end = False
+    while not found_end:
+        for i in xrange(len(data) // 2):
 
-        # Stop until the Rich footer signature is found
-        if data[2 * i] == RICH:
+            # Stop until the Rich footer signature is found
+            if data[2 * i] == RICH:
+                found_end = True
+                # it should be followed by the checksum
+                if data[2 * i + 1] != checksum:
+                    print('Rich Header corrupted')
+                break
 
-            # it should be followed by the checksum
-            if data[2 * i + 1] != checksum:
-                print('Rich Header corrupted')
-            break
+            # header values come by pairs
+            temp1 = data[2 * i] ^ checksum
+            temp2 = data[2 * i + 1] ^ checksum
+            headervalues.extend([temp1, temp2])
+            headerparsed.append({'id': temp1 >> 16,
+                                 'version': temp1 & 0xFFFF,
+                                 'times_used': temp2})
 
-        # header values come by pairs
-        temp1 = data[2 * i] ^ checksum
-        temp2 = data[2 * i + 1] ^ checksum
-        headervalues.extend([temp1, temp2])
-        headerparsed.append({'id': temp1 >> 16,
-                             'version': temp1 & 0xFFFF,
-                             'times_used': temp2 & 0xFFFF})
+        if not found_end:
+            # Since the footer wasn't found, grab 0x80 more bytes
+            rich_data = pe.get_data(current_pos, 0x80)
+            current_pos += 0x80
+            if len(rich_data) != 0x80:
+                # couldn't find the footer... must be corrupt
+                print('Rich Header corrupted (couldn\'t find rich signature)')
+                return None
+            data = list(struct.unpack("<32I", rich_data))
 
     d['values_raw'] = headervalues
     d['values_parsed'] = headerparsed

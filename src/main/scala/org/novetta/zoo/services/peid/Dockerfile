@@ -37,6 +37,7 @@ RUN mkdir -p /service
 ADD getrules.py /service
 ADD service.conf /service
 ADD peid_worker.py /service
+ADD rulepack /service/rulepack
 
 
 # gather the rules and add them

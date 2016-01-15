@@ -35,10 +35,10 @@ def main():
     try:
         rules = yara.compile(rule_location)
         rules.save('rules.yar')
-    except YaraSyntaxError:
+    except yara.YaraSyntaxError:
         print("Syntax error in the YARA rules.")
         sys.exit(ERROR_CODE)
-    except YaraError:
+    except yara.YaraError:
         print("Unknown YARA error.")
         sys.exit(ERROR_CODE)
     except Exception as e:

@@ -77,7 +77,7 @@ object driver extends App with Instrumented {
       work match {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
         case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
-        case "PE_ID" => Random.shuffle(services.getOrElse("peinfo", List())).head
+        case "PE_ID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PE_INFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
@@ -91,7 +91,7 @@ object driver extends App with Instrumented {
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
 
         case ("PE_ID", li: List[String]) =>
-          PEInfoWork(key, filename, 60, "PE_ID", GeneratePartial("PE_ID"), li)
+          PEiDWork(key, filename, 60, "PE_ID", GeneratePartial("PE_ID"), li)
 
         case ("PE_INFO", li: List[String]) =>
           PEInfoWork(key, filename, 60, "PE_INFO", GeneratePartial("PE_INFO"), li)

@@ -69,7 +69,7 @@ class Info(tornado.web.RequestHandler):
 <p>Copyright 2015 Holmes Processing
 
 <p>Description: Provides PEiD signature matching for samples using a collective 
-set of signatures or a provided custom signature.
+set of signatures or a provided custom signature. Rules provided by AlienVault.
 
         """
         self.write(description)

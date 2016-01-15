@@ -1,3 +1,10 @@
+peid:
+  build: ../src/main/scala/org/novetta/zoo/services/peid
+  volumes:
+   - /tmp:/tmp:ro
+  ports:
+    - "7720:8080"
+
 peinfo:
   build: ../src/main/scala/org/novetta/zoo/services/peinfo
   volumes:

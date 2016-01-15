@@ -8,7 +8,7 @@ This service extracts metadata from a zipfile.
 
 Build and start the docker container using the included Dockerfile.
 Since this container needs to have access to the sample file, you
-need to run this contiainer with:
+need to run this container with:
 
 `-v /tmp:/tmp:ro`
 

@@ -91,7 +91,7 @@ class PEiDApp(tornado.web.Application):
 
 def main():
     tornado.options.parse_command_line()
-    server = tornado.httpserver.HTTPServer(YaraApp())
+    server = tornado.httpserver.HTTPServer(PEiDApp())
     server.listen(options.port)
     print("starting the peid worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()

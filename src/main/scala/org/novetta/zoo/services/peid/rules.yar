@@ -6,7 +6,8 @@
 
 //include "./rulepack/epcompilersigs.yar"
 //include "./rulepack/eppackersigs.yar"
-include "./rulepack/userdb_exeinfope.yar"
+//include "./rulepack/userdb_exeinfope.yar"
 //include "./rulepack/userdb_jclausing.yar"
 //include "./rulepack/userdb_panda.yar"
 //include "./rulepack/UserDB.yar"
+include "./rulepack/peid-userdb-rules-with-pe-module.yar"

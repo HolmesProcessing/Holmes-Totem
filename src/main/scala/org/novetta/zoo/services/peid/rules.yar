@@ -4,8 +4,8 @@
   All credit goes to the original authors.
 */
 
-//include "./rulepack/epcompilersigs.yar"
-//include "./rulepack/eppackersigs.yar"
+include "./rulepack/epcompilersigs.yar"
+include "./rulepack/eppackersigs.yar"
 //include "./rulepack/userdb_exeinfope.yar"
 //include "./rulepack/userdb_jclausing.yar"
 //include "./rulepack/userdb_panda.yar"

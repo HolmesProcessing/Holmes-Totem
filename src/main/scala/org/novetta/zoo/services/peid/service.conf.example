@@ -1,0 +1,4 @@
+[Rules]
+get_remote = False
+download_url = <https://127.0.0.1/services/peid/rules>
+local_path = rules.yar

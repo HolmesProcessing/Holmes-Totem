@@ -1,14 +1,14 @@
-# PEinfo service for Holmes-Totem
+# PEiD service for Holmes-Totem
 
 ## Description
 
-A simple service to extact information from a sample using PEinfo.
+A simple service to id compilers and packers based on yara rules.
 
 ## Usage
 
 Build and start the docker container using the included Dockerfile.
 Since this container needs to have access to the sample file, you
-need to run this contiainer with:
+need to run this container with:
 
 `-v /tmp:/tmp:ro`
 

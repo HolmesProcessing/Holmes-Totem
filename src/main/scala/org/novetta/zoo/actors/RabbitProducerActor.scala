@@ -20,8 +20,8 @@ import org.json4s.jackson.Serialization
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object RabbitProducerActor {
-  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, requeueKey: String, misbehaveKey: String): Props = {
-    Props(new RabbitProducerActor(host, exchange, queue, requeueKey, misbehaveKey) )
+  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String): Props = {
+    Props(new RabbitProducerActor(host, exchange, queue, misbehaveQueue, encoding, requeueKey) )
   }
 }
 
@@ -61,10 +61,9 @@ object RabbitProducerActor {
  * @param exchange: an ExchangeSettings object, holds the exchange configuration.
  * @param queue: a QueueSettings object, holds the queue configuration.
  * @param requeueKey: the requeueKey from the configuration file, used as the queue that Jobs will be requeued into.
- * @param misbehaveKey: the key used to tag messages that have exhibited continual problems when being processed.
  */
 
-class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, encoding: TotemicEncoding, requeueKey: String, misbehaveKey: String) extends Actor with ActorLogging {
+class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String) extends Actor with ActorLogging {
   var channel: Channel =_
   var connection: Connection =_
   var totalDemand = 0
@@ -83,6 +82,9 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
     this.channel = connection.createChannel()
 
     this.channel.exchangeDeclare(exchange.exchangeName, exchange.exchangeType, exchange.durable)
+    this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
+    this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
+    //this is where the requeue queue information will go.
     this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
     this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
     log.info("Exchange {} should be made", exchange.exchangeName)
@@ -143,7 +145,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
           log.info("emitting a ZooWork {} to RMQ", j)
         } else {
-          sendMessage(RMQSendMessage(j.getBytes, misbehaveKey))
+          sendMessage(RMQSendMessage(j.getBytes, misbehaveQueue.routingKey))
           log.info("emitting misbehaving ZooWork {} to RMQ", j)
         }
         sender ! RemainderResolution(true)

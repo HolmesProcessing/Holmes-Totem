@@ -36,6 +36,13 @@ totem {
       exclusive = false
       autodelete = false
     }
+    misbehaveQueue {
+      name = "totem_misbehave"
+      routing_key = "misbehave.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
   }
 
   enrichers {

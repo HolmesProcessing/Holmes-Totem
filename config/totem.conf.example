@@ -36,7 +36,7 @@ totem {
       exclusive = false
       autodelete = false
     }
-    misbehaveQueue {
+    misbehavequeue {
       name = "totem_misbehave"
       routing_key = "misbehave.static.totem"
       durable = true

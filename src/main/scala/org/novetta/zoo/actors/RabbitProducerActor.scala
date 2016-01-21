@@ -59,11 +59,12 @@ object RabbitProducerActor {
  *             for reanalysis.
  * @param host: a HostSettings object, responsible for holding the server configuration to use.
  * @param exchange: an ExchangeSettings object, holds the exchange configuration.
- * @param queue: a QueueSettings object, holds the queue configuration.
+ * @param resultsQueue: a QueueSettings object, holds the results queue configuration.
+ * @param misbehaveQueue: a QueueSettings object, holds the midbehaved queue configuration
  * @param requeueKey: the requeueKey from the configuration file, used as the queue that Jobs will be requeued into.
  */
 
-class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String) extends Actor with ActorLogging {
+class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, resultsQueue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String) extends Actor with ActorLogging {
   var channel: Channel =_
   var connection: Connection =_
   var totalDemand = 0
@@ -81,12 +82,16 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
     this.connection = factory.newConnection()
     this.channel = connection.createChannel()
 
+    // Setting up the results queue
     this.channel.exchangeDeclare(exchange.exchangeName, exchange.exchangeType, exchange.durable)
-    this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
-    this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
-    //this is where the requeue queue information will go.
-    this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
-    this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
+    this.channel.queueDeclare(resultsQueue.queueName, resultsQueue.durable, resultsQueue.exclusive, resultsQueue.autodelete, null)
+    this.channel.queueBind(resultsQueue.queueName, exchange.exchangeName, resultsQueue.routingKey)
+
+    //TODO: this is where the requeue queue information will go.
+
+    // Setting up the misbehaved queue
+    this.channel.queueDeclare(misbehaveQueue.queueName, misbehaveQueue.durable, misbehaveQueue.exclusive, misbehaveQueue.autodelete, null)
+    this.channel.queueBind(misbehaveQueue.queueName, exchange.exchangeName, misbehaveQueue.routingKey)
     log.info("Exchange {} should be made", exchange.exchangeName)
 
   }
@@ -141,6 +146,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
       val j = compact(render(json))
       //val j = compact(render(json)) //this can be made generic to +ZooWork (ZooWorkC), see the scala worksheet.
 
+      // TODO: set attemts as a config object
       if(incremented_attempts <= 3) {
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
           log.info("emitting a ZooWork {} to RMQ", j)

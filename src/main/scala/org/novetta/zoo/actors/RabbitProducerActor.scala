@@ -7,6 +7,8 @@ package org.novetta.zoo.actors
 import akka.actor.{Props, Actor, ActorLogging}
 import com.rabbitmq.client.{Channel, Connection, _}
 import org.json4s.jackson.Serialization
+import org.json4s.jackson.Serialization._
+import org.novetta.zoo.driver.driver.TotemicEncoding
 import org.novetta.zoo.types._
 import scala.concurrent.duration.{FiniteDuration, _}
 import org.json4s._
@@ -18,8 +20,8 @@ import org.json4s.jackson.Serialization
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object RabbitProducerActor {
-  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, requeueKey: String, misbehaveKey: String): Props = {
-    Props(new RabbitProducerActor(host, exchange, queue, requeueKey, misbehaveKey) )
+  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String): Props = {
+    Props(new RabbitProducerActor(host, exchange, queue, misbehaveQueue, encoding, requeueKey) )
   }
 }
 
@@ -59,10 +61,9 @@ object RabbitProducerActor {
  * @param exchange: an ExchangeSettings object, holds the exchange configuration.
  * @param queue: a QueueSettings object, holds the queue configuration.
  * @param requeueKey: the requeueKey from the configuration file, used as the queue that Jobs will be requeued into.
- * @param misbehaveKey: the key used to tag messages that have exhibited continual problems when being processed.
  */
 
-class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, requeueKey: String, misbehaveKey: String) extends Actor with ActorLogging {
+class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String) extends Actor with ActorLogging {
   var channel: Channel =_
   var connection: Connection =_
   var totalDemand = 0
@@ -81,6 +82,9 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
     this.channel = connection.createChannel()
 
     this.channel.exchangeDeclare(exchange.exchangeName, exchange.exchangeType, exchange.durable)
+    this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
+    this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
+    //this is where the requeue queue information will go.
     this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
     this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
     log.info("Exchange {} should be made", exchange.exchangeName)
@@ -120,7 +124,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
             ("sha256" -> sha256)
           )
         val j = compact(render(json))
-        sendMessage(RMQSendMessage(j.getBytes, result.routingKey))
+        sendMessage(RMQSendMessage(j.getBytes, encoding.workRoutingKey(result)))
       })
       sender ! ResultResolution(true)
       log.info("emitting result {} to RMQ", sender().path)
@@ -135,6 +139,23 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
           ("attempts" -> incremented_attempts)
         )
       val j = compact(render(json))
+      //val j = compact(render(json)) //this can be made generic to +ZooWork (ZooWorkC), see the scala worksheet.
+
+      if(incremented_attempts <= 3) {
+          sendMessage(RMQSendMessage(j.getBytes, requeueKey))
+          log.info("emitting a ZooWork {} to RMQ", j)
+        } else {
+          sendMessage(RMQSendMessage(j.getBytes, misbehaveQueue.routingKey))
+          log.info("emitting misbehaving ZooWork {} to RMQ", j)
+        }
+        sender ! RemainderResolution(true)
+        log.info("emitting gunslinger from {}", sender().path)
+    /*
+    case msg: ZooWorkC =>
+      val incremented_attempts = attempts + 1
+
+      val j = write(msg)
+
       if(incremented_attempts <= 3) {
         sendMessage(RMQSendMessage(j.getBytes, requeueKey))
         log.info("emitting a ZooWork {} to RMQ", j)
@@ -145,6 +166,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
       sender ! RemainderResolution(true)
       log.info("emitting gunslinger from {}", sender().path)
 
+    */
     case msg =>
       log.error("RabbitProducerActor has received a message it cannot match against: {}", msg)
   }

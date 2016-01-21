@@ -1,4 +1,4 @@
-package org.novetta.zoo.services.yara
+package org.novetta.zoo.services.peid
 
 import dispatch.Defaults._
 import dispatch.{url, _}
@@ -20,7 +20,7 @@ import collection.mutable
  *
  */
 
-case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class PEiDWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
     // Parameters will be send via Post so we dont need the builder here
@@ -39,13 +39,13 @@ case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: S
       .either
       .map({
       case Right(content) =>
-        YaraSuccess(true, JString(content), Arguments) //should we parse content? yes. we should convert to a map structure?
+        PEiDSuccess(true, JString(content), Arguments) //should we parse content? yes. we should convert to a map structure?
       case Left(StatusCode(404)) =>
-        YaraFailure(false, JString("Not found"), Arguments) //should our key here be a boolean for success, or failure at the coordinator level?
+        PEiDFailure(false, JString("Not found"), Arguments) //should our key here be a boolean for success, or failure at the coordinator level?
       case Left(StatusCode(code)) =>
-        YaraFailure(false, JString("Some other code: " + code.toString), Arguments)
+        PEiDFailure(false, JString("Some other code: " + code.toString), Arguments)
       case Left(something) =>
-        YaraFailure(false, JString("wildcard failure: " + something.toString), Arguments)
+        PEiDFailure(false, JString("wildcard failure: " + something.toString), Arguments)
     })
     requestResult
   }
@@ -59,10 +59,10 @@ case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: S
  * @constructor Create a new YaraResult.
  *
  */
-case class YaraSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "yara.result.static.totem", WorkType: String = "YARA") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
-case class YaraFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "YARA") extends WorkFailure //want to add a time of completion? might also need to change ID to the original taskedwork
+case class PEiDSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "peid.result.static.totem", WorkType: String = "PE_ID") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
+case class PEiDFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "PE_ID") extends WorkFailure //want to add a time of completion? might also need to change ID to the original taskedwork
 
-object YaraREST {
+object PEiDREST {
   def constructURL(root: String, filename: String, arguments: List[String]): String = {
     arguments.foldLeft(new mutable.StringBuilder(root+filename))({
       (acc, e) => acc.append(e)}).toString()

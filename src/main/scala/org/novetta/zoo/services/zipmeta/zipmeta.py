@@ -1,19 +1,26 @@
 # imports for tornado
+# imports for tornado
 import tornado
-import tornado.web
-import tornado.httpserver
-import tornado.ioloop
+from tornado import web, httpserver, ioloop
+import tornado.options
+from tornado.options import define, options
+
 
 # imports for logging
 import traceback
 import os
 from os import path
+import mmap
 
 # get ZipParser
 import ZipParser
 ZipParser = ZipParser.ZipParser
 
+# Set up Tornado options
+define("port", default=8080, help="port to run", type=int)
+
 class ZipError (Exception):
+    __slots__ = ["status", "error"]
     def __init__ (self, status, error):
         self.status = status
         self.error  = error
@@ -24,10 +31,9 @@ class ZipError (Exception):
 
 
 class ResultSet (object):
-    
+    __slots__ = ["data"]
     def __init__(self):
         self.data = {}
-    
     def add(self, key, value):
         if key in self.data:
             if isinstance(self.data[key], list):
@@ -41,14 +47,85 @@ class ResultSet (object):
             self.data[key] = value
 
 
+class MemoryEfficientFile (object):
+    """
+    Low memory footprint file-like object. (read only access)
+    Reading and finding does not advance the offset.
+    If you need to adjust the offset, use seek or seek_relative.
+    """
+    __slots__ = ["file", "datamap", "size", "offset"]
+    def __init__ (self, filename):
+        self.file     = open(filename)
+        self.datamap  = mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_READ)
+        self.size     = self.datamap.size()
+        self.offset   = 0
+    
+    def close (self):
+        self.datamap.close()
+        self.file.close()
+        del(self.file)
+        del(self.offset)
+        del(self)
+    
+    # provide base functionality
+    def read (self, start, stop):
+        if start is None or start < 0:
+            start = 0
+        if stop is None or stop > self.size:
+            stop = self.size
+        if start >= self.size:
+            start = self.size - 1
+        if stop > self.size:
+            stop = self.size
+        return self.datamap[(self.offset+start):(self.offset+stop)]
+    
+    def seek (self, offset):
+        self.offset = offset
+    def seek_relative (self, offset):
+        self.offset += offset  # add offset adjustment ability
+    def tell (self):
+        return self.offset
+    
+    def find (self, needle, offset=0):
+        result = self.datamap.find(needle, self.offset+offset)
+        if result != -1:
+            result -= self.offset
+        return result
+    def startswith (self, needle):
+        return self[0:len(needle)] == needle
+    
+    def subfile (self, start):
+        class MemoryEfficientSubFile (MemoryEfficientFile):
+            def __init__ (self, file, datamap, start, size):
+                self.file     = file
+                self.datamap  = datamap
+                self.size     = size
+                self.offset   = start
+            def close (self):
+                pass  # remove close ability
+            def subfile (self, start):
+                pass  # remove subfile ability
+        return MemoryEfficientSubFile(
+            self.file, self.datamap, self.offset+start, self.size)
+    
+    # provide interface for built-ins
+    def __getitem__ (self, key):
+        if isinstance(key, slice):
+            return self.read(key.start, key.stop)
+        else:
+            return self.read(key.start, key.start+1)
+    
+    def __len__ (self):
+        return self.size
+
+
 class ZipMetaProcess(tornado.web.RequestHandler):
     def get(self, filename):
         resultset = ResultSet()
         try:
             # read file
             fullPath = os.path.join('/tmp/', filename)
-            with open(fullPath) as file:
-                data = file.read()
+            data     = MemoryEfficientFile(fullPath)
             
             # exclude non-zip
             if len(data) < 4:
@@ -61,6 +138,9 @@ class ZipMetaProcess(tornado.web.RequestHandler):
             parsedZip = parser.parseZipFile()
             if not parsedZip:
                 raise ZipError(400, "Could not parse file as a zip file")
+            
+            # clean up
+            data.close()
             
             # fetch result
             for centralDirectory in parsedZip:
@@ -103,7 +183,7 @@ class ZipMetaProcess(tornado.web.RequestHandler):
             self.set_status(ze.status, str(ze.error))
             self.write("")
         except Exception as e:
-            self.set_status(500, "Unknown error happened")
+            self.set_status(500, str(e))
             self.write({"error": traceback.format_exc(e)})
 
 
@@ -135,8 +215,10 @@ class ZipMetaApp(tornado.web.Application):
 
 
 def main():
+    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(7715)
+    server.listen(options.port)
+    print("starting the zipmeta worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

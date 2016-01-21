@@ -3,7 +3,9 @@ from __future__ import division
 
 # imports for tornado
 import tornado
-from tornado import web, httpserver
+from tornado import web, httpserver, ioloop
+import tornado.options
+from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -21,6 +23,8 @@ import logging
 import struct
 from time import localtime, strftime
 
+# Set up Tornado options
+define("port", default=8080, help="port to run", type=int)
 
 def _get_pehash(exe):
     #image characteristics
@@ -249,6 +253,7 @@ def _get_rich_header_enhanced(pe):
     # Read a block of data
     try:
         rich_data = pe.get_data(0x80, 0x80)
+        current_pos = 0x80+0x80
         if len(rich_data) != 0x80:
             return None
         data = list(struct.unpack("<32I", rich_data))
@@ -267,23 +272,35 @@ def _get_rich_header_enhanced(pe):
     headervalues = []
     headerparsed = []
     data = data[4:]
-    for i in xrange(len(data) // 2):
+    found_end = False
+    while not found_end:
+        for i in xrange(len(data) // 2):
 
-        # Stop until the Rich footer signature is found
-        if data[2 * i] == RICH:
+            # Stop until the Rich footer signature is found
+            if data[2 * i] == RICH:
+                found_end = True
+                # it should be followed by the checksum
+                if data[2 * i + 1] != checksum:
+                    print('Rich Header corrupted')
+                break
 
-            # it should be followed by the checksum
-            if data[2 * i + 1] != checksum:
-                print('Rich Header corrupted')
-            break
+            # header values come by pairs
+            temp1 = data[2 * i] ^ checksum
+            temp2 = data[2 * i + 1] ^ checksum
+            headervalues.extend([temp1, temp2])
+            headerparsed.append({'id': temp1 >> 16,
+                                 'version': temp1 & 0xFFFF,
+                                 'times_used': temp2})
 
-        # header values come by pairs
-        temp1 = data[2 * i] ^ checksum
-        temp2 = data[2 * i + 1] ^ checksum
-        headervalues.extend([temp1, temp2])
-        headerparsed.append({'id': temp1 >> 16,
-                             'version': temp1 & 0xFFFF,
-                             'times_used': temp2 & 0xFFFF})
+        if not found_end:
+            # Since the footer wasn't found, grab 0x80 more bytes
+            rich_data = pe.get_data(current_pos, 0x80)
+            current_pos += 0x80
+            if len(rich_data) != 0x80:
+                # couldn't find the footer... must be corrupt
+                print('Rich Header corrupted (couldn\'t find rich signature)')
+                return None
+            data = list(struct.unpack("<32I", rich_data))
 
     d['values_raw'] = headervalues
     d['values_parsed'] = headerparsed
@@ -465,7 +482,6 @@ class PEInfoProcess(tornado.web.RequestHandler):
         try:
             fullPath = os.path.join('/tmp/', filename)
             data = PEInfoRun(fullPath)
-            print len(data)
             self.write(data)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
@@ -482,6 +498,8 @@ class Info(tornado.web.RequestHandler):
 PEhash computing code is from Team Cymru.
 Wrapping into the CRITs module done by Adam Polkosnik.
 Adjustments for TOTEM made by George Webster.
+
+<p>Description: Extracts key elements of the PE Header.
         """
         self.write(description)
 
@@ -501,8 +519,10 @@ class PEApp(tornado.web.Application):
 
 
 def main():
+    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(PEApp())
-    server.listen(7705)
+    server.listen(options.port)
+    print("starting the peinfo worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

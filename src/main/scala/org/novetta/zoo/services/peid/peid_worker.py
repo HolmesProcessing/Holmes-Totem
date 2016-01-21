@@ -24,7 +24,7 @@ class YaraHandler(tornado.web.RequestHandler):
     def YaraEngine(self):
         return yara.load(sys.argv[1])
 
-class YaraProcess(YaraHandler):
+class PEiDProcess(YaraHandler):
     def process(self, filename, rules=None):
         try:
             if rules:
@@ -46,7 +46,7 @@ class YaraProcess(YaraHandler):
         try:
             fullPath = (os.path.join('/tmp/', filename), filename)
             data = self.process(fullPath)
-            self.write({"yara": data})
+            self.write({"peid": data})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -57,7 +57,7 @@ class YaraProcess(YaraHandler):
             fullPath = os.path.join('/tmp/', filename)
             rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
             data = self.process(fullPath, rules)
-            self.write({"yara": data})
+            self.write({"peid": data})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -68,18 +68,18 @@ class Info(tornado.web.RequestHandler):
         description = """
 <p>Copyright 2015 Holmes Processing
 
-<p>Description: Provides Yara signature matching for samples using a collective 
-set of signatures or a provided custom signature.
+<p>Description: Provides PEiD signature matching for samples using a collective 
+set of signatures or a provided custom signature. Rules provided by AlienVault.
 
         """
         self.write(description)
 
 
-class YaraApp(tornado.web.Application):
+class PEiDApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Info),
-            (r'/yara/([a-zA-Z0-9\-]*)', YaraProcess),
+            (r'/peid/([a-zA-Z0-9\-]*)', PEiDProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -91,9 +91,9 @@ class YaraApp(tornado.web.Application):
 
 def main():
     tornado.options.parse_command_line()
-    server = tornado.httpserver.HTTPServer(YaraApp())
+    server = tornado.httpserver.HTTPServer(PEiDApp())
     server.listen(options.port)
-    print("starting the yara worker on port {}".format(options.port))
+    print("starting the peid worker on port {}".format(options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

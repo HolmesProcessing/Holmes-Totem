@@ -1,4 +1,4 @@
-# Holmes-Totem-Service-VTSample
+# VirusTotal service for Holmes-Totem
 
 ## Description
 
@@ -7,21 +7,9 @@ It can also upload unknown samples to Virustotal.
 
 ## Usage
 
-Download the only dependencie, httprouter:
-```bash
-go get github.com/julienschmidt/httprouter
-```
-Edit `main.go` and fill in the constants with your own values.
-```go
-const (
-	ApiKey               = "APIKEY"
-	UploadUnknownSamples = true
-	HttpBinding = ":7710"
-)
-```
-Start the server by using `go run`, `go build` or `go install`, whatever you prefer.
+Copy `service.conf.example` to `service.conf` and fill in your own values.
 
-If you decide to active `UploadUnknownSamples` make sure to up the time a Holmes-Totem request may run
+If you decide to activate `UploadUnknownSamples` make sure to up the time a Holmes-Totem request may run
 in your `WorkActor.scala`:
 ```scala
 val config = new AsyncHttpClientConfig.Builder()
@@ -31,3 +19,12 @@ val config = new AsyncHttpClientConfig.Builder()
   .setConnectTimeout( 500 )
   .setIOThreadMultiplier(4).build()
 ```
+
+Build and start the docker container using the included Dockerfile.
+Since this container needs to have access to the sample file, you
+need to run this container with:
+
+`-v /tmp:/tmp:ro`
+
+This allows the container to access /tmp on the local file system in
+read-only mode.

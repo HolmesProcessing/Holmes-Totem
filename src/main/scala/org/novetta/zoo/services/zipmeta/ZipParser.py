@@ -28,11 +28,11 @@ class ZipParser():
             blockSize = struct.unpack("<H", extraField[2:4])[0]
             efBlock = extraField[:4+blockSize]
             if blockMagic in efMappings.keys():
-                #Mapping Header Is known (may or may not have been parsed)
+                # Mapping Header Is known (may or may not have been parsed)
                 parser = efMappings[blockMagic]["parseField"]()
                 parsedExtraField.append(parser.parse(efBlock, self.zip64Flag))
             else:
-                #No Header Hits
+                # No Header Hits
                 parser = efMappings["Unknown"]["parseField"]()
                 parsedExtraField.append(parser.parse(efBlock, self.zip64Flag))
             extraField = extraField[4+blockSize:]
@@ -41,9 +41,9 @@ class ZipParser():
     def getExtraField(self):
         if self.getExtraFieldLDLength() == 0:
             return None
-        #Handler for case where offset cannot be found in central Directory
+        # Handler for case where offset cannot be found in central Directory
         if self.zip64Flag["offsetZip64"]:
-            #If Offset flag present use central directory to find offset in extrafield
+            # If Offset flag present use central directory to find offset in extrafield
             startPosition = (46 + self.getFileNameLength())
             extraField = self.centralDirectory[startPosition:(startPosition + self.getExtraFieldCDLength())]
 
@@ -53,6 +53,7 @@ class ZipParser():
             start = extraField.find("\x01\x00")
             blockMagic = extraField[start:start + 2]
             blockSize = struct.unpack("<H", extraField[start + 2:start + 4])[0]
+            efBlock = extraField[:blockSize]
             parser = efMappings[blockMagic]["parseField"]()
             zip64 = parser.parse(efBlock, self.zip64Flag)
             offset = zip64["RelativeOffset"]
@@ -74,7 +75,7 @@ class ZipParser():
         return length
 
     def getModifyDate(self):
-        #MS-DOS Epoch
+        # MS-DOS Epoch
         if struct.unpack("<I", self.centralDirectory[12:16])[0] == 0:
             return None
         else:
@@ -269,21 +270,21 @@ class ZipParser():
             "ZipExtraField"             :self.getExtraField(),
             "ZipComments"               :self.getFileComment()
         }
-
         return centralDirectory
 
     def parseZipFile(self):
-        #Because a central directory is an extended version of a local
-        #directory and thus, contains more data, we parse it rather than
-        #the local directory.
+        # Because a central directory is an extended version of a local
+        # directory and thus, contains more data, we parse it rather than
+        # the local directory.
         if not self.centralDirectory.startswith(self.zipCDMagic):
             return None
-        start = 1
+        start = 0
         parsedFiles = []
-        while start > 0:
+        while start >= 0:
+            self.centralDirectory.seek_relative(start)
             parsedFiles.append(self.parseCentralDirectory())
-            start = self.centralDirectory[1:].find(self.zipCDMagic) + 1
-            self.centralDirectory = self.centralDirectory[start:]
+            self.centralDirectory.seek_relative(1)
+            start = self.centralDirectory.find(self.zipCDMagic)
         return parsedFiles
 
 #***************************END**DIRECTORY**PARSING*****************************
@@ -292,10 +293,11 @@ class ZipParser():
         return self.data[0:4]
 
     def getCDComment(self):
-        if self.endDirectory[22:(22 + self.getCDCommentLength())] == 0:
+        comment = self.endDirectory[22:22 + self.getCDCommentLength()]
+        if not comment:
             return None
         else:
-            return self.endDirectory[22:(22 + self.getCDCommentLength())]
+            return comment
 
     def getCDCommentLength(self):
         return struct.unpack("<H", self.endDirectory[20:22])[0]
@@ -320,7 +322,7 @@ class ZipParser():
 
     def parseEndDirectory(self):
         start = self.data.find("\x50\x4b\x05\x06")
-        self.endDirectory = self.data[start:]
+        self.endDirectory = self.data.subfile(start)
         endDirectoryDict = {
             "NumberOfDisk"     : self.getNumberOfDisk(),
             "StartOfCDDisk"    : self.getStartOfCDDisk(),
@@ -336,10 +338,11 @@ class ZipParser():
 
     def __init__(self,data):
         self.data = data
-        cdStart = self.parseEndDirectory()["CDStartOffset"]
-        cdEnd = cdStart + self.parseEndDirectory()["CDSize"]
-        self.localDirectory = data[:cdStart]
-        self.centralDirectory = data[cdStart:cdEnd]
+        endDirectory = self.parseEndDirectory()
+        cdStart = endDirectory["CDStartOffset"]
+        # cdEnd = cdStart + endDirectory["CDSize"]
+        self.localDirectory   = data.subfile(0)        # [:cdStart]
+        self.centralDirectory = data.subfile(cdStart)  # [cdStart:cdEnd]
         # Flags needed to denote a zip64 file type
         self.zip64Flag = {
             "ucZip64"     : False,

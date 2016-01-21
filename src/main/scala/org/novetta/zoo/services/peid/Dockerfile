@@ -36,7 +36,8 @@ RUN ldconfig
 RUN mkdir -p /service
 ADD getrules.py /service
 ADD service.conf /service
-ADD yara_worker.py /service
+ADD peid_worker.py /service
+ADD rulepack /service/rulepack
 
 
 # gather the rules and add them
@@ -53,4 +54,4 @@ RUN chown -R service /service
 USER service
 
 
-CMD ["python3", "/service/yara_worker.py", "/service/rules.yar"]
+CMD ["python3", "/service/peid_worker.py", "/service/rules.yar"]

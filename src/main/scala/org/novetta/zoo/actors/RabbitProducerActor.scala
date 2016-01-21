@@ -7,6 +7,8 @@ package org.novetta.zoo.actors
 import akka.actor.{Props, Actor, ActorLogging}
 import com.rabbitmq.client.{Channel, Connection, _}
 import org.json4s.jackson.Serialization
+import org.json4s.jackson.Serialization._
+import org.novetta.zoo.driver.driver.TotemicEncoding
 import org.novetta.zoo.types._
 import scala.concurrent.duration.{FiniteDuration, _}
 import org.json4s._
@@ -62,7 +64,7 @@ object RabbitProducerActor {
  * @param misbehaveKey: the key used to tag messages that have exhibited continual problems when being processed.
  */
 
-class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, requeueKey: String, misbehaveKey: String) extends Actor with ActorLogging {
+class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, encoding: TotemicEncoding, requeueKey: String, misbehaveKey: String) extends Actor with ActorLogging {
   var channel: Channel =_
   var connection: Connection =_
   var totalDemand = 0
@@ -120,7 +122,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
             ("sha256" -> sha256)
           )
         val j = compact(render(json))
-        sendMessage(RMQSendMessage(j.getBytes, result.routingKey))
+        sendMessage(RMQSendMessage(j.getBytes, encoding.workRoutingKey(result)))
       })
       sender ! ResultResolution(true)
       log.info("emitting result {} to RMQ", sender().path)
@@ -137,7 +139,22 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
       val j = compact(render(json))
       //val j = compact(render(json)) //this can be made generic to +ZooWork (ZooWorkC), see the scala worksheet.
 
-    if(incremented_attempts <= 3) {
+      if(incremented_attempts <= 3) {
+          sendMessage(RMQSendMessage(j.getBytes, requeueKey))
+          log.info("emitting a ZooWork {} to RMQ", j)
+        } else {
+          sendMessage(RMQSendMessage(j.getBytes, misbehaveKey))
+          log.info("emitting misbehaving ZooWork {} to RMQ", j)
+        }
+        sender ! RemainderResolution(true)
+        log.info("emitting gunslinger from {}", sender().path)
+    /*
+    case msg: ZooWorkC =>
+      val incremented_attempts = attempts + 1
+
+      val j = write(msg)
+
+      if(incremented_attempts <= 3) {
         sendMessage(RMQSendMessage(j.getBytes, requeueKey))
         log.info("emitting a ZooWork {} to RMQ", j)
       } else {
@@ -147,6 +164,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, queue:
       sender ! RemainderResolution(true)
       log.info("emitting gunslinger from {}", sender().path)
 
+    */
     case msg =>
       log.error("RabbitProducerActor has received a message it cannot match against: {}", msg)
   }

@@ -72,7 +72,7 @@ object driver extends App with Instrumented {
   )
 
   println("Configuring Services")
-  class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) {
+  class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) { //this is a class, but we can probably make it an object. No big deal, but it helps on mem. pressure.
     def GeneratePartial(work: String): String = {
       work match {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
@@ -123,6 +123,7 @@ object driver extends App with Instrumented {
         case x: VirustotalSuccess => conf.getString("totem.enrichers.virustotal.resultRoutingKey")
         case x: YaraSuccess => conf.getString("totem.enrichers.yara.resultRoutingKey")
         case x: ZipMetaSuccess => conf.getString("totem.enrichers.zipmeta.resultRoutingKey")
+        case x: _ => ""
       }
     }
   }
@@ -131,7 +132,7 @@ object driver extends App with Instrumented {
 
   println("Creating Totem Actors")
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
-  val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, conf.getString("totem.requeueKey"), conf.getString("totem.misbehaveKey")), "producer")
+  val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, encoding, conf.getString("totem.requeueKey"), conf.getString("totem.misbehaveKey")), "producer")
 
   println("Totem version " + conf.getString("totem.version") + " is up and running")
 

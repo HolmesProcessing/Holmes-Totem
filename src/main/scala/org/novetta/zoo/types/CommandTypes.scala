@@ -1,7 +1,10 @@
 package org.novetta.zoo.types
 
+import org.novetta.zoo.util.DownloadSettings
+
 /**
  * Create() case class. Used between the ConsumerActor and the WorkGroup.
+ * @param config: DownloadSettings => The configuration options for downloading an object
  * @param key: Long => The message key associated with this work.
  * @param primaryURI: String => The primary URL for downloading the target resource
  * @param secondaryURI: String => The secondary URL for downloading the target resource
@@ -10,7 +13,7 @@ package org.novetta.zoo.types
  * @constructor Generate a Create message. This is used to initiate the creation of a WorkActor
  *
  */
-case class Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState)
+case class Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState, config: DownloadSettings)
 
 /**
  * Result case class. Used between the WorkActor and the ProducerActor

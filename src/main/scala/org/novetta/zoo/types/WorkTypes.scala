@@ -5,7 +5,8 @@ import java.util.concurrent.ExecutorService
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.json4s.JsonAST.{JString, JValue}
-import org.novetta.zoo.services.{MetadataSuccess, MetadataWork, YaraSuccess, YaraWork}
+import org.novetta.zoo.services.yara.{YaraSuccess, YaraWork}
+import org.novetta.zoo.services.{MetadataSuccess, MetadataWork}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
@@ -113,8 +114,8 @@ abstract class GenericTotemEncoding extends WorkEncoding {
 }
 
 abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
-  val keys = conf.getObject("zoo.enrichers").keySet()
-  val en = conf.getObject("zoo.enrichers").toConfig
+  val keys = conf.getObject("totem.enrichers").keySet()
+  val en = conf.getObject("totem.enrichers").toConfig
   val services = keys.map(key =>
     (key, Random.shuffle(en.getStringList(s"$key.uri").toList))
   ).toMap[String, List[String]]

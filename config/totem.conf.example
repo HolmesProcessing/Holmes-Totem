@@ -1,8 +1,13 @@
-zoo {
+totem {
   version = "1.0.0"
-  download_directory = "/tmp/"
   requeueKey = "requeue.static.totem"
   misbehaveKey = "misbehave.static.totem"
+
+  download_settings {
+    download_directory = "/tmp/"
+    request_timeout = 500
+    connection_timeout = 500
+  }
 
   rabbit_settings {
     host {
@@ -36,11 +41,27 @@ zoo {
   enrichers {
     metadata {
       uri = ["http://127.0.0.1:7703/metadata/", "http://127.0.0.1:7707/metadata/"]
-      resultRoutingKey = "metadata.result.static.zoo"
+      resultRoutingKey = "metadata.result.static.totem"
+    }
+    peid {
+      uri = ["http://127.0.0.1:7720/peid/"]
+      resultRoutingKey = "peid.result.static.totem"
+    }
+    peinfo {
+      uri = ["http://127.0.0.1:7705/peinfo/"]
+      resultRoutingKey = "peinfo.result.static.totem"
+    }
+    virustotal {
+      uri = ["http://127.0.0.1:7710/"]
+      resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
       uri = ["http://127.0.0.1:7701/yara/"]
-      resultRoutingKey = "yara.result.static.zoo"
+      resultRoutingKey = "yara.result.static.totem"
+    }
+    zipmeta {
+      uri = ["http://127.0.0.1:7715/zipmeta/"]
+      resultRoutingKey = "zipmeta.result.static.totem"
     }
   }
 }

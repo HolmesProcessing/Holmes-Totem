@@ -8,7 +8,7 @@ import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig}
 import dispatch.{as, url, _}
 import org.joda.time.{DateTime, Duration}
 import org.novetta.zoo.types._
-import org.novetta.zoo.util.{DownloadMethods, MonitoredActor}
+import org.novetta.zoo.util.{DownloadSettings, DownloadMethods, MonitoredActor}
 
 import scala.concurrent.Future
 import scala.language.postfixOps
@@ -21,8 +21,8 @@ case class SuccessfulDownload(filepath: String, MD5Hash: String, SHA1Hash: Strin
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int, config: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts, config) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -61,6 +61,7 @@ object WorkActor {
  *
  * }}}
  * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
+ * @param downloadconfig: a DownloadSettings, provides configuration options when downloading a file
  * @param deliverytag: a Long, represents the message's ID from RMQ.
  * @param filename: a String, the name of the file we are downloading.
  * @param primaryURI: a String, the first URI we will try to use for a download.
@@ -69,14 +70,13 @@ object WorkActor {
  *
  */
 
-class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
   var standoff: Conflict = Conflict(false, false, false, false, false)
   lazy val execServ: ExecutorService = Executors.newFixedThreadPool(40)
 
-  val pythonDispatcher = context.actorSelection("/user/pythonDispatcher")
   val producer = context.actorSelection("/user/producer")
   var results: Map[TaskedWork, Option[WorkResult]] = workToDo.map(w => w -> None).toMap
   var MD5: String = ""
@@ -87,26 +87,26 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     myHttp.shutdown()
     execServ.shutdown()
   }
-  val config = new AsyncHttpClientConfig.Builder()
-    .setRequestTimeout( 500 ) //should have a config value for this
+  val httpconfig = new AsyncHttpClientConfig.Builder()
+    .setRequestTimeout( downloadconfig.request_timeout ) //should have a config value for this
     .setExecutorService(execServ)
     .setAllowPoolingConnections(true)
-    .setConnectTimeout( 500 )
+    .setConnectTimeout( downloadconfig.connect_timeout )
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
     .setIOThreadMultiplier(4).build()
-  lazy val client = new AsyncHttpClient(config)
-  lazy val asyncHttpClient = new AsyncHttpClient(config)
+  lazy val client = new AsyncHttpClient(httpconfig)
+  lazy val asyncHttpClient = new AsyncHttpClient(httpconfig)
   implicit lazy val myHttp = new Http(asyncHttpClient)
 
   val downloadResult = myHttp(url(primaryURI) OK as.Bytes)
     .option
     .map({
       case Some(v: Array[Byte]) =>
-        new FileOutputStream ("/tmp/" + filename, false).write (v) //this filepath can be a conf. variable
+        new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
         log.info ("Successfully downloaded {} using the primary URI", filename)
 
-        SuccessfulDownload("/tmp/" + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+        SuccessfulDownload(downloadconfig.download_directory + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
         log.info("Could not download {} using ANY URI", filename)
@@ -223,7 +223,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         val time = timeDelta(Some(created), DateTime.now())
 
         log.info("standoff resolved! Took: {}", time)
-        val fi = new File("/tmp/", filename)
+        val fi = new File(downloadconfig.download_directory, filename)
         log.info("Deleting {}", fi.toString)
         fi.delete()
         self ! PoisonPill

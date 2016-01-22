@@ -13,7 +13,7 @@ import org.novetta.zoo.util.DownloadSettings
  * @constructor Generate a Create message. This is used to initiate the creation of a WorkActor
  *
  */
-case class Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState, config: DownloadSettings)
+case class Create(key: Long, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings)
 
 /**
  * Result case class. Used between the WorkActor and the ProducerActor
@@ -30,6 +30,7 @@ case class Result(filename: String, result: WorkResult)
  * the target processing file, that information is lost due to the UUID usage in the temporary filestore.
  * @param filename: String => The filename representing the target of this Job
  * @param results: Iterable[WorkResult] => An Iterable representing the WorkResults to be transmitted
+ * @param tags: List[String] => A list of tags for the results
  * @param MD5: String => MD5 hash of the target file.
  * @param SHA1: String => SHA1 hash of the target file.
  * @param SHA256: String => SHA256 hash of the target file.
@@ -37,7 +38,7 @@ case class Result(filename: String, result: WorkResult)
  * @constructor Generate a ResultPackage message. This is for multiple WorkResult transfers.
  *
  */
-case class ResultPackage(filename: String, results: Iterable[WorkResult], MD5: String, SHA1: String, SHA256: String)
+case class ResultPackage(filename: String, results: Iterable[WorkResult], tags: List[String], MD5: String, SHA1: String, SHA256: String)
 
 object WorkState {
   def create(filename: String, hashfilename: String, workToDo: List[TaskedWork], results: List[WorkResult] = List[WorkResult](), attempts: Int): WorkState = {

@@ -15,14 +15,14 @@ import scala.language.postfixOps
 
 trait DownloadStatus
 case class FailedDownload() extends DownloadStatus
-case class SuccessfulDownload(filepath: String, MD5Hash: String, SHA1Hash: String, SHA256Hash: String) extends DownloadStatus
+case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: String, SHA1Hash: String, SHA256Hash: String) extends DownloadStatus
 
 /**
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], attempts: Int, config: DownloadSettings): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, attempts, config) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -67,10 +67,11 @@ object WorkActor {
  * @param primaryURI: a String, the first URI we will try to use for a download.
  * @param secondaryURI:  a String, the second URI we will try to use for a download.
  * @param workToDo: a List[TaskedWork], which represents all the work we need to do for this message
+ * @param tags: a List[String], which contains all tags to be added to the result
  *
  */
 
-class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
@@ -106,7 +107,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
         log.info ("Successfully downloaded {} using the primary URI", filename)
 
-        SuccessfulDownload(downloadconfig.download_directory + filename, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+        SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
         log.info("Could not download {} using ANY URI", filename)
@@ -136,7 +137,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   }
 
   def prepareFailedWork(res: List[WorkResult]): ZooWork = {
-    val z = ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), attempts)
+    val z = ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
     log.info("Our input to failedwork:", res)
     val nones = res.collect({
       case i: WorkFailure =>
@@ -173,7 +174,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
       self ! LocalResolution(true)
       context.parent ! NAck(key)
 
-    case SuccessfulDownload(filepath: String, md5sum: String, sha1sum: String, sha256sum: String) =>
+    case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
       log.info("Downloaded {} successfully, in {}!", md5sum, time)
       log.info("workload: {}", workToDo)
@@ -190,7 +191,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
           val time = timeDelta(Some(created), DateTime.now())
 
           log.info("we have nonempty successes. sending {} to producer. Took {} to generate", successes, time)
-          producer ! ResultPackage(hashfilename, successes, md5sum, sha1sum, sha256sum)
+          producer ! ResultPackage(hashfilename, successes, tags, md5sum, sha1sum, sha256sum)
         } else {
           self ! ResultResolution(true)
         }

@@ -2,44 +2,72 @@ import os
 import tempfile
 import shutil
 import mmap
+import sys
+
+# correctly import renamed modules (Py2 vs Py3)
+if sys.version_info >= (3,):
+    import configparser
+else:
+    import ConfigParser
+    configparser = ConfigParser
 
 
 class Meta():
-    needed_meta_data = ["ServiceName", "ServiceVersion", "ServiceConfig", "ObjectCategory", "ObjectType"]
-
     """
     Class for storing metadata for a service.
-    Metadata are read from a file with lines of the form:
-       key = value
+    Metadata are read from an INI style configuration file.
+    Example INI:
+        [service]
+        ServiceName         = HelloWorld
+        ServiceVersion      = 1.0
+        ServiceDescription  = ./DESCRIPTION
+        ServiceConfig       = ./service.conf
+        ServiceCopyright    = ./COPYRIGHT
+        ServiceLicence      = ./LICENCE
+
+        [object]
+        ObjectCategory      = None
+        ObjectType          = None
     """
+    
+    needed_meta_data = [
+        "ServiceName",
+        "ServiceVersion",
+        "ServiceDescription",
+        "ServiceConfig",
+        "ServiceCopyright",
+        "ServiceLicence",
+        
+        "ObjectCategory",
+        "ObjectType",
+    ]
+
     def __init__(self, cfg="META"):
-        self.data = dict()
-        f = open(cfg)
-        for line in f:
-            if(line.strip() == ""):
-                continue
-            l = line.split("=")
-            if len(l) == 2:
-                key = l[0].strip()
-                value = l[1].strip()
-                self.data[key] = value
-            else:
-                print("%s malformed. Ignoring line: %s" % (cfg, line))
-                #exit(-1)
+        parser = configparser.ConfigParser()
+        # avoid case insensitivity for keys
+        parser.optionxform = str
+        self.data = {}
+        parser.read(cfg)
+        # draw values from any section
+        if sys.version_info >= (3,):
+            for section in parser.sections():
+                for key in parser[section]:
+                    self.data[key] = parser[section][key]
+        else:
+            for section in parser.sections():
+                for (key, value) in parser.items(section):
+                    self.data[key] = value
+        
         for needed in Meta.needed_meta_data:
             if self.data.get(needed) is None:
                 print("%s is not configured in %s!" % (needed, cfg))
-
-    def getServiceName(self):
-        return self.data["ServiceName"]
-    def getServiceVersion(self):
-        return self.data["ServiceVersion"]
-    def getServiceConfig(self):
-        return self.data["ServiceConfig"]
-    def getObjectCategory(self):
-        return self.data["ObjectCategory"]
-    def getObjectType(self):
-        return self.data["ObjectType"]
+    
+    def __getattr__ (self, key):
+        return self.data.get(key)
+    
+    def __iter__ (self):
+        for key in self.data:
+            yield (key, self.data[key])
 
 
 
@@ -90,8 +118,8 @@ class ServiceRequestError (Exception):
     def __repr__ (self):
         return repr(str(self))
     def __iter__ (self):
-        yield "status"
-        yield "error"
+        yield ("status", self.status)
+        yield ("error", self.error)
     def __getitem__ (self, key):
         return getattr(self,key)
 
@@ -140,7 +168,7 @@ class BigFile (object):
         subfile = file.subfile(start)
         # find a needle somewhere after the offset, relative to the offset
         position = subfile.find("second needle")
-        # adjust offset in the subfile
+        # adjust offset in the subfile to after the previous find
         subfile.adjust(position+1)
     """
     __slots__ = ["file","datamap","size","offset"]
@@ -215,3 +243,4 @@ class BigFile (object):
     # provide standard functions
     def __len__ (self):
         return self.size
+

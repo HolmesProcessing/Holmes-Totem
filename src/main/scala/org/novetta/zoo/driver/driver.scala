@@ -72,11 +72,11 @@ object driver extends App with Instrumented {
   )
 
   val misbehaveQueueConfig = QueueSettings(
-    conf.getString("totem.rabbit_settings.misbehave.name"),
-    conf.getString("totem.rabbit_settings.misbehave.routing_key"),
-    conf.getBoolean("totem.rabbit_settings.misbehave.durable"),
-    conf.getBoolean("totem.rabbit_settings.misbehave.exclusive"),
-    conf.getBoolean("totem.rabbit_settings.misbehave.autodelete")
+    conf.getString("totem.rabbit_settings.misbehavequeue.name"),
+    conf.getString("totem.rabbit_settings.misbehavequeue.routing_key"),
+    conf.getBoolean("totem.rabbit_settings.misbehavequeue.durable"),
+    conf.getBoolean("totem.rabbit_settings.misbehavequeue.exclusive"),
+    conf.getBoolean("totem.rabbit_settings.misbehavequeue.autodelete")
   )
 
 

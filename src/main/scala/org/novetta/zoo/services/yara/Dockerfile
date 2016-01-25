@@ -31,9 +31,15 @@ RUN python3 setup.py install
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf
 RUN ldconfig
 
+# get holmeslibrary
+RUN mkdir -p /service
+WORKDIR /service
+RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git library
+WORKDIR /service/library
+RUN git fetch origin && git checkout 1c196c89d08644a71cbf4d9720ce156b8ab1cf5e
+
 
 # add the core files to the container
-RUN mkdir -p /service
 ADD getrules.py /service
 ADD service.conf /service
 ADD yara_worker.py /service

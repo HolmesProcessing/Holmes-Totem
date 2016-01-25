@@ -16,6 +16,11 @@ import binascii
 import sys
 import yara
 
+# imports for services
+from holmeslibrary.services import ServiceMeta
+
+# Get service meta information and configuration
+metadata = ServiceMeta("./service.meta")
 # Set up Tornado options
 define("port", default=8080, help="port to run", type=int)
 
@@ -65,14 +70,20 @@ class YaraProcess(YaraHandler):
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
-        description = """
-<p>Copyright 2015 Holmes Processing
+        info = """
+            <p>{copyright:s}
 
-<p>Description: Provides Yara signature matching for samples using a collective 
-set of signatures or a provided custom signature.
+            <p>{name:s} - {version:s}
 
-        """
-        self.write(description)
+            <p>{description:s}
+
+        """.format(
+            copyright   = str(metadata.ServiceCopyright).replace("\n", "<br>"),
+            description = str(metadata.ServiceDescription).replace("\n", "<br>"),
+            name        = str(metadata.ServiceName).replace("\n", "<br>"),
+            version     = str(metadata.ServiceVersion).replace("\n", "<br>")
+        )
+        self.write(info)
 
 
 class YaraApp(tornado.web.Application):

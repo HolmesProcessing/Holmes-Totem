@@ -4,4 +4,4 @@ ServiceVersion      = 1.0
 ServiceDescription  = ./README.md
 ServiceCopyright    = Copyright 2015 Holmes Processing
 ServiceLicense      = ./LICENSE
-ServiceConfig       = ./service.conf.example
+ServiceConfig       = ./service.conf

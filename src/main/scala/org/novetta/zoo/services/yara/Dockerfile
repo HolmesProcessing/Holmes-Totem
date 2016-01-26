@@ -35,7 +35,7 @@ RUN ldconfig
 RUN mkdir -p /service
 WORKDIR /service
 RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git holmeslibrary
-WORKDIR /service/library
+WORKDIR /service/holmeslibrary
 RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
 
@@ -59,4 +59,4 @@ RUN chown -R service /service
 USER service
 
 
-CMD ["python3", "/service/yara_worker.py", "/service/rules.yar"]
+CMD ["python3", "/service/yara_worker.py"]

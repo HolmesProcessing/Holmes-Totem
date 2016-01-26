@@ -12,8 +12,6 @@ from os import path
 # imports for yara to work
 from io import StringIO
 import base64
-import binascii
-import sys
 import yara
 
 # imports for services
@@ -27,8 +25,6 @@ define("port", default=Config.settings.port, help="port to run", type=int)
 class YaraHandler(tornado.web.RequestHandler):
     @property
     def YaraEngine(self):
-        if not "load" in dir(yara):
-            return yara.load_rules(Config.settings.yararules)
         return yara.load(Config.settings.yararules)
 
 class YaraProcess(YaraHandler):
@@ -37,10 +33,7 @@ class YaraProcess(YaraHandler):
             ruleBuff = StringIO()
             ruleBuff.write(rules)
             ruleBuff.seek(0)
-            if not "load" in dir(yara):
-                results = yara.load_rules(file=ruleBuff)
-            else:
-                rules = yara.load(file=ruleBuff)
+            rules = yara.load(file=ruleBuff)
             results = rules.match(filename[0], externals={'filename': filename[1]})
         else:
             results = self.YaraEngine.match(filename[0], externals={'filename': filename[1]})

@@ -1,7 +1,0 @@
-[service]
-ServiceName         = Yara
-ServiceVersion      = 1.0
-ServiceDescription  = Description: Provides Yara signature matching for samples using a collective set of signatures or a provided custom signature.
-ServiceCopyright    = Copyright 2015 Holmes Processing
-ServiceLicense      = ./LICENSE
-ServiceConfig       = ./service.conf

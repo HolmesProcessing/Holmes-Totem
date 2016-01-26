@@ -1,3 +1,17 @@
+[metadata]
+Name        = Yara
+Version     = 1.0
+Description = ./README.md
+# Description: Provides Yara signature matching for samples using a collective set of signatures or a provided custom signature.
+Copyright   = Copyright 2015 Holmes Processing
+License     = ./LICENSE
+
+[settings]
+Port        = 8080
+InfoURL     = /
+AnalysisURL = /yara
+YaraRules   = ./rules.yar
+
 [Rules]
 get_remote = False
 download_url = <https://127.0.0.1/services/yara/rules>

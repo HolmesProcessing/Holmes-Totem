@@ -9,13 +9,13 @@ from os import path
 
 import ZipParser
 ZipParser = ZipParser.ZipParser
-from library.services import ServiceRequestError, ServiceResultSet, ServiceMeta
-from library.mmap     import mmapFile
+from library.services import ServiceRequestError, ServiceResultSet, ServiceConfig
+from library.files    import LargeFileReader
 
 # Get service meta information and configuration
-metadata = ServiceMeta("./service.meta")
+Config = ServiceConfig("./service.conf")
 # Set up Tornado options
-define("port", default=8080, help="port to run", type=int)
+define("port", default=int(Config.settings.port,10), help="port to run", type=int)
 
 class ZipError (ServiceRequestError):
     pass
@@ -26,7 +26,7 @@ class ZipMetaProcess(tornado.web.RequestHandler):
         try:
             # read file
             fullPath = os.path.join('/tmp/', filename)
-            data     = mmapFile(fullPath)
+            data     = LargeFileReader(fullPath)
             
             # exclude non-zip
             if len(data) < 4:
@@ -92,14 +92,16 @@ class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
         info = """
+            <p>{name:s} - {version:s}</p>
+            <hr>
             <p>{description:s}</p>
             <hr>
             <p>{license:s}
         """.format(
-            copyright   = str(metadata.ServiceCopyright).replace("\n", "<br>"),
-            description = str(metadata.ServiceDescription).replace("\n", "<br>"),
-            config      = str(metadata.ServiceConfig).replace("\n", "<br>"),
-            license     = str(metadata.ServiceLicense).replace("\n", "<br>")
+            name        = str(Config.metadata.name).replace("\n", "<br>"),
+            version     = str(Config.metadata.version).replace("\n", "<br>"),
+            description = str(Config.metadata.description).replace("\n", "<br>"),
+            license     = str(Config.metadata.license).replace("\n", "<br>")
         )
         self.write(info)
 
@@ -107,8 +109,8 @@ class Info(tornado.web.RequestHandler):
 class ZipMetaApp(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', Info),
-            (r'/zipmeta/([a-zA-Z0-9\-\.]*)', ZipMetaProcess),
+            (Config.settings.infourl + r'', Info),
+            (Config.settings.analysisurl + r'/([a-zA-Z0-9\-\.]*)', ZipMetaProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

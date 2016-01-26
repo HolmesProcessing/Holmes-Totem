@@ -12,7 +12,7 @@ WORKDIR /service
 RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git library
 WORKDIR /service/library
 # to overcome the caching issue, the correct revision must go here
-RUN git fetch origin && git checkout 1c196c89d08644a71cbf4d9720ce156b8ab1cf5e
+RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
 ADD LICENSE README.md service.meta /service/
 ADD zipmeta.py ZipParser.py extra_field_parse.py /service/

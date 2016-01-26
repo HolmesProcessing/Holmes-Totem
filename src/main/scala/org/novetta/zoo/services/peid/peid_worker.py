@@ -12,17 +12,21 @@ from os import path
 # imports for yara to work
 from io import StringIO
 import base64
-import binascii
-import sys
 import yara
 
+# imports for services
+from holmeslibrary.services import ServiceConfig
+
+# Get service meta information and configuration
+Config = ServiceConfig("./service.conf")
+
 # Set up Tornado options
-define("port", default=8080, help="port to run", type=int)
+define("port", default=Config.settings.port, help="port to run", type=int)
 
 class YaraHandler(tornado.web.RequestHandler):
     @property
     def YaraEngine(self):
-        return yara.load(sys.argv[1])
+        return yara.load(Config.settings.yararules)
 
 class PEiDProcess(YaraHandler):
     def process(self, filename, rules=None):
@@ -65,21 +69,26 @@ class PEiDProcess(YaraHandler):
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
-        description = """
-<p>Copyright 2015 Holmes Processing
-
-<p>Description: Provides PEiD signature matching for samples using a collective 
-set of signatures or a provided custom signature. Rules provided by AlienVault.
-
-        """
-        self.write(description)
+        info = """
+            <p>{name:s} - {version:s}</p>
+            <hr>
+            <p>{description:s}</p>
+            <hr>
+            <p>{license:s}
+        """.format(
+            name        = str(Config.metadata.name).replace("\n", "<br>"),
+            version     = str(Config.metadata.version).replace("\n", "<br>"),
+            description = str(Config.metadata.description).replace("\n", "<br>"),
+            license     = str(Config.metadata.license).replace("\n", "<br>")
+        )
+        self.write(info)
 
 
 class PEiDApp(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', Info),
-            (r'/peid/([a-zA-Z0-9\-]*)', PEiDProcess),
+            (Config.settings.infourl + r'', Info),
+            (Config.settings.analysisurl + r'/([a-zA-Z0-9\-]*)', PEiDProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

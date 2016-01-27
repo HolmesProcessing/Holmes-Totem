@@ -4,7 +4,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 
-case class ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) {
+case class ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) {
 
   def +(that: WorkFailure): ZooWork = {
     val newtasks = this.tasks + (that.WorkType -> that.Arguments)
@@ -13,6 +13,7 @@ case class ZooWork(primaryURI: String, secondaryURI: String, filename: String, t
       secondaryURI = this.secondaryURI,
       filename = this.filename,
       tasks = newtasks,
+      tags = this.tags,
       attempts = this.attempts
     )
   }

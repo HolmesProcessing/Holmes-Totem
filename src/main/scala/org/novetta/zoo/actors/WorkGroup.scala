@@ -47,12 +47,12 @@ object WorkGroup {
 class WorkGroup extends Actor with ActorLogging with MonitoredActor {
 
   def monitoredReceive = {
-    case Create(key: Long, primaryURI: String, secondaryURI: String, value: WorkState, config: DownloadSettings) =>
+    case Create(key: Long, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings) =>
       val child = context.child(key.toString).getOrElse({
         log.info("Instantiating a new actor for message: {}", key)
         context.watch(
           context.actorOf(
-            WorkActor.props(key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, value.attempts, config), key.toString
+            WorkActor.props(key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, tags, value.attempts, config), key.toString
           )
         )
 

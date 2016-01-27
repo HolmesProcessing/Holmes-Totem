@@ -128,13 +128,14 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
     case RabbitMessage(deliveryTag: Long, body: Array[Byte]) =>
         try {
           parse(new String(body)).extract[T] match {
-            case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) =>
+            case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
               log.info("Created a ZooWork, {}", filename)
               val uuid_filename: String = UUID.randomUUID().toString
               WorkGroupActor ! Create(
                 deliveryTag,
                 primaryURI,
                 secondaryURI,
+                tags,
                 WorkState.create(
                   uuid_filename,
                   filename,

@@ -25,7 +25,7 @@ define("port", default=Config.settings.port, help="port to run", type=int)
 class YaraHandler(tornado.web.RequestHandler):
     @property
     def YaraEngine(self):
-        return yara.load(Config.settings.yararules)
+        return yara.load(Config.yara_rules.local_path)
 
 class YaraProcess(YaraHandler):
     def process(self, filename, rules=None):

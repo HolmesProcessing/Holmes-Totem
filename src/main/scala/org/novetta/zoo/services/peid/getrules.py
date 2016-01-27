@@ -5,36 +5,36 @@ import yara
 
 ERROR_CODE = 1
 
-def DownloadFile(url):
+def DownloadFile(url, rulefile):
     r = requests.get(url, stream=True)
-    with open('rules.yar', 'wb') as f:
+    with open(rulefile, 'wb') as f:
         for chunk in r.iter_content(chunk_size=(100*1024)):
             if chunk:
                 f.write(chunk)
-    return 'rules.yar'
 
 
 def main():
     """ Main logic for program """
     cfg = configparser.ConfigParser()
     cfg.read('service.conf')
-    get_remote = False
     rule_location = 'rules.yar'
+    get_remote    = False
 
     # Parse configuration options
-    if cfg.has_section('Rules'):
-        get_remote = cfg['Rules'].getboolean('get_remote', fallback=False)
+    if cfg.has_section('yara_rules'):
+        rule_location = cfg['yara_rules'].get('local_path', fallback='rules.yar')
+        get_remote    = cfg['yara_rules'].getboolean('get_remote', fallback=False)
         if get_remote:
-            rule_location = DownloadFile(cfg['Rules'].get('download_url'))
-        else:
-            rule_location = cfg['Rules'].get('local_path', fallback='rules.yar')
+            DownloadFile(cfg['yara_rules'].get('download_url'), rule_location)
+            
     else:
-        print("Configuration Error: Cannot find Rules section. Using default values.")
+        print("Configuration Error: Cannot find yara_rules section in"
+            "service.conf. Using default values.")
 
     # attempt to compile rules
     try:
         rules = yara.compile(rule_location)
-        rules.save('rules.yar')
+        rules.save(rule_location)
     except yara.YaraSyntaxError:
         print("Syntax error in the YARA rules.")
         sys.exit(ERROR_CODE)

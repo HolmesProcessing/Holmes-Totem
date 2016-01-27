@@ -1,4 +1,5 @@
 peid:
+  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/peid
   volumes:
    - /tmp:/tmp:ro
@@ -6,6 +7,7 @@ peid:
     - "7720:8080"
 
 peinfo:
+  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/peinfo
   volumes:
    - /tmp:/tmp:ro
@@ -13,6 +15,7 @@ peinfo:
     - "7705:8080"
 
 virustotal:
+  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/virustotal
   volumes:
    - /tmp:/tmp:ro
@@ -20,6 +23,7 @@ virustotal:
     - "7710:8080"
 
 yara:
+  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/yara
   volumes:
    - /tmp:/tmp:ro
@@ -27,6 +31,7 @@ yara:
     - "7701:8080"
 
 zipmeta:
+  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/zipmeta
   volumes:
    - /tmp:/tmp:ro

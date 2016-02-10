@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 
 # install what you need here
 RUN apt-get update
-RUN apt-get install -y --fix-missing python3-pip wget build-essential checkinstall dh-autoreconf libssl-dev libmagic-dev python-dev
+RUN apt-get install -y --fix-missing python3-pip wget build-essential checkinstall dh-autoreconf libssl-dev libmagic-dev python-dev git
 
 
 # install python3 dependencies

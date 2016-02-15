@@ -1,39 +1,39 @@
 peid:
-  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/peid
-  volumes:
-   - /tmp:/tmp:ro
   ports:
     - "7720:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
 
 peinfo:
-  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/peinfo
-  volumes:
-   - /tmp:/tmp:ro
   ports:
     - "7705:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
 
 virustotal:
-  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/virustotal
-  volumes:
-   - /tmp:/tmp:ro
   ports:
     - "7710:8080"
+  restart: unless-stopped
+  volumes:
+   - /tmp:/tmp:ro
 
 yara:
-  restart: unless-stopped
   build: ../src/main/scala/org/novetta/zoo/services/yara
-  volumes:
-   - /tmp:/tmp:ro
   ports:
     - "7701:8080"
-
-zipmeta:
   restart: unless-stopped
-  build: ../src/main/scala/org/novetta/zoo/services/zipmeta
   volumes:
    - /tmp:/tmp:ro
+
+zipmeta:
+  build: ../src/main/scala/org/novetta/zoo/services/zipmeta
   ports:
     - "7715:8080"
+  restart: unless-stopped
+  volumes:
+   - /tmp:/tmp:ro

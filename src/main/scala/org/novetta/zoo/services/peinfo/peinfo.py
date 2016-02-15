@@ -19,12 +19,17 @@ import string
 import bz2
 import binascii
 import hashlib
-import logging
 import struct
 from time import localtime, strftime
 
+# imports for services
+from holmeslibrary.services import ServiceConfig
+
+# Get service meta information and configuration
+Config = ServiceConfig("./service.conf")
+
 # Set up Tornado options
-define("port", default=8080, help="port to run", type=int)
+define("port", default=Config.settings.port, help="port to run", type=int)
 
 def _get_pehash(exe):
     #image characteristics
@@ -162,10 +167,10 @@ def _get_debug_info(pe):
                                     'DebugPath': "%s" % dbg_path,
                                     'result': "%s" % dbg_path,
                                 })
-            d.append(result)                
+            d.append(result)
         return d
             #self._add_result('pe_debug', dbg_path, result)
-    except Exception as e:
+    except:
         return d
 
 
@@ -186,7 +191,7 @@ def _get_imports(pe):
 
                 d.append({"function": name, "dll": entry.dll})
         return d
-    except Exception as e:
+    except:
         return d
 
 
@@ -196,7 +201,7 @@ def _get_exports(pe):
         for entry in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             d.append({"function": entry.name})
         return d
-    except Exception as e:
+    except:
         return d
 
 
@@ -220,7 +225,7 @@ def _get_rich_header(pe):
         if len(rich_data) != 0x80:
             return d
         temp_data = list(struct.unpack("<32I", rich_data))
-    except pefile.PEFormatError as e:
+    except pefile.PEFormatError:
         return d
 
     checksum = temp_data[1]
@@ -342,7 +347,7 @@ def _get_timestamp(pe):
         timestamp = pe.FILE_HEADER.TimeDateStamp
         time_string = strftime('%Y-%m-%dT%H:%M:%SZ', localtime(timestamp))
         return {'human_timestamp': time_string, "timestamp": timestamp}
-    except Exception as e:
+    except:
         return {}
 
 
@@ -396,14 +401,15 @@ def _get_version_info(pe):
                             #result_name = str_entry[0] + ': ' + value[:255]
                             #self._add_result('version_info', result_name, result)
             return d
-        except Exception as e:
+        except:
             return d
 
 
 def _get_version_var_info(pe):
     d = []
     if hasattr(pe, 'FileInfo'):
-        try:                            
+        try:
+            entry = pe.FileInfo
             if hasattr(entry, 'Var'):
                 for var_entry in entry.Var:
                     if hasattr(var_entry, 'entry'):
@@ -427,7 +433,7 @@ def _get_version_var_info(pe):
                             #result_name = key + ': ' + value
                             #self._add_result('version_var', result_name, result)
             return d
-        except Exception as e:
+        except:
             return d
 
 
@@ -490,25 +496,26 @@ class PEInfoProcess(tornado.web.RequestHandler):
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
-        description = """
-<p>Copyright 2015 Holmes Processing
-<p>Copyright (c) 2015, Adam Polkosnik, Team Cymru.  All rights reserved.
-
-<p>Source code distributed pursuant to license agreement.
-PEhash computing code is from Team Cymru.
-Wrapping into the CRITs module done by Adam Polkosnik.
-Adjustments for TOTEM made by George Webster.
-
-<p>Description: Extracts key elements of the PE Header.
-        """
-        self.write(description)
+        info = """
+            <p>{name:s} - {version:s}</p>
+            <hr>
+            <p>{description:s}</p>
+            <hr>
+            <p>{license:s}
+        """.format(
+            name        = str(Config.metadata.name).replace("\n", "<br>"),
+            version     = str(Config.metadata.version).replace("\n", "<br>"),
+            description = str(Config.metadata.description).replace("\n", "<br>"),
+            license     = str(Config.metadata.license).replace("\n", "<br>")
+        )
+        self.write(info)
 
 
 class PEApp(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', Info),
-            (r'/peinfo/([a-zA-Z0-9\-]*)', PEInfoProcess),
+            (Config.settings.infourl + r'', Info),
+            (Config.settings.analysisurl + r'/([a-zA-Z0-9\-]*)', PEInfoProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

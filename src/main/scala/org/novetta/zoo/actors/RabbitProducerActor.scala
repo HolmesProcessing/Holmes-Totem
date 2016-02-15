@@ -118,12 +118,13 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       val j = compact(render(json))
       sendMessage(RMQSendMessage(j.getBytes, r.result.routingKey))
 
-    case ResultPackage(filename: String, results: Iterable[WorkResult], md5: String, sha1: String, sha256: String) => //work can get lost here. Need to make sure that doesnt happen.
+    case ResultPackage(filename: String, results: Iterable[WorkResult], tags: List[String], md5: String, sha1: String, sha256: String) => //work can get lost here. Need to make sure that doesnt happen.
       results.foreach({ result =>
 
         val json = (
           ("filename" -> filename) ~
             ("data" -> result.data) ~
+            ("tags" -> tags) ~
             ("md5" -> md5) ~
             ("sha1" -> sha1) ~
             ("sha256" -> sha256)
@@ -134,7 +135,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       sender ! ResultResolution(true)
       log.info("emitting result {} to RMQ", sender().path)
 
-    case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], attempts: Int) =>
+    case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
       val incremented_attempts = attempts + 1
       val json = (
         ("primaryURI" -> primaryURI) ~

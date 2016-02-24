@@ -1,0 +1,11 @@
+[metadata]
+Name        = OfficeMeta
+Version     = 1.0
+Description = ./README.md
+Copyright   = Copyright 2015 Holmes Processing
+License     = ./LICENSE
+
+[settings]
+Port        = 8080
+InfoURL     = /
+AnalysisURL = /office_meta

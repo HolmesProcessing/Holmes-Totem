@@ -1,15 +1,12 @@
-# import webserver related libraries
+# imports for tornado
 import tornado.web, tornado.httpserver, tornado.ioloop, tornado.options
 
-# get service relevant classes
+# imports for officemeta
 from office_meta      import OfficeParser, OfficeMetaError
 from library.services import ServiceResultSet, ServiceConfig
-
-# other service relevant imports
 import binascii
 import traceback
 import os
-from os import path
 
 
 # get config and init Tornado
@@ -118,8 +115,8 @@ class ServiceApp(tornado.web.Application):
             (Config.settings.analysisurl + r'/([a-zA-Z0-9\-\.]*)', OfficeMetaProcess),
         ]
         settings = dict(
-            template_path=path.join(path.dirname(__file__), 'templates'),
-            static_path=path.join(path.dirname(__file__), 'static'),
+            template_path=os.path.join(os.path.dirname(__file__), 'templates'),
+            static_path=os.path.join(os.path.dirname(__file__), 'static'),
         )
         tornado.web.Application.__init__(self, handlers, **settings)
         self.engine = None

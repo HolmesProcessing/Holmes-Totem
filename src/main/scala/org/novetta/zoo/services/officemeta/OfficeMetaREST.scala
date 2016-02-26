@@ -1,4 +1,4 @@
-package org.novetta.zoo.services.zipmeta
+package org.novetta.zoo.services.officemeta
 
 import dispatch.Defaults._
 import dispatch.{url, _}
@@ -22,8 +22,10 @@ case class OfficeMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkT
 
       case Left(StatusCode(code)) =>
         OfficeMetaFailure(false, JString("Some other code: " + code.toString), Arguments)
+
       case Left(something) =>
         OfficeMetaFailure(false, JString("Wildcard failure: " + something.toString), Arguments)
+
       })
     requestResult
   }

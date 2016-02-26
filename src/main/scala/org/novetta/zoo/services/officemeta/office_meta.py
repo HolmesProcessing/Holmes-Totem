@@ -1,14 +1,16 @@
+# import our base error class for services and extend it
 from library.services import ServiceRequestError
 class OfficeMetaError (ServiceRequestError):
     pass
 
-import sys
+# imports for OfficeParser
 import time
 import array
 import hashlib
 import binascii
 import struct
 import pprint
+
 
 class OfficeParser (object):
     summary_mapping = {

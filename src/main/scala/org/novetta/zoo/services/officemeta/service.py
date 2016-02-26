@@ -1,16 +1,18 @@
+# get webserver
 import tornado
 from tornado import web, httpserver, ioloop
 import tornado.options
 from tornado.options import define, options
 
-import traceback
-import os
-from os import path
-
+# get service relevant classes
 from office_meta      import OfficeParser, OfficeMetaError
 from library.services import ServiceResultSet, ServiceConfig
 
+# other service relevant imports
 import binascii
+import traceback
+import os
+from os import path
 
 
 # get config and init Tornado

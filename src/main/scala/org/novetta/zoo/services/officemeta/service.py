@@ -1,8 +1,5 @@
-# get webserver
-import tornado
-from tornado import web, httpserver, ioloop
-import tornado.options
-from tornado.options import define, options
+# import webserver related libraries
+import tornado.web, tornado.httpserver, tornado.ioloop, tornado.options
 
 # get service relevant classes
 from office_meta      import OfficeParser, OfficeMetaError
@@ -17,7 +14,8 @@ from os import path
 
 # get config and init Tornado
 Config = ServiceConfig("./service.conf")
-define("port", default=int(Config.settings.port,10), help="port to run", type=int)
+tornado.options.define("port", default=int(Config.settings.port,10),
+    help="port to run", type=int)
 
 
 class OfficeMetaProcess(tornado.web.RequestHandler):
@@ -130,8 +128,9 @@ class ServiceApp(tornado.web.Application):
 def main():
     tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(ServiceApp())
-    server.listen(options.port)
-    print("starting the office_meta worker on port {}".format(options.port))
+    server.listen(tornado.options.options.port)
+    print("starting the office_meta worker on port {}".format(
+        tornado.options.options.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

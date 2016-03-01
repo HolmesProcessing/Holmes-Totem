@@ -32,8 +32,8 @@ case class OfficeMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkT
 }
 
 
-case class OfficeMetaSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "zipmeta.result.static.totem", WorkType: String = "ZIPMETA") extends WorkSuccess
-case class OfficeMetaFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "ZIPMETA") extends WorkFailure
+case class OfficeMetaSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "officemeta.result.static.totem", WorkType: String = "OFFICEMETA") extends WorkSuccess
+case class OfficeMetaFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "OFFICEMETA") extends WorkFailure
 
 
 object OfficeMetaREST {

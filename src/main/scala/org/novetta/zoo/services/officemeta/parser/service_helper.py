@@ -13,12 +13,14 @@ class ServiceHelper (object):
             raise OfficeMetaError(500, "Could not read file")
         
     def parse_office_doc(self):
+        # unpack first if activemime/mso
+        if mso.match(self.data):
+            self.data = mso.extract(self.data)
+        
         if ole.match(self.data):
             parser = ole.Parser(self.data)
         elif oox.match(self.data):
             parser = oox.Parser(self.data)
-        elif mso.match(self.data):
-            parser = mso.Parser(self.data)
         else:
             # last chance, plain text office 2003 format
             parser = xml.Parser(self.data)

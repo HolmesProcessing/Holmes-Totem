@@ -1,9 +1,14 @@
-# import our base error class for services and extend it
-from library.services import ServiceRequestError
-class OfficeMetaError (ServiceRequestError):
-    pass
+"""
+Totem officemeta service - OLE file parser
 
-# imports for OfficeParser
+TODO:
+ - submit contained files to the analysis queue (once Totem supports this)
+"""
+
+# import service error class
+from error import OfficeMetaError
+
+# imports for parser
 import time
 import array
 import hashlib
@@ -11,8 +16,22 @@ import binascii
 import struct
 import pprint
 
+# import for result compilation
+from library.services import ServiceResultSet
 
-class OfficeParser (object):
+
+# magic number all OLE files must start with
+OLE_MAGIC = b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'
+
+
+# determine if it's a file in ole format
+def match (data):
+    return data.startswith(OLE_MAGIC)
+
+
+#
+class Parser (object):
+    
     summary_mapping = {
         "\xE0\x85\x9F\xF2\xF9\x4F\x68\x10\xAB\x91\x08\x00\x2B\x27\xB3\xD9": {
             'name':         'SummaryInformation',
@@ -60,10 +79,18 @@ class OfficeParser (object):
             # what the heck do these values mean?
         }
     }
+    
     office_magic = "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
-    def __init__(self, data, verbose=False):
-        self.data = data
+    
+    
+    def __init__(self, filedata, verbose=False):
+        # settings:
+        self.data = filedata
         self.verbose = verbose
+        # results:
+        self.fileformat = None
+        self.filetype = ""
+        self.fileversion = ""
         self.office_header = {}
         self.directory = []
         self.properties = []
@@ -71,6 +98,7 @@ class OfficeParser (object):
         self.mini_fat_table = []
         self.mini_fat_data = ''
         self.sector_size = 512
+
 
     def get_mini_fat_chain(self, sector):
         if sector in [0xffffffff, 0xfffffffe]:
@@ -83,8 +111,10 @@ class OfficeParser (object):
                 return data + self.get_mini_fat_chain(self.mini_fat_table[sector])
         return ''
 
+
     def get_mini_fat_sector(self, sector):
         return self.mini_fat_data[(sector) * 64 : (sector + 1) * 64]
+
 
     def get_fat_chain(self, sector):
         if sector in [0xffffffff, 0xfffffffe]:
@@ -99,6 +129,7 @@ class OfficeParser (object):
                 return data + self.get_fat_chain(self.fat_table[sector])
         return ''
 
+
     def get_mini_fat_sector_chain(self, sector):
         if sector in [0xffffffff, 0xfffffffe, 0xfffffffd]:
             return []
@@ -109,8 +140,10 @@ class OfficeParser (object):
                 return [sector] + self.get_mini_fat_sector_chain(self.fat_table[sector])
         return []
 
+
     def get_fat_sector(self, sector):
         return self.data[(sector + 1) * self.sector_size : (sector+2) * self.sector_size]
+
 
     def make_fat(self, sector_list):
         fat = array.array('I')
@@ -124,6 +157,7 @@ class OfficeParser (object):
                 if self.verbose:
                     print "!!!!! Error, invalid SAT table, sector missing"
         return fat
+
 
     def parse_office_header(self):
         office_header = {
@@ -161,6 +195,7 @@ class OfficeParser (object):
             print self.mini_fat_table
         return office_header
 
+
     def find_office_header(self):
         offset = self.data.find(self.office_magic)
         if offset >= 0:
@@ -171,6 +206,7 @@ class OfficeParser (object):
         if self.verbose:
             print "\t[-] could not find office header"
         return None
+
 
     def parse_property_set_header(self, prop_data):
         if len(prop_data) >= 28:
@@ -204,11 +240,13 @@ class OfficeParser (object):
             return property_set_header
         return {}
 
+
     def lookup_property_id(self, prop_id, prop_type):
         table = self.summary_mapping.get(binascii.unhexlify(prop_type), {})
         if table:
             return table.get(prop_id, 'Unknown (%d)' % prop_id)
         return 'Unknown'
+
 
     def timestamp_string(self, wtimestamp):
         timestamp = (wtimestamp / 10000000) - 11644473600
@@ -218,6 +256,7 @@ class OfficeParser (object):
             timestamp = (wtimestamp / 10000000)
             datestring = "%02d:%02d:%02d" % (timestamp / 360, timestamp / 60, timestamp % 60)
         return (timestamp, datestring)
+
 
     def parse_properties(self, prop_data, prop_type):
         if len(prop_data) >= 8:
@@ -266,6 +305,7 @@ class OfficeParser (object):
             return properties
         return {}
 
+
     def parse_summary_information(self, summary_data, prop_type):
         if self.verbose:
             print "\t[+] parsing %d bytes of summary_data for %s" % (len(summary_data), prop_type)
@@ -277,6 +317,7 @@ class OfficeParser (object):
                     pprint.pprint(item)
             return property_set_header
         return {}
+
 
     def parse_directory(self, data):
         if len(data) >= 128:
@@ -338,6 +379,7 @@ class OfficeParser (object):
             self.parse_directory(data[128:])
         return {}
 
+
     def pretty_print(self):
         print "\nDocument Summary\n" + "-" * 40
         print "%20s:%20s" % ("Magic", self.office_header['magic'])
@@ -357,10 +399,81 @@ class OfficeParser (object):
                         for item in prop['properties']['properties']:
                             value = item.get('date', item['value'])
                             print "%50s - %40s" % (item['name'], value)
-    def parse_office_doc(self):
+    
+    
+    def parse(self):
         if (self.find_office_header() is None):
             return None
         self.office_header = self.parse_office_header()
+        if not self.office_header.get('maj_ver'):
+            raise OfficeMetaError(500,"Could not parse file as an office document")
         if self.office_header['maj_ver'] in [3,4]:
             self.parse_directory(self.get_fat_chain(self.office_header['first_dir_sect']))
-
+        return True
+    
+    
+    def make_dictionary(self):
+        result = ServiceResultSet()
+        result.add("format","ole/cfbf")
+        result.add("version", '{:d}.{:d}'.format(
+            self.office_header.get('maj_ver'),
+            self.office_header.get('min_ver')
+        ))
+        
+        # filetypes and
+        # contained streams/files
+        added_files = []
+        filetypes = []
+        
+        for curr_dir in self.directory:
+            directory = {
+                'md5':          curr_dir.get('md5', ''),
+                'size':         curr_dir.get('stream_size', 0),
+                'mod_time':     self.timestamp_string(curr_dir['modify_time'])[1],
+                'create_time':  self.timestamp_string(curr_dir['create_time'])[1],
+            }
+            
+            if "data" in curr_dir:
+                for keyword in ["Microsoft Word-Dokument","Microsoft Excel",
+                                "PowerPoint Document","MS PowerPoint"]:
+                    f = curr_dir["data"].find(keyword)
+                    if f>=0:
+                        f2 = curr_dir["data"].find("\x00",f)
+                        filetype = curr_dir["data"][f:f2]
+                        if not (filetype in filetypes):
+                            filetypes.append(filetype)
+            
+            name = curr_dir['norm_name'].decode('ascii', errors='ignore')
+            result.add("directory",name,directory)
+            
+            # TODO: Implement once Totem supports it!
+            # if Config.settings.save_streams == 1 and 'data' in curr_dir:
+                # handle_file(name, curr_dir['data'], obj.source,
+                #             related_id=str(obj.id),
+                #             campaign=obj.campaign,
+                #             method=self.name,
+                #             relationship=RelationshipTypes.CONTAINED_WITHIN,
+                #             user=self.current_task.username)
+                # stream_md5 = hashlib.md5(curr_dir['data']).hexdigest()
+                # added_files.append((name, stream_md5))
+                # pass
+        
+        result.add("type", "|".join(filetypes))
+        
+        for prop_list in self.properties:
+            for prop in prop_list['property_list']:
+                prop_summary = self.summary_mapping.get(binascii.unhexlify(prop['clsid']), None)
+                prop_name = prop_summary.get('name', 'Unknown')
+                for item in prop['properties']['properties']:
+                    name = item.get('name', 'Unknown')
+                    r = {
+                        'name':             name,
+                        'value':            item.get('date', item['value']),
+                        'result':           item.get('result', ''),
+                    }
+                    result.add('doc_meta', prop_name, name, r)
+        
+        for f in added_files:
+            result.add("file_added", f[0], {'md5': f[1]})
+        
+        return result.data

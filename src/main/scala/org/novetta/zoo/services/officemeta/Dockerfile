@@ -4,6 +4,7 @@ FROM ubuntu:14.04
 RUN apt-get update
 RUN apt-get install -y --fix-missing python-pip build-essential python-dev git
 RUN pip install tornado
+RUN pip install defusedxml
 
 # add the files to the container
 RUN mkdir -p /service
@@ -15,7 +16,9 @@ RUN git fetch origin && git checkout 7832ab6b0d4d097c4aa3c309d6fc6335236cd0bb
 
 WORKDIR /service
 ADD LICENSE README.md service.conf /service/
-ADD service.py office_meta.py /service/
+ADD service.py __init__.py /service/
+RUN mkdir -p /service/parser
+ADD parser /service/parser
 
 # create a new user with limited access
 RUN useradd -s /bin/bash service

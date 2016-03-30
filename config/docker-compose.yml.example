@@ -1,4 +1,4 @@
-office_meta:
+officemeta:
   build: ../src/main/scala/org/novetta/zoo/services/officemeta
   ports:
     - "7730:8080"

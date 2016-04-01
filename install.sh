@@ -278,9 +278,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             DOCKERFILE=$(cat Docker/Install.dockerfile)
             DOCKERFILE=$(echo "$DOCKERFILE" | sed -e 's~INSTALL_REPOSITORY~'$INSTALL_REPOSITORY'~')
             echo "$DOCKERFILE" > "Install.dockerfile.modified"
-            sudo docker pull dockerfile/java
             sudo docker build -t holmes_totem -f "Install.dockerfile.modified" .
-            rm "Holmes-Totem.dockerfile"
+            rm "Install.dockerfile.modified"
             echo ""
             
         else

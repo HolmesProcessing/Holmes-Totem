@@ -223,9 +223,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         if [[ $UNINSTALL_INIT_SCRIPT -eq 1 ]]; then
             if [[ $INIT_SYSTEM = "init" ]]; then
-                sudo rm /etc/init/holmes-processing.holmes-totem.conf
+                sudo rm /etc/init/holmes-totem.conf
             else
-                sudo rm /etc/systemd/system/holmes-processing.holmes-totem.service
+                sudo rm /etc/systemd/system/holmes-totem.service
             fi
         fi
         

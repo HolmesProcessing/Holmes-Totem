@@ -44,10 +44,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ----------------------------------------------------------------------
         # grab init system
         INIT_SYSTEM=$(cat /proc/1/comm)
-        UNINSTALL_INIT_SCRIPT=0
+        UNINSTALL_INIT_SCRIPT=1
         if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
             error "${RED}UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather $INIT_SYSTEM)${ENDC}"
-            UNINSTALL_INIT_SCRIPT=-1
+            UNINSTALL_INIT_SCRIPT=0
         else
             echo "${CYAN}> Init system is $INIT_SYSTEM${ENDC}"
         fi
@@ -200,7 +200,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # Now that we're finished getting options, execute what was selected
         #
         
-        # OPT_UNINSTALL_DOCKER=-1
         if [[ $OPT_UNINSTALL_DOCKER -eq 1 && $DOCKER_IS_INSTALLED -eq 1 ]]; then
             sudo apt-get purge -y --auto-remove docker-engine
         fi
@@ -220,6 +219,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         if [[ $OPT_ERASE -eq 1 ]]; then
             sudo rm -rf $(pwd)
+        fi
+        
+        if [[ $UNINSTALL_INIT_SCRIPT -eq 1 ]]; then
+            if [[ $INIT_SYSTEM = "init" ]]; then
+                sudo rm /etc/init/holmes-processing.holmes-totem.conf
+            else
+                sudo rm /etc/systemd/system/holmes-processing.holmes-totem.service
+            fi
         fi
         
         # Finish notice

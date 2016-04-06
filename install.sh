@@ -1,6 +1,6 @@
 #!/bin/bash
 echo ""
-
+START_PWD=$(pwd) # remember starting directory
 
 # set up global helper functions
 function error () {
@@ -40,6 +40,18 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         KERNEL_VERSION=$(uname -r | sed -e 's/-.*//;s/\(.*\)\..*/\1/')
         KERNEL_VERSION_MAJOR=$(echo $KERNEL_VERSION | sed -e 's/\..*//')
         KERNEL_VERSION_MINOR=$(echo $KERNEL_VERSION | sed -e 's/.*\.//')
+        
+        
+        # ----------------------------------------------------------------------
+        # grab init system
+        INIT_SYSTEM=$(cat /proc/1/comm)
+        INSTALL_INIT_SCRIPT=0
+        if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
+            error "${RED}UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather $INIT_SYSTEM)${ENDC}"
+            INSTALL_INIT_SCRIPT=-1
+        else
+            echo "${CYAN}> Init system is $INIT_SYSTEM${ENDC}"
+        fi
         
         
         # ----------------------------------------------------------------------
@@ -128,6 +140,13 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     ;;
                 "--no-erase-old")
                     OPT_ERASE_OLD=0
+                    ;;
+                
+                "--install-init-script")
+                    OPT_INSTALL_INIT_SCRIPT=1
+                    ;;
+                "--no-install-init-script")
+                    OPT_INSTALL_INIT_SCRIPT=0
                     ;;
                 
                 *)
@@ -231,6 +250,23 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             INSTALL_RABBITMQ=$OPT_INSTALL_RABBIT_MQ
         fi
         
+        #-#-#-#-#-#
+        # 5) Install service scripts? (supported init systems: upstart/systemd)
+        #
+        # INSTALL_INIT_SCRIPT
+        #
+        if [[ INSTALL_INIT_SCRIPT -ne -1 ]]; then
+            if [[ $OPT_INSTALL_INIT_SCRIPT -eq -1 ]]; then
+                read -e -p "${MAGENTA}> Your system is upstart or systemd compatible. Do you want to install Totem as a service? (Y/n): ${ENDC}" INPUT
+                INPUT=$(tolower $INPUT)
+                if [[ INPUT == "y" || INPUT == "yes" ]]; then
+                    INSTALL_INIT_SCRIPT=1
+                fi
+            else
+                INSTALL_INIT_SCRIPT=$OPT_INSTALL_INIT_SCRIPT
+            fi
+        fi
+        
         
         echo ""
         
@@ -323,15 +359,13 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 rm rabbitmq-signing-key-public.asc
             fi
             
-            # install scala sbt
+            # prepare scala sbt
             echo "${CYAN}> Preparing SBT.${ENDC}"
             echo "deb https://dl.bintray.com/sbt/debian /" > /etc/apt/sources.list.d/sbt.list
             sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
             echo ""
             
-            
-            
-            # run installations
+            # install java, [rabbitmq and] scala
             echo "${CYAN}> Updating package indizes.${ENDC}"
             sudo apt-get update
             echo ""
@@ -349,8 +383,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             echo "${CYAN}> Installing SBT.${ENDC}"
             sudo apt-get install -y sbt
             
-            
-            
+            # no cloning, instead take the current directory as the source
             if [[ $INSTALL_FROM_WDIR -eq 1 ]]; then
                 echo "${CYAN}> Building Holmes-Totem.${ENDC}"
                 sudo chown -R totem:totem "."
@@ -365,21 +398,53 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 # clone
                 cd $INSTALL_DIRECTORY
                 git clone $INSTALL_REPOSITORY .
+                # if we cloned the default repo we need to copy the example config
+                if [[ "$INSTALL_DIRECTORY" = "$INSTALL_DIRECTORY_DEFAULT" ]]; then
+                    cd config
+                    cp totem.conf.example totem.conf
+                    cp docker-compose.yml.example docker-compose.yml
+                    cd ..
+                fi
                 # build
                 sudo chown -R totem:totem $INSTALL_DIRECTORY
                 sudo su totem -c "cd $INSTALL_DIRECTORY && ls -al && pwd && sbt assembly"
             fi
             
-            
-            
-            # Finish notice
-            echo "${GREEN}"
-            echo "> Finished installing. To launch Holmes-Totem change into totem users context (sudo su totem) and issue the following commands:"
-            echo "  cd $INSTALL_DIRECTORY/config"
-            echo "  docker-compose up -d"
-            echo "  cd .."
-            echo "  java -jar ./target/scala-2.11/totem-assembly-1.0.jar ./config/totem.conf"
-            echo "${ENDC}"
+            # if the user wants totem to be installed as a service (upstart/systemd) install the required scripts
+            if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then
+                cd "$START_PWD" # change back to the directory we started in, where the installation scripts reside
+                if [[ $INIT_SYSTEM = "init" ]]; then
+                    # sysvinit/upstart
+                    INIT_SCRIPT=$(sudo cat install/upstart.totem.template)
+                    INIT_SCRIPT=$(echo "$INIT_SCRIPT" | sed -e 's~INSTALL_DIRECTORY~'$INSTALL_DIRECTORY'~')
+                    sudo echo "$INIT_SCRIPT" > "holmes-processing.holmes-totem.conf.tmp"
+                    sudo cp "holmes-processing.holmes-totem.conf.tmp" "/etc/init/holmes-processing.holmes-totem.conf"
+                    sudo rm "holmes-processing.holmes-totem.conf.tmp"
+                    sudo initctl reload-configuration
+                    sudo service "holmes-processing.holmes-totem" start
+                else
+                    # systemd
+                    INIT_SCRIPT=$(sudo cat install/systemd.totem.template)
+                    INIT_SCRIPT=$(echo "$INIT_SCRIPT" | sed -e 's~INSTALL_DIRECTORY~'$INSTALL_DIRECTORY'~')
+                    sudo echo "$INIT_SCRIPT" > "/etc/systemd/system/holmes-processing.holmes-totem.service"
+                    sudo systemctl enable "holmes-processing.holmes-totem.service"
+                    sudo systemctl start "holmes-processing.holmes-totem.service"
+                fi
+                # Finish notice
+                echo "${GREEN}"
+                echo "> Finished. Totem got successfully installed and is now running as a service on your system!"
+                echo "! Totems services are not installed as init services. However, if you opted to install RabbitMQ, it is installed as a service by default."
+                echo "${ENDC}"
+            else
+                # Finish notice
+                echo "${GREEN}"
+                echo "> Finished installing. To launch Holmes-Totem change into totem users context (sudo su totem) and issue the following commands:"
+                echo "  cd $INSTALL_DIRECTORY/config"
+                echo "  docker-compose up -d"
+                echo "  cd .."
+                echo "  java -jar ./target/scala-2.11/totem-assembly-1.0.jar ./config/totem.conf"
+                echo "${ENDC}"
+            fi
             
             # end host install
             

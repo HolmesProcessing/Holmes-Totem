@@ -5,7 +5,8 @@
 description "Totem - Holmes Processing"
 author "Holmes Processing"
 
-start on runlevel [2345]
+# start on runlevel [2345]
+start on filesystem and started docker
 stop on runlevel [!2345]
 
 # make sure any output is logged

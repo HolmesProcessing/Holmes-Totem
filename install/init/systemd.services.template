@@ -1,6 +1,7 @@
 [Unit]
 Description=Totem - Holmes Processing
 Author=Holmes Processing
+After=docker.service
 
 [Service]
 Type=forking

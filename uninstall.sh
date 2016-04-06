@@ -201,6 +201,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         #
         
         # OPT_UNINSTALL_DOCKER=-1
+        if [[ $OPT_UNINSTALL_DOCKER -eq 1 && $DOCKER_IS_INSTALLED -eq 1 ]]; then
+            sudo apt-get purge -y --auto-remove docker-engine
+        fi
+        
         if [[ $OPT_UNINSTALL_RABBITMQ -eq 1 ]]; then
             sudo service rabbitmq-server stop
             sudo apt-get purge -y rabbitmq-server

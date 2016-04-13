@@ -5,7 +5,7 @@
 sudo apt-get update
 echo ""
 echo "${CYAN}> Installing base infrastructure dependencies.${ENDC}"
-sudo apt-get install -y build-essential python-dev python-pip git apt-transport-https
+sudo apt-get install -y build-essential python-dev python-pip git apt-transport-https software-properties-common
 echo ""
 
 # (create &) update Docker user
@@ -23,22 +23,21 @@ sudo usermod -aG docker totem
 
 # prepare java 8
 echo "${CYAN}> Preparing Oracle Java 8.${ENDC}"
-sudo apt-get install -y software-properties-common
-echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
 sudo add-apt-repository -y ppa:webupd8team/java
 
 # prepare rabbitmq
 if [[ $INSTALL_RABBITMQ -eq 1 ]]; then
     echo "${CYAN}> Preparing RabbitMQ.${ENDC}"
-    echo "deb http://www.rabbitmq.com/debian/ testing main" > /etc/apt/sources.list.d/rabbitmq.list
-    wget https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+    echo "deb http://www.rabbitmq.com/debian/ testing main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list > /dev/null
+    sudo wget https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
     sudo apt-key add rabbitmq-signing-key-public.asc
-    rm rabbitmq-signing-key-public.asc
+    sudo rm rabbitmq-signing-key-public.asc
 fi
 
 # prepare scala sbt
 echo "${CYAN}> Preparing SBT.${ENDC}"
-echo "deb https://dl.bintray.com/sbt/debian /" > /etc/apt/sources.list.d/sbt.list
+echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt.list > /dev/null
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
 echo ""
 

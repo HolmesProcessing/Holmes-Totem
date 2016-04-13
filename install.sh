@@ -12,11 +12,21 @@ function tolower () {
 }
 
 # font colors
-RED=$(tput setaf 1) #red
-GREEN=$(tput setaf 2) #green
-MAGENTA=$(tput setaf 5) #magenta
-CYAN=$(tput setaf 6) #cyan
-ENDC=$(tput sgr0)   #ends color
+# check for interactive shell
+if [[ $- == *i* ]]
+then
+    RED=$(tput setaf 1) #red
+    GREEN=$(tput setaf 2) #green
+    MAGENTA=$(tput setaf 5) #magenta
+    CYAN=$(tput setaf 6) #cyan
+    ENDC=$(tput sgr0)   #ends color
+else
+    RED=''
+    GREEN=''
+    MAGENTA=''
+    CYAN=''
+    ENDC=''
+fi
 
 # set up global variables
 HOLMES_TOTEM_DEFAULT_REPOSITORY="https://github.com/HolmesProcessing/Holmes-Totem"
@@ -26,6 +36,27 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "${CYAN}> Found OSTYPE Linux${ENDC}"
     
     # find out the operating system flavor (Ubuntu/Debian/etc)
+    # if lsb_release is not installed, ask the user for a little help
+    null=$(which lsb_release)
+    if [[ $? -ne 0 ]]; then
+        error "${RED}> Fatal: lsb_release not installed but required.${ENDC}"
+        if [[ -d /etc/lsb-release || -d /etc/debian_release || -d /etc/debian_version ]]; then
+            error "${RED}> System could be Debian/Ubuntu.${ENDC}"
+            read -e -p "${MAGENTA}> In order to continue, lsb_release needs to be installed, do you want to do that now? (Y/n): ${ENDC}" INPUT
+            INPUT=$(tolower $INPUT)
+            if [[ $INPUT == "y" || $INPUT == "yes" || $INPUT == "" ]]; then
+                echo "${CYAN}> Installing lsb-release package.${ENDC}"
+                apt-get install lsb-release
+            else
+                error "${RED}> Installation aborted.${ENDC}"
+                exit 1
+            fi
+        else
+            error "${RED}> Operating system could not be recognized. Aborting installation.${ENDC}"
+            exit 1
+        fi
+    fi
+    
     OS=$(lsb_release -si)
     OS_VERSION=$(lsb_release -sr)
     OS_CODENAME=$(lsb_release -sc)
@@ -47,7 +78,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         INIT_SYSTEM=$(cat /proc/1/comm)
         INSTALL_INIT_SCRIPT=0
         if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
-            error "${RED}UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather $INIT_SYSTEM)${ENDC}"
+            error "${RED}> UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')${ENDC}"
             INSTALL_INIT_SCRIPT=-1
         else
             echo "${CYAN}> Init system is $INIT_SYSTEM${ENDC}"

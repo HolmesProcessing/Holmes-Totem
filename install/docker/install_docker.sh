@@ -4,11 +4,11 @@
 apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
 
 # Flavor specific treatment
-if [[ $OS == "Ubuntu" ]]; then
-    echo "deb https://apt.dockerproject.org/repo ubuntu-$1 main" > /etc/apt/sources.list.d/docker.list
+if [[ $1 == "Ubuntu" ]]; then
+    echo "deb https://apt.dockerproject.org/repo ubuntu-$2 main" > /etc/apt/sources.list.d/docker.list
     apt-get update && apt-get purge lxc-docker
 else
-    echo "deb https://apt.dockerproject.org/repo debian-$1 main" > /etc/apt/sources.list.d/docker.list
+    echo "deb https://apt.dockerproject.org/repo debian-$2 main" > /etc/apt/sources.list.d/docker.list
     apt-get update && apt-get purge lxc-docker* docker.io*
 fi
 

@@ -1,4 +1,8 @@
 #!/bin/bash
+LOG_FILE="$(pwd)/totem-install.log"
+exec > >(tee -a ${LOG_FILE} )
+exec 2> >(tee -a ${LOG_FILE} >&2)
+
 echo ""
 START_PWD=$(pwd) # remember starting directory
 
@@ -307,7 +311,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         #
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
             echo "${CYAN}> Installing Docker.${ENDC}"
-            sudo install/docker/install_docker.sh "$OS_CODENAME"
+            sudo install/docker/install_docker.sh "$OS" "$OS_CODENAME"
             echo ""
         fi
         

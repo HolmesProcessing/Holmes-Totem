@@ -30,9 +30,7 @@ sudo add-apt-repository -y ppa:webupd8team/java
 if [[ $INSTALL_RABBITMQ -eq 1 ]]; then
     echo "${CYAN}> Preparing RabbitMQ.${ENDC}"
     echo "deb http://www.rabbitmq.com/debian/ testing main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list > /dev/null
-    sudo wget https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-    sudo apt-key add rabbitmq-signing-key-public.asc
-    sudo rm rabbitmq-signing-key-public.asc
+    wget -O- https://www.rabbitmq.com/rabbitmq-signing-key-public.asc | sudo apt-key add -
 fi
 
 # prepare scala sbt

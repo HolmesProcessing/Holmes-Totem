@@ -91,7 +91,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         DOCKER_IS_INSTALLED=0
         DOCKER_VERSION=""
         #
-        if [[ $KERNEL_VERSION_MAJOR -lt 3 || $KERNEL_VERSION_MINOR -lt 10 ]]; then
+        if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
             error "${RED}> Your kernel version does not support running Docker, but Holmes-Totem requires Docker."
             error "  If you wish install Holmes-Totem, please first upgrade your kernel (>=3.10).${ENDC}"
             echo ""

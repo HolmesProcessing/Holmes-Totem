@@ -16,13 +16,10 @@ respawn limit 10 5
 # this goes to /var/log/upstart/holmes-processing.holmes-totem.log
 console log
 
+# limit permissions, set working directory
+setuid totem
+setgid totem
+chdir INSTALL_DIRECTORY
+
 # run
-exec start-stop-daemon \
-    -v \
-    --start \
-    --chdir INSTALL_DIRECTORY \
-    --user totem \
-    --group totem \
-    --exec /usr/bin/java \
-    -- \
-    -jar target/scala-2.11/totem-assembly-1.0.jar
+exec /usr/bin/java -jar target/scala-2.11/totem-assembly-1.0.jar

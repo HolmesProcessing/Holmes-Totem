@@ -6,15 +6,6 @@ exec 2> >(tee -a ${LOG_FILE} >&2)
 echo ""
 START_PWD=$(pwd) # remember starting directory
 
-# set up global helper functions
-function error () {
-    >&2 echo $1
-}
-function tolower () {
-    x=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-    echo $x
-}
-
 # font colors
 # check for interactive shell
 if [[ $- == *i* ]]
@@ -32,31 +23,47 @@ else
     ENDC=''
 fi
 
+# set up global helper functions
+function error {
+    >&2 echo "${RED}$1${ENDC}"
+}
+function info {
+    echo "${CYAN}$1${ENDC}"
+}
+function tolower {
+    x=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    echo $x
+}
+function readinput {
+    read -e -p "${MAGENTA}$1: ${ENDC}" INPUT
+    INPUT=$(tolower $INPUT)
+    echo "$INPUT"
+}
+
 # set up global variables
 HOLMES_TOTEM_DEFAULT_REPOSITORY="https://github.com/HolmesProcessing/Holmes-Totem"
 
 # distinguish based on operating system, for now only linux?
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    echo "${CYAN}> Found OSTYPE Linux${ENDC}"
+    info "> Found OSTYPE Linux"
     
     # find out the operating system flavor (Ubuntu/Debian/etc)
     # if lsb_release is not installed, ask the user for a little help
     null=$(which lsb_release)
     if [[ $? -ne 0 ]]; then
-        error "${RED}> Fatal: lsb_release not installed but required.${ENDC}"
+        error "> Fatal: lsb_release not installed but required."
         if [[ -d /etc/lsb-release || -d /etc/debian_release || -d /etc/debian_version ]]; then
-            error "${RED}> System could be Debian/Ubuntu.${ENDC}"
-            read -e -p "${MAGENTA}> In order to continue, lsb_release needs to be installed, do you want to do that now? (Y/n): ${ENDC}" INPUT
-            INPUT=$(tolower $INPUT)
+            error "> System could be Debian/Ubuntu."
+            INPUT=$(readinput "> In order to continue, lsb_release needs to be installed, do you want to do that now? (Y/n)")
             if [[ $INPUT == "y" || $INPUT == "yes" || $INPUT == "" ]]; then
-                echo "${CYAN}> Installing lsb-release package.${ENDC}"
+                info "> Installing lsb-release package."
                 apt-get install lsb-release
             else
-                error "${RED}> Installation aborted.${ENDC}"
+                error "> Installation aborted."
                 exit 1
             fi
         else
-            error "${RED}> Operating system could not be recognized. Aborting installation.${ENDC}"
+            error "> Operating system could not be recognized. Aborting installation."
             exit 1
         fi
     fi
@@ -67,7 +74,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     
     # if it is Ubuntu / Debian, we can offer auto-installation of Docker if the kernel version is sufficient
     if [[ $OS == "Ubuntu" || $OS == "Debian" ]]; then
-        echo "${CYAN}> Found OS flavor $OS${ENDC}"
+        info "> Found OS flavor $OS"
         
         # ----------------------------------------------------------------------
         # gather kernel version
@@ -82,10 +89,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         INIT_SYSTEM=$(cat /proc/1/comm)
         INSTALL_INIT_SCRIPT=0
         if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
-            error "${RED}> UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')${ENDC}"
+            error "> UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')"
             INSTALL_INIT_SCRIPT=-1
         else
-            echo "${CYAN}> Init system is $INIT_SYSTEM${ENDC}"
+            info "> Init system is $INIT_SYSTEM"
         fi
         
         
@@ -96,17 +103,17 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         DOCKER_VERSION=""
         #
         if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
-            error "${RED}> Your kernel version does not support running Docker, but Holmes-Totem requires Docker."
-            error "  If you wish to install Holmes-Totem, please first upgrade your kernel (>=3.10).${ENDC}"
-            echo ""
+            error "> Your kernel version does not support running Docker, but Holmes-Totem requires Docker."
+            error "  If you wish to install Holmes-Totem, please first upgrade your kernel (>=3.10)."
+            error ""
             exit 1
         else
             DOCKER_VERSION=$(docker -v)
             if [[ $? -eq 0 ]]; then
                 DOCKER_IS_INSTALLED=1
-                echo "${CYAN}> Detected an existing Docker installation.${ENDC}"
+                info "> Detected an existing Docker installation."
             else
-                error "${RED}> No Docker installation found.${ENDC}"
+                error "> No Docker installation found."
             fi
             echo ""
         fi
@@ -132,7 +139,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         OPT_INSTALL_REPOSITORY=""
         OPT_INSTALL_FROM_CWD=-1
         OPT_INSTALL_PATH=""
-        OPT_INSTALL_RABBIT_MQ=-1
+        # OPT_INSTALL_RABBIT_MQ=-1
         OPT_ERASE_OLD=0
         #
         while [ $# -gt 0 ]
@@ -140,12 +147,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             opt=$1
             shift
             case "$opt" in
-                "--docker")
-                    OPT_INSTALL_IN_DOCKER=1
-                    ;;
-                "--no-docker")
-                    OPT_INSTALL_IN_DOCKER=0
-                    ;;
                 
                 "--repository" | "-r")
                     OPT_INSTALL_REPOSITORY=$1
@@ -158,16 +159,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     OPT_INSTALL_FROM_CWD=0
                     ;;
                 
-                "--path" | "-p")
+                "--install-path" | "-p")
                     OPT_INSTALL_PATH=$1
                     shift
-                    ;;
-                
-                "--rabbit-mq")
-                    OPT_INSTALL_RABBIT_MQ=1
-                    ;;
-                "--no-rabbit-mq")
-                    OPT_INSTALL_RABBIT_MQ=0
                     ;;
                 
                 "--erase-old")
@@ -185,39 +179,30 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     ;;
                 
                 *)
+                    error "Invalid option '$1'."
+                    error "Valid command line options are:"
+                    error "--repository REPOSITORY    : Url for the repository to clone (Git) (incompatible with --install-from-cwd)"
+                    error "--install-from-cwd         : Force installation from current directory (incompatible with --install-path and --repository)"
+                    error "--no-install-from-cwd      : Ignore current directory if it is a Git repository"
+                    error "--install-path PATH        : Use specified path as the directory to install in (incompatible with --install-from-cwd)"
+                    error "--erase-old                : Empty the installation directory (incompatible with --install-from-cwd)"
+                    error "--no-erase-old             : Do not empty the installation directory, abort if not empty"
+                    error "--install-init-script      : Install an init script for totem/service automation (compatible only with upstart and systemd)"
+                    error "--no-install-init-script   : Do not install an init script for totem/service automation"
                     ;;
             esac
         done
         
         #-#-#-#-#-#
-        # 1) Install in Container?
-        #
-        INSTALL_IN_DOCKER=0
-        #
-        if [[ OPT_INSTALL_IN_DOCKER -eq -1 ]]; then
-            read -e -p "${MAGENTA}> Install Holmes-Totem inside of a Docker container? --NOT recommended-- (y/N): ${ENDC}" INPUT
-            INPUT=$(tolower $INPUT)
-            if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
-                echo "${RED}  - Installing in a container.${ENDC}"
-                INSTALL_IN_DOCKER=1
-            else
-                echo "${MAGENTA}  - Installing on the host.${ENDC}"
-            fi
-        else
-            INSTALL_IN_DOCKER=$OPT_INSTALL_IN_DOCKER
-        fi
-        
-        #-#-#-#-#-#
-        # 2) Determine repository
+        # 1) Determine repository
         #
         INSTALL_FROM_WDIR=0
         INSTALL_REPOSITORY=""
         #
         if [[ $OPT_INSTALL_REPOSITORY == "" ]]; then
             if [[ $WDIR_IS_GIT_REPOSITORY -eq 1 && $INSTALL_IN_DOCKER -eq 0 && $OPT_INSTALL_FROM_CWD -eq -1 ]]; then
-                echo "${MAGENTA}> You seem to be in a git repository already."
-                read -e -p "> Do you want to use this repository as the installation base? (Y/n): ${ENDC}" INPUT
-                INPUT=$(tolower $INPUT)
+                info "> Git repository detected in working directory."
+                INPUT=$(readinput "> Do you want to use this repository as the installation base? (Y/n)")
                 if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
                     INSTALL_FROM_WDIR=1
                 fi
@@ -226,8 +211,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 INSTALL_FROM_WDIR=$OPT_INSTALL_FROM_CWD
             fi
             if [[ $INSTALL_FROM_WDIR -eq 0 ]]; then
-                read -e -p "${MAGENTA}> Please enter a repository to install from (default: $HOLMES_TOTEM_DEFAULT_REPOSITORY): ${ENDC}" INPUT
-                # -i "$HOLMES_TOTEM_DEFAULT_REPOSITORY"
+                INPUT=$(readinput "> Please enter a repository to install from (default: $HOLMES_TOTEM_DEFAULT_REPOSITORY)")
                 if [[ $INPUT == "" ]]; then
                     INSTALL_REPOSITORY=$HOLMES_TOTEM_DEFAULT_REPOSITORY
                 else
@@ -239,15 +223,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         fi
         
         #-#-#-#-#-#
-        # 3) If not in a container and not in a repo clone, where to install to?
+        # 2) If not in a container and not in a repo clone, where to install to?
         #
         INSTALL_DIRECTORY_DEFAULT="/data/holmes-totem"
         INSTALL_DIRECTORY=""
         #
         if [[ $OPT_INSTALL_PATH == "" ]]; then
-            if [[ $INSTALL_IN_DOCKER -eq 0 && $INSTALL_FROM_WDIR -eq 0 ]]; then
-                read -e -p "${MAGENTA}> Where to install Holmes-Totem to? (default: $INSTALL_DIRECTORY_DEFAULT): ${ENDC}" INPUT
-                # -i "$INSTALL_DIRECTORY_DEFAULT"
+            if [[ $INSTALL_FROM_WDIR -eq 0 ]]; then
+                INPUT=$(readinput "> Where to install Holmes-Totem to? (default: $INSTALL_DIRECTORY_DEFAULT)")
                 if [[ $INPUT == "" ]]; then
                     INSTALL_DIRECTORY=$INSTALL_DIRECTORY_DEFAULT
                 else
@@ -259,42 +242,26 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         fi
         # check if installation directory exists and warn if it does
         if [[ -d "$INSTALL_DIRECTORY" && OPT_ERASE_OLD -eq 0 ]]; then
-            error "${RED}> The selected installation destination isn't empty.${ENDC}"
-            read -e -p "${MAGENTA}> Erase folder? (y/N): ${ENDC}" INPUT
-            INPUT=$(tolower $INPUT)
+            error "> The selected installation destination isn't empty."
+            INPUT=$(readinput "> Erase directory contents? (y/N)")
             if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
-                echo "${RED}> Erasing $INSTALL_DIRECTORY.${ENDC}"
+                info "> Erasing $INSTALL_DIRECTORY."
             else
-                echo "${RED}> Aborting installation.${ENDC}"
+                info "> Aborting installation."
+                info ""
                 exit 0
             fi
         fi
         
         #-#-#-#-#-#
-        # 4) Install RabbitMQ as well?
-        #
-        INSTALL_RABBITMQ=0
-        #
-        if [[ $OPT_INSTALL_RABBIT_MQ -eq -1 ]]; then
-            read -e -p "${MAGENTA}> Do you want to install RabbitMQ as well? (y/N): ${ENDC}" INPUT
-            INPUT=$(tolower $INPUT)
-            if [[ INPUT == "y" || INPUT == "yes" ]]; then
-                INSTALL_RABBITMQ=1
-            fi
-        else
-            INSTALL_RABBITMQ=$OPT_INSTALL_RABBIT_MQ
-        fi
-        
-        #-#-#-#-#-#
-        # 5) Install service scripts? (supported init systems: upstart/systemd)
+        # 3) Install service scripts? (supported init systems: upstart/systemd)
         #
         # INSTALL_INIT_SCRIPT
         #
-        if [[ INSTALL_INIT_SCRIPT -ne -1 ]]; then
+        if [[ $INSTALL_INIT_SCRIPT -ne -1 ]]; then
             if [[ $OPT_INSTALL_INIT_SCRIPT -eq -1 ]]; then
-                read -e -p "${MAGENTA}> Your system is upstart or systemd compatible. Do you want to install Totem as a service? (Y/n): ${ENDC}" INPUT
-                INPUT=$(tolower $INPUT)
-                if [[ INPUT == "y" || INPUT == "yes" ]]; then
+                INPUT=$(readinput "> Your system is upstart or systemd compatible. Do you want to install Totem as a service? (Y/n)")
+                if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
                     INSTALL_INIT_SCRIPT=1
                 fi
             else
@@ -307,18 +274,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         
         # ----------------------------------------------------------------------
-        # Install docker if not already installed, do that now
         #
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
             echo "${CYAN}> Installing Docker.${ENDC}"
-            sudo install/docker/install_docker.sh "$OS" "$OS_CODENAME"
+            curl -sSL https://get.docker.com/ | /bin/sh
             echo ""
         fi
         
         
-        # ----------------------------------------------------------------------
-        # Install Totem
-        #
         if [[ $INSTALL_IN_DOCKER -eq 1 ]]; then
             echo "${CYAN}> Installing Totem.${ENDC}"
             sudo install/totem/install_in_docker.sh "$INSTALL_REPOSITORY"

@@ -34,11 +34,15 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         echo "${CYAN}> Found OS flavor $OS${ENDC}"
         
         # ----------------------------------------------------------------------
-        # gather kernel version
+        # check for docker availability
         #
-        KERNEL_VERSION=$(uname -r | sed -e 's/-.*//;s/\(.*\)\..*/\1/')
-        KERNEL_VERSION_MAJOR=$(echo $KERNEL_VERSION | sed -e 's/\..*//')
-        KERNEL_VERSION_MINOR=$(echo $KERNEL_VERSION | sed -e 's/.*\.//')
+        DOCKER_IS_INSTALLED=0
+        DOCKER_VERSION=""
+        #
+        DOCKER_VERSION=$(docker -v >/dev/null)
+        if [[ $? -eq 0 ]]; then
+            DOCKER_IS_INSTALLED=1
+        fi
         
         
         # ----------------------------------------------------------------------
@@ -54,27 +58,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         
         # ----------------------------------------------------------------------
-        # check for docker availability
-        #
-        DOCKER_IS_INSTALLED=0
-        DOCKER_VERSION=""
-        #
-        if [[ $KERNEL_VERSION_MAJOR -lt 3 || $KERNEL_VERSION_MINOR -lt 10 ]]; then
-            echo "${CYAN}> Skipping Docker removal (insufficient Kernel version for Docker).${ENDC}"
-        else
-            DOCKER_VERSION=$(docker -v)
-            if [[ $? -eq 0 ]]; then
-                DOCKER_IS_INSTALLED=1
-            fi
-        fi
-        
-        
-        # ----------------------------------------------------------------------
         # User and command line options
-        #
-        
-        #-#-#-#-#-#
-        # Get options
         #
         OPT_UNINSTALL_DOCKER=-1
         OPT_UNINSTALL_RABBITMQ=-1
@@ -94,17 +78,17 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     OPT_UNINSTALL_DOCKER=0
                     ;;
                 
-                "--remove-rabbit-mq")
+                "--remove-rabbitmq")
                     OPT_UNINSTALL_RABBITMQ=1
                     ;;
-                "--keep-rabbit-mq")
+                "--keep-rabbitmq")
                     OPT_UNINSTALL_RABBITMQ=0
                     ;;
                 
-                "--remove-installation-directory")
+                "--remove-data")
                     OPT_ERASE=1
                     ;;
-                "--keep-installation-directory")
+                "--keep-data")
                     OPT_ERASE=0
                     ;;
                     
@@ -199,35 +183,56 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         #-#-#-#-#-#
         # Now that we're finished getting options, execute what was selected
         #
+        if [[ $INIT_SYSTEM = "init" ]]; then
+            function service_stop {
+                sudo service "$1" stop
+            }
+            function service_remove {
+                sudo rm "/etc/init/$1.conf"
+            }
+        else
+            if [[ $INIT_SYSTEM = "systemd" ]]; then
+                function service_stop {
+                    sudo systemctl stop "$1"
+                }
+                function service_remove {
+                    sudo rm "/etc/systemd/system/$1.service"
+                }
+            else
+                function service_stop {}
+                function service_remove {}
+            fi
+        fi
         
         if [[ $OPT_UNINSTALL_DOCKER -eq 1 && $DOCKER_IS_INSTALLED -eq 1 ]]; then
+            service_stop docker
             sudo apt-get purge -y --auto-remove docker-engine
         fi
         
         if [[ $OPT_UNINSTALL_RABBITMQ -eq 1 ]]; then
-            sudo service rabbitmq-server stop
-            sudo apt-get purge -y rabbitmq-server
+            service_stop rabbitmq-server
+            sudo apt-get purge -y --auto-remove rabbitmq-server
         fi
         
         if [[ $OPT_UNINSTALL_JAVA8 -eq 1 ]]; then
-            sudo apt-get purge -y oracle-java8-installer
+            sudo apt-get purge -y --auto-remove oracle-java8-installer
         fi
         
         if [[ $OPT_UNINSTALL_SBT -eq 1 ]]; then
-            sudo apt-get purge -y sbt
+            sudo apt-get purge -y --auto-remove sbt
         fi
         
         if [[ $OPT_ERASE -eq 1 ]]; then
-            sudo rm -rf $(pwd)
+            sudo rm -rf $(pwd)/*
         fi
         
-        if [[ $UNINSTALL_INIT_SCRIPT -eq 1 ]]; then
-            if [[ $INIT_SYSTEM = "init" ]]; then
-                sudo rm /etc/init/holmes-totem.conf
-            else
-                sudo rm /etc/systemd/system/holmes-totem.service
-            fi
-        fi
+        # the following functions only execute if valid init scripts and system
+        # have been found
+        service_stop holmes-totem-service
+        service_stop holmes-totem
+        service_remove holmes-totem-service
+        service_remove holmes-totem
+        
         
         # Finish notice
         echo "${GREEN}"

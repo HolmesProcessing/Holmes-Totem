@@ -26,13 +26,6 @@ echo "${CYAN}> Preparing Oracle Java 8.${ENDC}"
 echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
 sudo add-apt-repository -y ppa:webupd8team/java
 
-# prepare rabbitmq
-if [[ $INSTALL_RABBITMQ -eq 1 ]]; then
-    echo "${CYAN}> Preparing RabbitMQ.${ENDC}"
-    echo "deb http://www.rabbitmq.com/debian/ testing main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list > /dev/null
-    wget -O- https://www.rabbitmq.com/rabbitmq-signing-key-public.asc | sudo apt-key add -
-fi
-
 # prepare scala sbt
 echo "${CYAN}> Preparing SBT.${ENDC}"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt.list > /dev/null
@@ -86,7 +79,7 @@ else
     sudo su totem -c "cd $INSTALL_DIRECTORY && ls -al && pwd && sbt assembly"
 fi
 
-# if the user wants totem to be installed as a service (upstart/systemd) install the required scripts
+# if we detected a supported init syste type, install a service script
 if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then
     cd "$START_PWD" # change back to the directory we started in, where the installation scripts reside
     if [[ $INIT_SYSTEM = "init" ]]; then

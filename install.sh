@@ -135,7 +135,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         #-#-#-#-#-#
         # Get command line options
         #
-        OPT_INSTALL_IN_DOCKER=-1
         OPT_INSTALL_REPOSITORY=""
         OPT_INSTALL_FROM_CWD=-1
         OPT_INSTALL_PATH=""
@@ -203,7 +202,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         INSTALL_REPOSITORY=""
         #
         if [[ $OPT_INSTALL_REPOSITORY == "" ]]; then
-            if [[ $WDIR_IS_GIT_REPOSITORY -eq 1 && $INSTALL_IN_DOCKER -eq 0 && $OPT_INSTALL_FROM_CWD -eq -1 ]]; then
+            if [[ $WDIR_IS_GIT_REPOSITORY -eq 1 && $OPT_INSTALL_FROM_CWD -eq -1 ]]; then
                 info "> Git repository detected in working directory."
                 INPUT=$(readinput "> Do you want to use this repository as the installation base? (Y/n)")
                 if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
@@ -289,17 +288,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             echo ""
         fi
         
-        
-        if [[ $INSTALL_IN_DOCKER -eq 1 ]]; then
-            echo "${CYAN}> Installing Totem.${ENDC}"
-            sudo install/totem/install_in_docker.sh "$INSTALL_REPOSITORY"
-            echo ""
-            
-        else
-            # run sub-installer
-            # must be sourced to pass the required variables
-            . install/totem/install_on_host.sh
-        fi
+        # run sub-installer
+        # must be sourced to pass the required variables
+        . install/totem/install_on_host.sh
         
         # end ubuntu/debian
         

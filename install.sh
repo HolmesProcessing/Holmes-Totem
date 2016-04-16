@@ -284,23 +284,22 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         #
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
             echo "${CYAN}> Installing Docker.${ENDC}"
-            curl -sSL https://get.docker.com/ | /bin/sh
-            echo "return value: $?"
-            exit 0
+            script=$(curl -sSL https://get.docker.com/)
             if [[ $? -eq 127 ]]; then
                 info "> curl not installed, trying wget."
-                wget -qO- https://get.docker.com/ | /bin/sh
+                script=$(wget -qO- https://get.docker.com/)
                 if [[ $? -eq 127 ]]; then
                     info "> wget not installed either, trying to install curl and then retry."
                     sudo apt-get update
                     sudo apt-get install curl
-                    curl -sSL https://get.docker.com/ | /bin/sh
+                    script=$(curl -sSL https://get.docker.com/)
                 fi
             fi
             if [[ $? -ne 0 ]]; then
                 error "> Unknown error happened trying to install Docker via curl and wget. Aborting installation."
                 exit 0
             fi
+            echo "$script" | /bin/sh
             echo ""
         fi
         

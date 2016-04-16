@@ -285,6 +285,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
             echo "${CYAN}> Installing Docker.${ENDC}"
             curl -sSL https://get.docker.com/ | /bin/sh
+            echo "return value: $?"
+            exit 0
             if [[ $? -eq 127 ]]; then
                 info "> curl not installed, trying wget."
                 wget -qO- https://get.docker.com/ | /bin/sh

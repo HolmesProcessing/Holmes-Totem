@@ -205,7 +205,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             if [[ $WDIR_IS_GIT_REPOSITORY -eq 1 && $OPT_INSTALL_FROM_CWD -eq -1 ]]; then
                 info "> Git repository detected in working directory."
                 INPUT=$(readinput "> Do you want to use this repository as the installation base? (Y/n)")
-                if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
+                if [[ $INPUT == "" ]]; then
                     INSTALL_FROM_WDIR=1
                 fi
             fi

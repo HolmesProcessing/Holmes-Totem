@@ -180,8 +180,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 
                 *)
                     error "Holmes-Totem Installation script"
-                    if [[ $opt = "--help" || $opt = "-h" ]]; then
-                    else
+                    if [[ $opt != "--help" && $opt != "-h" ]]; then
                         error "Invalid option '$1'."
                     fi
                     error "Valid command line options are:"

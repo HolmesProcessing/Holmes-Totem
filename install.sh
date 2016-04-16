@@ -103,8 +103,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         DOCKER_VERSION=""
         #
         if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
-            error "> Your kernel version does not support running Docker, but Holmes-Totem requires Docker."
-            error "  If you wish to install Holmes-Totem, please first upgrade your kernel (>=3.10)."
+            error "> Your kernel version does not support running Docker, however Holmes-Totem default installation requires Docker."
+            error "  If you wish to install Holmes-Totem with this script, please first upgrade your kernel (>=3.10)."
             error ""
             exit 1
         else
@@ -140,7 +140,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         OPT_INSTALL_FROM_CWD=-1
         OPT_INSTALL_PATH=""
         # OPT_INSTALL_RABBIT_MQ=-1
-        OPT_ERASE_OLD=0
+        OPT_ERASE_OLD=-1
         #
         while [ $# -gt 0 ]
         do                   
@@ -179,7 +179,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     ;;
                 
                 *)
-                    error "Invalid option '$1'."
+                    error "Holmes-Totem Installation script"
+                    if [[ $opt = "--help" || $opt = "-h" ]]; then
+                    else
+                        error "Invalid option '$1'."
+                    fi
                     error "Valid command line options are:"
                     error "--repository REPOSITORY    : Url for the repository to clone (Git) (incompatible with --install-from-cwd)"
                     error "--install-from-cwd         : Force installation from current directory (incompatible with --install-path and --repository)"
@@ -228,26 +232,31 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         INSTALL_DIRECTORY_DEFAULT="/data/holmes-totem"
         INSTALL_DIRECTORY=""
         #
-        if [[ $OPT_INSTALL_PATH == "" ]]; then
-            if [[ $INSTALL_FROM_WDIR -eq 0 ]]; then
-                INPUT=$(readinput "> Where to install Holmes-Totem to? (default: $INSTALL_DIRECTORY_DEFAULT)")
-                if [[ $INPUT == "" ]]; then
-                    INSTALL_DIRECTORY=$INSTALL_DIRECTORY_DEFAULT
-                else
-                    INSTALL_DIRECTORY=$INPUT
-                fi
+        if [[ "$OPT_INSTALL_PATH" = "" ]]; then
+            INPUT=$(readinput "> Where do you want to install Holmes-Totem to? (default: $INSTALL_DIRECTORY_DEFAULT)")
+            if [[ $INPUT == "" ]]; then
+                INSTALL_DIRECTORY=$INSTALL_DIRECTORY_DEFAULT
+            else
+                INSTALL_DIRECTORY=$INPUT
             fi
         else
             INSTALL_DIRECTORY=$OPT_INSTALL_PATH
         fi
         # check if installation directory exists and warn if it does
-        if [[ -d "$INSTALL_DIRECTORY" && OPT_ERASE_OLD -eq 0 ]]; then
-            error "> The selected installation destination isn't empty."
-            INPUT=$(readinput "> Erase directory contents? (y/N)")
-            if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
-                info "> Erasing $INSTALL_DIRECTORY."
+        if [[ -d "$INSTALL_DIRECTORY" ]]; then
+            if [[ OPT_ERASE_OLD -eq -1 ]]; then
+                error "> The selected installation destination isn't empty."
+                INPUT=$(readinput "> Erase directory contents? (y/N)")
+                if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
+                    OPT_ERASE_OLD=1
+                else
+                    OPT_ERASE_OLD=0
+                fi
+            fi
+            if [[ OPT_ERASE_OLD -eq 1 ]]; then
+                info "> Selected to remove the old installation ($INSTALL_DIRECTORY)."
             else
-                info "> Aborting installation."
+                info "> Selected to keep the old installation. Aborting any further action."
                 info ""
                 exit 0
             fi

@@ -52,32 +52,33 @@ echo "${CYAN}> Installing SBT.${ENDC}"
 sudo apt-get install -y sbt
 echo ""
 
-# no cloning, instead take the current directory as the source
+info "> Preparing Holmes-Totem."
+sudo rm -rf "$INSTALL_DIRECTORY" &>/dev/null
+sudo mkdir -p "$INSTALL_DIRECTORY"
+# get sources
 if [[ $INSTALL_FROM_WDIR -eq 1 ]]; then
-    echo "${CYAN}> Building Holmes-Totem.${ENDC}"
-    sudo chown -R totem:totem "."
-    sudo su totem -c "sbt assembly"
-else
-    # setup Holmes-Totem
-    echo "${CYAN}> Installing Holmes-Totem.${ENDC}"
-    # clean installation directory
-    sudo rm -rf "$INSTALL_DIRECTORY"
-    sudo mkdir -p "$INSTALL_DIRECTORY"
-    sudo chown $USER:$USER $INSTALL_DIRECTORY
-    # clone
+    # use tar for copy
+    sudo su root -c "tar cf - . | (cd \"$INSTALL_DIRECTORY\" && tar xBf -)"
     cd $INSTALL_DIRECTORY
+else
+    info "> Cloning Holmes-Totem."
+    cd $INSTALL_DIRECTORY
+    sudo chown $USER:$USER $INSTALL_DIRECTORY
     git clone $INSTALL_REPOSITORY .
-    # if we cloned the default repo we need to install the example config
-    if [[ "$INSTALL_DIRECTORY" = "$INSTALL_DIRECTORY_DEFAULT" ]]; then
-        cd config
-        cp totem.conf.example totem.conf
-        cp docker-compose.yml.example docker-compose.yml
-        cd ..
-    fi
-    # build
-    sudo chown -R totem:totem $INSTALL_DIRECTORY
-    sudo su totem -c "cd $INSTALL_DIRECTORY && ls -al && pwd && sbt assembly"
 fi
+# if we cloned the default repo we need to install the example config
+cd config
+if [[ ! -f "totem.conf" ]]; then
+    cp totem.conf.example totem.conf
+fi
+if [[ ! -f "docker-compose.yml" ]]; then
+    cp docker-compose.yml.example docker-compose.yml
+fi
+cd ..
+# build
+info "> Building Holmes-Totem."
+sudo chown -R totem:totem $INSTALL_DIRECTORY
+sudo su totem -c "cd $INSTALL_DIRECTORY && sbt assembly"
 
 # if we detected a supported init syste type, install a service script
 if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then

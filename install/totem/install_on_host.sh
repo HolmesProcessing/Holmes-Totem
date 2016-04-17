@@ -63,6 +63,7 @@ sudo mkdir -p "$INSTALL_DIRECTORY"
 # get sources
 if [[ $INSTALL_FROM_WDIR -eq 1 ]]; then
     # use tar for copy
+    info "> Copying files from working directory to installation destination."
     sudo su root -c "tar cf - . | (cd \"$INSTALL_DIRECTORY\" && tar xBf -)"
     cd $INSTALL_DIRECTORY
 else

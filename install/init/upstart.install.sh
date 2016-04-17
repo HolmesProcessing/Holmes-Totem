@@ -6,8 +6,8 @@ TOTEM_SCRIPT=$(echo "$TOTEM_SCRIPT" | sed -e 's~INSTALL_DIRECTORY~'$2'~')
 SERVICE_SCRIPT=$(cat "$1"/install/init/upstart.services.template)
 SERVICE_SCRIPT=$(echo "$SERVICE_SCRIPT" | sed -e 's~INSTALL_DIRECTORY~'$2'~')
 
-echo "$TOTEM_SCRIPT" | tee "/etc/init/holmes-totem.conf"
-echo "$SERVICE_SCRIPT" | tee "/etc/init/holmes-totem-services.conf"
+echo "$TOTEM_SCRIPT" | tee "/etc/init/holmes-totem.conf" >/dev/null
+echo "$SERVICE_SCRIPT" | tee "/etc/init/holmes-totem-services.conf" >/dev/null
 
 initctl reload-configuration
 

@@ -53,7 +53,7 @@ sudo apt-get install -y sbt
 echo ""
 
 info "> Preparing Holmes-Totem."
-if [[ -d "$INSTALL_DIRECTORY" ]]; then
+if [[ -d "$INSTALL_DIRECTORY" && "$(ls -A $INSTALL_DIRECTORY)" ]]; then
     if [[ -f "$INSTALL_DIRECTORY/uninstall.sh" ]]; then
         ($INSTALL_DIRECTORY/uninstall.sh --keep-docker --keep-rabbitmq --remove-data --keep-sbt --keep-java8)
     fi

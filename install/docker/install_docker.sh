@@ -1,25 +1,25 @@
 #!/bin/bash
-# deprecated
 
-# Add the gpg key for the apt repository
-apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-
-# Flavor specific treatment
-if [[ $1 == "Ubuntu" ]]; then
-    echo "deb https://apt.dockerproject.org/repo ubuntu-$2 main" > /etc/apt/sources.list.d/docker.list
-    apt-get update && apt-get purge lxc-docker
-else
-    echo "deb https://apt.dockerproject.org/repo debian-$2 main" > /etc/apt/sources.list.d/docker.list
-    apt-get update && apt-get purge lxc-docker* docker.io*
+# install docker itself
+script=$(curl -sSL https://get.docker.com/)
+if [[ $? -eq 127 ]]; then
+    info "> curl not installed, trying wget."
+    script=$(wget -qO- https://get.docker.com/)
+    if [[ $? -eq 127 ]]; then
+        info "> wget not installed either, trying to install curl and then retry."
+        sudo apt-get update
+        sudo apt-get install curl
+        script=$(curl -sSL https://get.docker.com/)
+    fi
 fi
+if [[ $? -ne 0 ]]; then
+    error "> Unknown error happened trying to install Docker via curl and wget. Aborting installation."
+    exit 1
+fi
+echo "$script" | /bin/sh
 
-# Install Docker, this requires the linux image extra as well
-apt-get install -y linux-image-extra-$(uname -r)
-apt-cache policy docker-engine
-apt-get install -y docker-engine
-
-# Install Docker Compose
-# TODO this way is acutally discouraged, there seems to be a better way to do it
+# install docker-compose
+# TODO this way is actually discouraged, there seems to be a better way to do it
 # see https://docs.docker.com/compose/install/
 pip install docker-compose
 

@@ -238,7 +238,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             INSTALL_DIRECTORY=$OPT_INSTALL_PATH
         fi
         # check if installation directory exists and warn if it does
-        if [[ -d "$INSTALL_DIRECTORY" ]]; then
+        if [[ -d "$INSTALL_DIRECTORY" && "$(ls -A $INSTALL_DIRECTORY)" ]]; then
             if [[ OPT_ERASE_OLD -eq -1 ]]; then
                 info "> The selected installation destination isn't empty."
                 INPUT=$(readinput "> Erase directory contents? (y/N)")
@@ -257,30 +257,15 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         fi
         
         
-        echo ""
+        info ""
         
         
         # ----------------------------------------------------------------------
         #
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
-            echo "${CYAN}> Installing Docker.${ENDC}"
-            script=$(curl -sSL https://get.docker.com/)
-            if [[ $? -eq 127 ]]; then
-                info "> curl not installed, trying wget."
-                script=$(wget -qO- https://get.docker.com/)
-                if [[ $? -eq 127 ]]; then
-                    info "> wget not installed either, trying to install curl and then retry."
-                    sudo apt-get update
-                    sudo apt-get install curl
-                    script=$(curl -sSL https://get.docker.com/)
-                fi
-            fi
-            if [[ $? -ne 0 ]]; then
-                error "> Unknown error happened trying to install Docker via curl and wget. Aborting installation."
-                exit 1
-            fi
-            echo "$script" | /bin/sh
-            echo ""
+            info "> Installing Docker."
+            . install/docker/install_docker.sh
+            info ""
         fi
         
         # run sub-installer

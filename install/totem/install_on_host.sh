@@ -55,7 +55,9 @@ echo ""
 info "> Preparing Holmes-Totem."
 if [[ -d "$INSTALL_DIRECTORY" && "$(ls -A $INSTALL_DIRECTORY)" ]]; then
     if [[ -f "$INSTALL_DIRECTORY/uninstall.sh" ]]; then
-        ($INSTALL_DIRECTORY/uninstall.sh --keep-docker --keep-rabbitmq --remove-data --keep-sbt --keep-java8)
+        cd $INSTALL_DIRECTORY
+        (uninstall.sh --keep-docker --keep-rabbitmq --remove-data --keep-sbt --keep-java8)
+        cd "$START_PWD"
     fi
     sudo rm -rf "$INSTALL_DIRECTORY" &>/dev/null
 fi

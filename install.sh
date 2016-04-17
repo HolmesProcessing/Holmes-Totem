@@ -263,9 +263,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ----------------------------------------------------------------------
         #
         if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
-            info "> Installing Docker."
             . install/docker/install_docker.sh
-            info ""
         fi
         
         # run sub-installer

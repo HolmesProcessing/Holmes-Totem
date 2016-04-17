@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # install docker itself
+info "> Installing Docker."
 script=$(curl -sSL https://get.docker.com/)
 if [[ $? -eq 127 ]]; then
     info "> curl not installed, trying wget."
@@ -17,11 +18,15 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 echo "$script" | /bin/sh
+info ""
 
 # install docker-compose
 # TODO this way is actually discouraged, there seems to be a better way to do it
 # see https://docs.docker.com/compose/install/
+info "> Installing Docker-Compose."
 pip install docker-compose
+info ""
 
 # Start Docker daemon
 service docker start
+info ""

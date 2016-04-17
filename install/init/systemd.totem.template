@@ -1,7 +1,8 @@
 [Unit]
-Description=Totem - Holmes Processing
+Description=Totem
 Author=Holmes Processing
 After=holmes-totem-services.service
+Requires=holmes-totem-services.service
 
 [Service]
 Type=forking

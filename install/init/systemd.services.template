@@ -1,13 +1,16 @@
 [Unit]
-Description=Totem - Holmes Processing
+Description=Totem-Services
 Author=Holmes Processing
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=forking
+User=totem
+Group=totem
 WorkingDirectory=INSTALL_DIRECTORY/config
 ExecStart=/usr/local/bin/docker-compose up -d
+
 
 [Install]
 WantedBy=multi-user.target

@@ -100,20 +100,27 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ----------------------------------------------------------------------
         # check for docker availability
         #
-        DOCKER_IS_INSTALLED=0
-        DOCKER_VERSION=""
+        DOCKER=0
+        DOCKER_COMPOSE=0
         #
         if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
             error "> Your kernel version does not support running Docker, however Holmes-Totem default installation requires Docker."
             error "  If you wish to install Holmes-Totem with this script, please first upgrade your kernel (>=3.10)."
             exit 1
         else
-            DOCKER_VERSION=$(docker -v 2>&1 >/dev/null)
-            if [[ $? -eq 0 ]]; then
-                DOCKER_IS_INSTALLED=1
+            $(docker -v 2>&1 >/dev/null)
+            if [[ $? -ne 127 ]]; then
+                DOCKER=1
                 info "> Detected an existing Docker installation."
             else
                 info "> No Docker installation found."
+            fi
+            $(docker-compose -v &>/dev/null)
+            if [[ $? -ne 127 ]]; then
+                DOCKER_COMPOSE=1
+                info "> Detected an existing Docker-Compose installation."
+            else
+                info "> No Docker-Compose installation found."
             fi
             echo ""
         fi
@@ -261,10 +268,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         
         # ----------------------------------------------------------------------
-        #
-        if [[ $DOCKER_IS_INSTALLED -eq 0 ]]; then
-            . install/docker/install_docker.sh
-        fi
+        # make sure docker & docker-compose are installed
+        . install/docker/install_docker.sh
         
         # run sub-installer
         # must be sourced to pass the required variables

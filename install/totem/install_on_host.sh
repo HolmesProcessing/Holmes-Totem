@@ -53,7 +53,12 @@ sudo apt-get install -y sbt
 echo ""
 
 info "> Preparing Holmes-Totem."
-sudo rm -rf "$INSTALL_DIRECTORY" &>/dev/null
+if [[ -d "$INSTALL_DIRECTORY" ]]; then
+    if [[ -f "$INSTALL_DIRECTORY/uninstall.sh" ]]; then
+        ($INSTALL_DIRECTORY/uninstall.sh)
+    fi
+    sudo rm -rf "$INSTALL_DIRECTORY" &>/dev/null
+fi
 sudo mkdir -p "$INSTALL_DIRECTORY"
 # get sources
 if [[ $INSTALL_FROM_WDIR -eq 1 ]]; then

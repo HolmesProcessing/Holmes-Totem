@@ -187,20 +187,30 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             function service_stop {
                 sudo service "$1" stop
             }
+            function service_disable {}
             function service_remove {
                 sudo rm "/etc/init/$1.conf"
+            }
+            function init_reload {
+                sudo initctl reload-configuration
             }
         else
             if [[ $INIT_SYSTEM = "systemd" ]]; then
                 function service_stop {
                     sudo systemctl stop "$1"
                 }
+                function service_disable {
+                    sudo systemctl disable "$1"
+                }
                 function service_remove {
                     sudo rm "/etc/systemd/system/$1.service"
                 }
+                function init_reload {}
             else
                 function service_stop {}
+                function service_disable {}
                 function service_remove {}
+                function init_reload {}
             fi
         fi
         
@@ -230,8 +240,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # have been found
         service_stop holmes-totem-service
         service_stop holmes-totem
+        service_disable holmes-totem-service
+        service_disable holmes-totem
         service_remove holmes-totem-service
         service_remove holmes-totem
+        init_reload
         
         
         # Finish notice

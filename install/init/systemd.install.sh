@@ -12,5 +12,7 @@ echo "$TOTEM_SCRIPT" | tee "/etc/systemd/system/holmes-totem.service" >/dev/null
 systemctl enable "holmes-totem-services.service"
 systemctl enable "holmes-totem.service"
 
+sleep 2
+
 systemctl start "holmes-totem-services.service"
 systemctl start "holmes-totem.service"

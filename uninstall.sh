@@ -187,9 +187,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             function service_stop {
                 sudo service "$1" stop
             }
-            function service_disable {
-                # do nothing
-            }
+            function service_disable {:}
             function service_remove {
                 sudo rm "/etc/init/$1.conf"
             }
@@ -207,22 +205,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 function service_remove {
                     sudo rm "/etc/systemd/system/$1.service"
                 }
-                function init_reload {
-                    # do nothing
-                }
+                function init_reload {:}
             else
-                function service_stop {
-                    # do nothing
-                }
-                function service_disable {
-                    # do nothing
-                }
-                function service_remove {
-                    # do nothing
-                }
-                function init_reload {
-                    # do nothing
-                }
+                function service_stop {:}
+                function service_disable {:}
+                function service_remove {:}
+                function init_reload {:}
             fi
         fi
         

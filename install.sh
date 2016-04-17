@@ -1,5 +1,6 @@
 #!/bin/bash
 LOG_FILE="$(pwd)/totem-install.log"
+echo "" | tee "$LOG_FILE"
 exec > >(tee -a ${LOG_FILE} )
 exec 2> >(tee -a ${LOG_FILE} >&2)
 
@@ -51,9 +52,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # if lsb_release is not installed, ask the user for a little help
     null=$(which lsb_release)
     if [[ $? -ne 0 ]]; then
-        error "> Fatal: lsb_release not installed but required."
+        info "> Fatal: lsb_release not installed but required."
         if [[ -d /etc/lsb-release || -d /etc/debian_release || -d /etc/debian_version ]]; then
-            error "> System could be Debian/Ubuntu."
+            info "> System could be Debian/Ubuntu."
             INPUT=$(readinput "> In order to continue, lsb_release needs to be installed, do you want to do that now? (Y/n)")
             if [[ $INPUT == "y" || $INPUT == "yes" || $INPUT == "" ]]; then
                 info "> Installing lsb-release package."
@@ -87,10 +88,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ----------------------------------------------------------------------
         # grab init system
         INIT_SYSTEM=$(cat /proc/1/comm)
-        INSTALL_INIT_SCRIPT=0
+        INSTALL_INIT_SCRIPT=1
         if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
-            error "> UNKNOWN INIT SYSTEM (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')"
-            INSTALL_INIT_SCRIPT=-1
+            info "> Unknown INIT system (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')."
+            INSTALL_INIT_SCRIPT=0
         else
             info "> Init system is $INIT_SYSTEM"
         fi
@@ -105,15 +106,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
             error "> Your kernel version does not support running Docker, however Holmes-Totem default installation requires Docker."
             error "  If you wish to install Holmes-Totem with this script, please first upgrade your kernel (>=3.10)."
-            error ""
             exit 1
         else
-            DOCKER_VERSION=$(docker -v)
+            DOCKER_VERSION=$(docker -v 2>&1 >/dev/null)
             if [[ $? -eq 0 ]]; then
                 DOCKER_IS_INSTALLED=1
                 info "> Detected an existing Docker installation."
             else
-                error "> No Docker installation found."
+                info "> No Docker installation found."
             fi
             echo ""
         fi
@@ -191,6 +191,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     error "--no-erase-old             : Do not empty the installation directory, abort if not empty"
                     error "--install-init-script      : Install an init script for totem/service automation (compatible only with upstart and systemd)"
                     error "--no-install-init-script   : Do not install an init script for totem/service automation"
+                    exit 0
                     ;;
             esac
         done
@@ -243,7 +244,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # check if installation directory exists and warn if it does
         if [[ -d "$INSTALL_DIRECTORY" ]]; then
             if [[ OPT_ERASE_OLD -eq -1 ]]; then
-                error "> The selected installation destination isn't empty."
+                info "> The selected installation destination isn't empty."
                 INPUT=$(readinput "> Erase directory contents? (y/N)")
                 if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
                     OPT_ERASE_OLD=1
@@ -255,7 +256,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 info "> Selected to remove the old installation ($INSTALL_DIRECTORY)."
             else
                 info "> Selected to keep the old installation. Aborting any further action."
-                info ""
                 exit 0
             fi
         fi
@@ -297,7 +297,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             fi
             if [[ $? -ne 0 ]]; then
                 error "> Unknown error happened trying to install Docker via curl and wget. Aborting installation."
-                exit 0
+                exit 1
             fi
             echo "$script" | /bin/sh
             echo ""

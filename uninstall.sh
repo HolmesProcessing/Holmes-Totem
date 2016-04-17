@@ -245,7 +245,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         fi
         
         if [[ $OPT_ERASE -eq 1 ]]; then
-            sudo rm -rf $(pwd)/*
+            sudo rm -rf $(pwd)/* $(pwd)/.*
         fi
         
         # the following functions only execute if valid init scripts and system

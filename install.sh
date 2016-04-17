@@ -170,11 +170,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     OPT_ERASE_OLD=0
                     ;;
                 
-                "--install-init-script")
-                    OPT_INSTALL_INIT_SCRIPT=1
-                    ;;
-                "--no-install-init-script")
-                    OPT_INSTALL_INIT_SCRIPT=0
+                "--no-init-script")
+                    INSTALL_INIT_SCRIPT=0
                     ;;
                 
                 *)
@@ -189,8 +186,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     error "--install-path PATH        : Use specified path as the directory to install in (incompatible with --install-from-cwd)"
                     error "--erase-old                : Empty the installation directory (incompatible with --install-from-cwd)"
                     error "--no-erase-old             : Do not empty the installation directory, abort if not empty"
-                    error "--install-init-script      : Install an init script for totem/service automation (compatible only with upstart and systemd)"
-                    error "--no-install-init-script   : Do not install an init script for totem/service automation"
+                    error "--no-init-script           : Do not install an init script for totem/service automation"
                     exit 0
                     ;;
             esac
@@ -257,22 +253,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             else
                 info "> Selected to keep the old installation. Aborting any further action."
                 exit 0
-            fi
-        fi
-        
-        #-#-#-#-#-#
-        # 3) Install service scripts? (supported init systems: upstart/systemd)
-        #
-        # INSTALL_INIT_SCRIPT
-        #
-        if [[ $INSTALL_INIT_SCRIPT -ne -1 ]]; then
-            if [[ $OPT_INSTALL_INIT_SCRIPT -eq -1 ]]; then
-                INPUT=$(readinput "> Your system is upstart or systemd compatible. Do you want to install Totem as a service? (Y/n)")
-                if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
-                    INSTALL_INIT_SCRIPT=1
-                fi
-            else
-                INSTALL_INIT_SCRIPT=$OPT_INSTALL_INIT_SCRIPT
             fi
         fi
         

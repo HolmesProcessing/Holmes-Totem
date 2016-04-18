@@ -5,15 +5,11 @@ if [[ $DOCKER -eq 0 ]]; then
     info "> Installing Docker."
     
     # sort out which program to use for download
-    which curl &>/dev/null
     cmd=""
-    echo $?
-    if [[ $? -eq 0 ]]; then
+    if [[ command -v curl >/dev/null 2>&1 ]]; then
         cmd="curl -sSL"
     else
-        which wget &>/dev/null
-        echo $?
-        if [[ $? -eq 0 ]]; then
+        if [[ command -v wget >/dev/null 2>&1 ]]; then
             cmd="wget -qO-"
         else
             sudo apt-get update
@@ -39,13 +35,11 @@ if [[ $DOCKER_COMPOSE -eq 0 ]]; then
     info "> Installing Docker-Compose."
     
     # sort out which program to use for download
-    $(which curl &>/dev/null)
     cmd=""
-    if [[ $? -eq 0 ]]; then
+    if [[ command -v curl >/dev/null 2>&1 ]]; then
         cmd="curl -L"
     else
-        $(which wget &>/dev/null)
-        if [[ $? -eq 0 ]]; then
+        if [[ command -v wget >/dev/null 2>&1 ]]; then
             cmd="wget -qO-"
         else
             sudo apt-get update

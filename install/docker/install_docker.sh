@@ -13,7 +13,7 @@ if [[ $DOCKER -eq 0 ]]; then
             cmd="wget -qO-"
         else
             sudo apt-get update
-            sudo apt-get install curl
+            sudo apt-get install -y curl
             cmd="curl -sSL"
         fi
     fi
@@ -41,7 +41,7 @@ if [[ $DOCKER_COMPOSE -eq 0 ]]; then
             cmd="wget -qO-"
         else
             sudo apt-get update
-            sudo apt-get install curl
+            sudo apt-get install -y curl
             cmd="curl -L"
         fi
     fi

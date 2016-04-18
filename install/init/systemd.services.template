@@ -9,7 +9,7 @@ Type=forking
 User=totem
 Group=totem
 WorkingDirectory=INSTALL_DIRECTORY/config
-ExecStart=/usr/local/bin/docker-compose up -d
+ExecStart=start-stop-daemon --start --exec "/usr/local/bin/docker-compose up -d"
 
 
 [Install]

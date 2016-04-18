@@ -100,6 +100,7 @@ if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then
     echo "${GREEN}"
     echo "> Finished. Totem got successfully installed and is now running as a service on your system!"
     echo "  To start/stop Totem or its services, please use your init systems functionality (initctl or systemctl)."
+    echo "  Please note that docker-compose will take some time to build your services."
     echo "${ENDC}"
 else
     # Finish notice

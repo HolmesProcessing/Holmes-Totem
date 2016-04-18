@@ -16,4 +16,4 @@ console log
 chdir "INSTALL_DIRECTORY/config"
 
 # run
-exec docker-compose up -d
+exec start-stop-daemon --start --exec "/usr/local/bin/docker-compose up -d"

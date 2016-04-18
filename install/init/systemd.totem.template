@@ -1,6 +1,5 @@
 [Unit]
 Description=Totem
-Author=Holmes Processing
 After=holmes-totem-services.service
 Requires=holmes-totem-services.service
 

@@ -1,6 +1,5 @@
 [Unit]
 Description=Totem-Services
-Author=Holmes Processing
 After=docker.service
 Requires=docker.service
 
@@ -9,7 +8,13 @@ Type=forking
 User=totem
 Group=totem
 WorkingDirectory=INSTALL_DIRECTORY/config
-ExecStart=/sbin/start-stop-daemon --start --exec "/usr/local/bin/docker-compose up -d"
+ExecStart=/sbin/start-stop-daemon \
+    --start \
+    --chdir "INSTALL_DIRECTORY/config"
+    --user totem
+    --group totem
+    --exec /usr/local/bin/docker-compose \
+    -- up -d
 
 
 [Install]

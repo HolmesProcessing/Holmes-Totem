@@ -16,4 +16,10 @@ console log
 chdir "INSTALL_DIRECTORY/config"
 
 # run
-exec /sbin/start-stop-daemon --start --exec "/usr/local/bin/docker-compose up -d"
+exec /sbin/start-stop-daemon \
+    --start \
+    --chdir "INSTALL_DIRECTORY/config"
+    --user totem
+    --group totem
+    --exec /usr/local/bin/docker-compose
+    -- up -d

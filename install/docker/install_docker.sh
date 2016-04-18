@@ -30,8 +30,6 @@ fi
 
 # install docker-compose
 if [[ $DOCKER_COMPOSE -eq 0 ]]; then
-    # TODO this way is actually discouraged, there seems to be a better way to do it
-    # see https://docs.docker.com/compose/install/
     info "> Installing Docker-Compose."
     
     # sort out which program to use for download

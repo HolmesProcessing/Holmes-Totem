@@ -112,3 +112,5 @@ else
     echo "  java -jar ./target/scala-2.11/totem-assembly-1.0.jar ./config/totem.conf"
     echo "${ENDC}"
 fi
+# copy the final version of the log
+sudo cp totem-install.log "$INSTALL_DIRECTORY/totem-install.log"

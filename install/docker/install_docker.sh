@@ -6,10 +6,10 @@ if [[ $DOCKER -eq 0 ]]; then
     
     # sort out which program to use for download
     cmd=""
-    if [[ command -v curl >/dev/null 2>&1 ]]; then
+    if command -v curl >/dev/null 2>&1; then
         cmd="curl -sSL"
     else
-        if [[ command -v wget >/dev/null 2>&1 ]]; then
+        if command -v wget >/dev/null 2>&1; then
             cmd="wget -qO-"
         else
             sudo apt-get update
@@ -36,10 +36,10 @@ if [[ $DOCKER_COMPOSE -eq 0 ]]; then
     
     # sort out which program to use for download
     cmd=""
-    if [[ command -v curl >/dev/null 2>&1 ]]; then
+    if command -v curl >/dev/null 2>&1; then
         cmd="curl -L"
     else
-        if [[ command -v wget >/dev/null 2>&1 ]]; then
+        if command -v wget >/dev/null 2>&1; then
             cmd="wget -qO-"
         else
             sudo apt-get update

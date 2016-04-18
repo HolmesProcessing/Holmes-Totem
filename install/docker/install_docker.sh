@@ -56,5 +56,9 @@ fi
 
 # Start Docker daemon
 info "> Ensuring Docker daemon started."
-service docker start
+if [[ $INIT_SYSTEM = "systemd" ]]; then
+    sudo systemctl start docker.service
+else
+    sudo service docker start
+fi
 info ""

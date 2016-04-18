@@ -1,7 +1,6 @@
 [Unit]
 Description=Totem
 After=holmes-totem-services.service
-Requires=holmes-totem-services.service
 
 [Service]
 Type=forking

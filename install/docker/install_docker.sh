@@ -5,12 +5,14 @@ if [[ $DOCKER -eq 0 ]]; then
     info "> Installing Docker."
     
     # sort out which program to use for download
-    $(which curl &>/dev/null)
+    which curl &>/dev/null
     cmd=""
+    echo $?
     if [[ $? -eq 0 ]]; then
         cmd="curl -sSL"
     else
-        $(which wget &>/dev/null)
+        which wget &>/dev/null
+        echo $?
         if [[ $? -eq 0 ]]; then
             cmd="wget -qO-"
         else

@@ -3,17 +3,25 @@
 # install docker itself
 if [[ $DOCKER -eq 0 ]]; then
     info "> Installing Docker."
-    script=$(curl -sSL https://get.docker.com/)
-    if [[ $? -eq 127 ]]; then
-        info "> curl not installed, trying wget."
-        script=$(wget -qO- https://get.docker.com/)
-        if [[ $? -eq 127 ]]; then
-            info "> wget not installed either, trying to install curl and then retry."
+    
+    # sort out which program to use for download
+    $(which curl &>/dev/null)
+    cmd=""
+    if [[ $? -eq 0 ]]; then
+        cmd="curl -sSL"
+    else
+        $(which wget &>/dev/null)
+        if [[ $? -eq 0 ]]; then
+            cmd="wget -qO-"
+        else
             sudo apt-get update
             sudo apt-get install curl
-            script=$(curl -sSL https://get.docker.com/)
+            cmd="curl -sSL"
         fi
     fi
+    
+    # get script and install docker
+    script=$($cmd https://get.docker.com/)
     if [[ $? -ne 0 ]]; then
         error "> Unknown error happened trying to install Docker via curl and wget. Aborting installation."
         exit 1
@@ -27,7 +35,26 @@ if [[ $DOCKER_COMPOSE -eq 0 ]]; then
     # TODO this way is actually discouraged, there seems to be a better way to do it
     # see https://docs.docker.com/compose/install/
     info "> Installing Docker-Compose."
-    pip install docker-compose
+    
+    # sort out which program to use for download
+    $(which curl &>/dev/null)
+    cmd=""
+    if [[ $? -eq 0 ]]; then
+        cmd="curl -L"
+    else
+        $(which wget &>/dev/null)
+        if [[ $? -eq 0 ]]; then
+            cmd="wget -qO-"
+        else
+            sudo apt-get update
+            sudo apt-get install curl
+            cmd="curl -L"
+        fi
+    fi
+    
+    # get script and install docker-compose
+    sudo sh -c "$cmd https://github.com/docker/compose/releases/download/1.7.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
+    sudo chmod +x /usr/local/bin/docker-compose
     info ""
 fi
 

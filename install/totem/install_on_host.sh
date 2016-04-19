@@ -18,8 +18,10 @@ else
     # create its cash in ~/.sbt
     sudo /sbin/mkhomedir_helper totem
 fi
-echo "${CYAN}> Assigning user 'totem' to the 'docker' group.${ENDC}"
-sudo usermod -aG docker totem
+if [[ $OPT_INSTALL_SERVICES -eq 1 ]]; then
+    echo "${CYAN}> Assigning user 'totem' to the 'docker' group.${ENDC}"
+    sudo usermod -aG docker totem
+fi
 
 # prepare java 8
 echo "${CYAN}> Preparing Oracle Java 8.${ENDC}"
@@ -79,7 +81,7 @@ cd config
 if [[ ! -f "totem.conf" ]]; then
     cp totem.conf.example totem.conf
 fi
-if [[ ! -f "docker-compose.yml" ]]; then
+if [[ ! -f "docker-compose.yml" && $OPT_INSTALL_SERVICES -eq 1 ]]; then
     cp docker-compose.yml.example docker-compose.yml
 fi
 cd ..
@@ -92,16 +94,18 @@ sudo su totem -c "cd $INSTALL_DIRECTORY && sbt assembly"
 if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then
     cd "$START_PWD" # change back to the directory we started in, where the installation scripts reside
     if [[ $INIT_SYSTEM = "init" ]]; then
-        sudo install/init/upstart.install.sh "$START_PWD" "$INSTALL_DIRECTORY"
+        sudo install/init/upstart.install.sh "$START_PWD" "$INSTALL_DIRECTORY" "$OPT_INSTALL_SERVICES"
     else
-        sudo install/init/systemd.install.sh "$START_PWD" "$INSTALL_DIRECTORY"
+        sudo install/init/systemd.install.sh "$START_PWD" "$INSTALL_DIRECTORY" "$OPT_INSTALL_SERVICES"
     fi
     # Finish notice
     echo "${GREEN}"
     echo "> Finished. Totem got successfully installed and is now running as a service on your system!"
-    echo "  To start/stop Totem or its services, please use your init systems functionality (initctl or systemctl)."
-    echo "  Please note that docker-compose will take some time to build your services."
-    echo "  Please also note, that all services need to build successfully for the holmes-totem-services service to start up correctly."
+    echo "  To start/stop Totem or its services (if installed), please use your init systems functionality (initctl or systemctl)."
+    if [[ $OPT_INSTALL_SERVICES -eq 1 ]]; then
+        echo "  Please note that docker-compose will take some time to build your services."
+        echo "  Please also note, that all services need to build successfully for the holmes-totem-services service to start up correctly."
+    fi
     echo "${ENDC}"
 else
     # Finish notice

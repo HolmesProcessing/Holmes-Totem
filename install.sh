@@ -1,4 +1,76 @@
 #!/bin/bash
+
+#-#-#-#-#-#
+# Get command line options
+#
+OPT_INSTALL_REPOSITORY=""
+OPT_INSTALL_FROM_CWD=-1
+OPT_INSTALL_PATH=""
+OPT_INSTALL_SERVICES=1
+OPT_ERASE_OLD=-1
+INSTALL_INIT_SCRIPT=1
+#
+while [ $# -gt 0 ]
+do                   
+    opt=$1
+    shift
+    case "$opt" in
+        
+        "--repository" | "-r")
+            if [[ "$1" = "cwd" ]]; then
+                OPT_INSTALL_FROM_CWD=1
+            else
+                OPT_INSTALL_REPOSITORY=$1
+            fi
+            shift
+            ;;
+        "--repository-ignore-cwd")
+            OPT_INSTALL_FROM_CWD=0
+            ;;
+        
+        "--install-path" | "-p")
+            OPT_INSTALL_PATH=$1
+            shift
+            ;;
+        
+        "--erase-old")
+            OPT_ERASE_OLD=1
+            ;;
+        "--no-erase-old")
+            OPT_ERASE_OLD=0
+            ;;
+        
+        "--no-init-script")
+            INSTALL_INIT_SCRIPT=0
+            ;;
+        
+        "--no-services")
+            OPT_INSTALL_SERVICES=0
+            ;;
+        
+        *)
+            error "Holmes-Totem Installation script"
+            if [[ $opt != "--help" && $opt != "-h" ]]; then
+                error "Invalid option '$1'."
+            fi
+            error "Valid command line options are:"
+            error "--repository REPOSITORY    : Url for the repository to clone (Git) (special repository cwd to install from repository in current working directory)"
+            error "--repository-ignore-cwd    : Ignore current directory if it is a Git repository"
+            
+            error "--install-path PATH        : Use specified path as the directory to install in (incompatible with --install-from-cwd)"
+            
+            error "--erase-old                : Empty the installation directory (incompatible with --install-from-cwd)"
+            error "--no-erase-old             : Do not empty the installation directory, abort if not empty"
+            
+            error "--no-init-script           : Do not install an init script for totem/service automation"
+            
+            error "--no-services              : Do not install services (no Docker installation)"
+            exit 0
+            ;;
+    esac
+done
+
+
 LOG_FILE="$(pwd)/totem-install.log"
 echo "" | tee "$LOG_FILE"
 exec > >(tee -a ${LOG_FILE} )
@@ -88,41 +160,44 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ----------------------------------------------------------------------
         # grab init system
         INIT_SYSTEM=$(cat /proc/1/comm)
-        INSTALL_INIT_SCRIPT=1
-        if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
-            info "> Unknown INIT system (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')."
-            INSTALL_INIT_SCRIPT=0
-        else
-            info "> Init system is $INIT_SYSTEM"
+        if [[ $INSTALL_INIT_SCRIPT -eq 1 ]]; then
+            if [[ $INIT_SYSTEM != "systemd" && $INIT_SYSTEM != "init" ]]; then
+                info "> Unknown INIT system (neither systemd, nor init compatible, but rather reporting '$INIT_SYSTEM')."
+                INSTALL_INIT_SCRIPT=0
+            else
+                info "> Init system is $INIT_SYSTEM"
+            fi
         fi
         
         
         # ----------------------------------------------------------------------
         # check for docker availability
         #
-        DOCKER=0
-        DOCKER_COMPOSE=0
-        #
-        if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
-            error "> Your kernel version does not support running Docker, however Holmes-Totem default installation requires Docker."
-            error "  If you wish to install Holmes-Totem with this script, please first upgrade your kernel (>=3.10)."
-            exit 1
-        else
-            $(docker -v 2>&1 >/dev/null)
-            if [[ $? -ne 127 ]]; then
-                DOCKER=1
-                info "> Detected an existing Docker installation."
+        if [[ $OPT_INSTALL_SERVICES -eq 1 ]]; then
+            DOCKER=0
+            DOCKER_COMPOSE=0
+            #
+            if [[ $KERNEL_VERSION_MAJOR -lt 3 ]] || [[ $KERNEL_VERSION_MAJOR -eq 3 && $KERNEL_VERSION_MINOR -lt 10 ]]; then
+                error "> Your kernel version does not support running Docker, however Holmes-Totem default installation requires Docker."
+                error "  If you wish to install Holmes-Totem with this script, please first upgrade your kernel (>=3.10)."
+                exit 1
             else
-                info "> No Docker installation found."
+                $(docker -v 2>&1 >/dev/null)
+                if [[ $? -ne 127 ]]; then
+                    DOCKER=1
+                    info "> Detected an existing Docker installation."
+                else
+                    info "> No Docker installation found."
+                fi
+                $(docker-compose -v &>/dev/null)
+                if [[ $? -ne 127 ]]; then
+                    DOCKER_COMPOSE=1
+                    info "> Detected an existing Docker-Compose installation."
+                else
+                    info "> No Docker-Compose installation found."
+                fi
+                echo ""
             fi
-            $(docker-compose -v &>/dev/null)
-            if [[ $? -ne 127 ]]; then
-                DOCKER_COMPOSE=1
-                info "> Detected an existing Docker-Compose installation."
-            else
-                info "> No Docker-Compose installation found."
-            fi
-            echo ""
         fi
         
         
@@ -136,68 +211,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         
         # ----------------------------------------------------------------------
-        # User and command line options
+        # Clearify settings
         #
-        
-        #-#-#-#-#-#
-        # Get command line options
-        #
-        OPT_INSTALL_REPOSITORY=""
-        OPT_INSTALL_FROM_CWD=-1
-        OPT_INSTALL_PATH=""
-        # OPT_INSTALL_RABBIT_MQ=-1
-        OPT_ERASE_OLD=-1
-        #
-        while [ $# -gt 0 ]
-        do                   
-            opt=$1
-            shift
-            case "$opt" in
-                
-                "--repository" | "-r")
-                    OPT_INSTALL_REPOSITORY=$1
-                    shift
-                    ;;
-                "--install-from-cwd")
-                    OPT_INSTALL_FROM_CWD=1
-                    ;;
-                "--no-install-from-cwd")
-                    OPT_INSTALL_FROM_CWD=0
-                    ;;
-                
-                "--install-path" | "-p")
-                    OPT_INSTALL_PATH=$1
-                    shift
-                    ;;
-                
-                "--erase-old")
-                    OPT_ERASE_OLD=1
-                    ;;
-                "--no-erase-old")
-                    OPT_ERASE_OLD=0
-                    ;;
-                
-                "--no-init-script")
-                    INSTALL_INIT_SCRIPT=0
-                    ;;
-                
-                *)
-                    error "Holmes-Totem Installation script"
-                    if [[ $opt != "--help" && $opt != "-h" ]]; then
-                        error "Invalid option '$1'."
-                    fi
-                    error "Valid command line options are:"
-                    error "--repository REPOSITORY    : Url for the repository to clone (Git) (incompatible with --install-from-cwd)"
-                    error "--install-from-cwd         : Force installation from current directory (incompatible with --install-path and --repository)"
-                    error "--no-install-from-cwd      : Ignore current directory if it is a Git repository"
-                    error "--install-path PATH        : Use specified path as the directory to install in (incompatible with --install-from-cwd)"
-                    error "--erase-old                : Empty the installation directory (incompatible with --install-from-cwd)"
-                    error "--no-erase-old             : Do not empty the installation directory, abort if not empty"
-                    error "--no-init-script           : Do not install an init script for totem/service automation"
-                    exit 0
-                    ;;
-            esac
-        done
         
         #-#-#-#-#-#
         # 1) Determine repository
@@ -269,17 +284,27 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
         # ----------------------------------------------------------------------
         # make sure docker & docker-compose are installed
-        . install/docker/install_docker.sh
+        if [[ $OPT_INSTALL_SERVICES -eq 1 ]]; then
+            . install/docker/install_docker.sh
+        fi
         
         # run sub-installer
         # must be sourced to pass the required variables
         . install/totem/install_on_host.sh
         
         # end ubuntu/debian
+    
+    else
+        
+        error "> Unsupported Linux distribution."
         
     fi
     
     # end linux
+
+else
+    
+    error "> Unsupported OS type. (Non-Linux)"
     
 fi
 

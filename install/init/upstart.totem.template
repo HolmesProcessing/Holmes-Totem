@@ -13,7 +13,7 @@ respawn
 respawn limit 10 5
 
 # make sure any output is logged
-# this goes to /var/log/upstart/holmes-processing.holmes-totem.log
+# this goes to /var/log/upstart/holmes-totem.log
 console log
 
 # limit permissions, set working directory

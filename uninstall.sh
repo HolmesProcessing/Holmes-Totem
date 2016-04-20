@@ -61,7 +61,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # User and command line options
         #
         OPT_UNINSTALL_DOCKER=-1
-        OPT_UNINSTALL_RABBITMQ=-1
         OPT_UNINSTALL_JAVA8=-1
         OPT_UNINSTALL_SBT=-1
         OPT_ERASE=-1
@@ -76,13 +75,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                     ;;
                 "--keep-docker")
                     OPT_UNINSTALL_DOCKER=0
-                    ;;
-                
-                "--remove-rabbitmq")
-                    OPT_UNINSTALL_RABBITMQ=1
-                    ;;
-                "--keep-rabbitmq")
-                    OPT_UNINSTALL_RABBITMQ=0
                     ;;
                 
                 "--remove-data")
@@ -121,19 +113,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
                 OPT_UNINSTALL_DOCKER=1
             else
                 OPT_UNINSTALL_DOCKER=0
-            fi
-        fi
-        
-        #-#-#-#-#-#
-        # OPT_UNINSTALL_RABBITMQ
-        #
-        if [[ $OPT_UNINSTALL_RABBITMQ -eq -1 ]]; then
-            read -e -p "${MAGENTA}> Remove RabbitMQ? (y/N): ${ENDC}" INPUT
-            INPUT=$(tolower $INPUT)
-            if [[ $INPUT == "y" || $INPUT == "yes" ]]; then
-                OPT_UNINSTALL_RABBITMQ=1
-            else
-                OPT_UNINSTALL_RABBITMQ=0
             fi
         fi
         
@@ -229,11 +208,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if [[ $OPT_UNINSTALL_DOCKER -eq 1 && $DOCKER_IS_INSTALLED -eq 1 ]]; then
             service_stop docker
             sudo apt-get purge -y --auto-remove docker-engine
-        fi
-        
-        if [[ $OPT_UNINSTALL_RABBITMQ -eq 1 ]]; then
-            service_stop rabbitmq-server
-            sudo apt-get purge -y --auto-remove rabbitmq-server
         fi
         
         if [[ $OPT_UNINSTALL_JAVA8 -eq 1 ]]; then

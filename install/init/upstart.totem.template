@@ -1,0 +1,25 @@
+# Totem - Holmes Processing Analysis Engine
+#
+# The Totem service performs enrichment against submitted analysis files
+
+description "Totem - Holmes Processing"
+author "Holmes Processing"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+# Automatically Respawn
+respawn
+respawn limit 10 5
+
+# make sure any output is logged
+# this goes to /var/log/upstart/holmes-totem.log
+console log
+
+# limit permissions, set working directory
+setuid totem
+setgid totem
+chdir INSTALL_DIRECTORY
+
+# run
+exec /usr/bin/java -jar target/scala-2.11/totem-assembly-1.0.jar

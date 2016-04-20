@@ -1,0 +1,14 @@
+[Unit]
+Description=Totem
+After=holmes-totem-services.service
+
+[Service]
+Type=forking
+User=totem
+Group=totem
+WorkingDirectory=INSTALL_DIRECTORY
+ExecStart=/usr/bin/java -jar target/scala-2.11/totem-assembly-1.0.jar
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

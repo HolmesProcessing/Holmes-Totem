@@ -1,0 +1,25 @@
+# Totem - Holmes Processing Analysis Engine
+#
+# The Totem service performs enrichment against submitted analysis files
+
+description "Totem - Holmes Processing"
+author "Holmes Processing"
+
+# start on runlevel [2345]
+start on filesystem and started docker
+stop on runlevel [!2345]
+
+# make sure any output is logged
+console log
+
+# change working directory
+chdir "INSTALL_DIRECTORY/config"
+
+# run
+exec /sbin/start-stop-daemon \
+    --start \
+    --chdir "INSTALL_DIRECTORY/config" \
+    --user totem \
+    --group totem \
+    --exec /usr/local/bin/docker-compose \
+    -- up -d

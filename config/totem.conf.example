@@ -50,6 +50,10 @@ totem {
       uri = ["http://127.0.0.1:7703/metadata/", "http://127.0.0.1:7707/metadata/"]
       resultRoutingKey = "metadata.result.static.totem"
     }
+    officemeta {
+      uri = ["http://127.0.0.1:7730/officemeta/"]
+      resultRoutingKey = "officemeta.result.static.totem"
+    }
     peid {
       uri = ["http://127.0.0.1:7720/peid/"]
       resultRoutingKey = "peid.result.static.totem"

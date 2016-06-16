@@ -40,8 +40,9 @@ RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
 
 # add the core files to the container
-ADD getrules.py /service
 ADD service.conf /service
+ADD LICENSE README.md /service/
+ADD getrules.py /service
 ADD yara_worker.py /service
 
 

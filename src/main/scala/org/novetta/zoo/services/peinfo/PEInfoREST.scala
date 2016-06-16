@@ -34,8 +34,8 @@ case class PEInfoWork(key: Long, filename: String, TimeoutMillis: Int, WorkType:
 }
 
 
-case class PEInfoSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "peinfo.result.static.totem", WorkType: String = "PE_INFO") extends WorkSuccess
-case class PEInfoFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "PE_INFO") extends WorkFailure
+case class PEInfoSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "peinfo.result.static.totem", WorkType: String = "PEINFO") extends WorkSuccess
+case class PEInfoFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "PEINFO") extends WorkFailure
 
 
 object PEInfoREST {

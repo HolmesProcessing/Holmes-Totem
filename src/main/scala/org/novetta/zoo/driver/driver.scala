@@ -4,6 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.novetta.zoo.actors._
+import org.novetta.zoo.services.objdump.{ObjdumpSuccess, ObjdumpWork}
 import org.novetta.zoo.services.peid.{PEiDSuccess, PEiDWork}
 import org.novetta.zoo.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.novetta.zoo.services.virustotal.{VirustotalSuccess, VirustotalWork}
@@ -86,6 +87,7 @@ object driver extends App with Instrumented {
       work match {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
         case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
+        case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
@@ -98,6 +100,9 @@ object driver extends App with Instrumented {
       val w = workToDo.map({
         case ("FILE_METADATA", li: List[String]) =>
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
+
+        case ("OBJDUMP", li: List[String]) =>
+          ObjdumpWork(key, filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
 
         case ("PEID", li: List[String]) =>
           PEiDWork(key, filename, 60, "PEID", GeneratePartial("PEID"), li)
@@ -126,6 +131,7 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
+        case x: ObjdumpSuccess => conf.getString("totem.enrichers.objdump.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.enrichers.peid.resultRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.enrichers.peinfo.resultRoutingKey")
         case x: MetadataSuccess => conf.getString("totem.enrichers.metadata.resultRoutingKey")

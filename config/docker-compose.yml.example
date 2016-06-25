@@ -1,3 +1,11 @@
+objdump:
+  build: ../src/main/scala/org/novetta/zoo/services/objdump
+  ports:
+    - "7730:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
+
 peid:
   build: ../src/main/scala/org/novetta/zoo/services/peid
   ports:

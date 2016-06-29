@@ -342,6 +342,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
                 opcodes_total += 1
                 if opcodes_total >= opcodes_max {
                     // we reached our max opcodes!
+                    line, line_offset, line_more = nextline(stdout, line_offset)
                     break
                 }
                 expected = expect_section | expect_block | expect_opcode
@@ -356,10 +357,8 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
                 // Create a new section block, depending on whether we can
                 // detect a name, we create a named block or not.
                 if len(result)>=4 {
-                    log.Printf("Found block %s at %s", result[3], result[1])
                     cur_block = &Block{Name: result[3], Offset: result[1]}
                 } else {
-                    log.Printf("Found block at %s", result[1])
                     cur_block = &Block{Name: "unknown", Offset: result[1]}
                 }
                 cur_block.Offset = result[1]
@@ -380,7 +379,6 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         // sections.
         if !processed && (expected & expect_section) != 0 {
             if result := re_section.FindStringSubmatch(line); len(result)>0 {
-                log.Printf("Found section %s\n", result[1])
                 if _, exists := map_sections[result[1]]; exists {
                     log.Printf("Error: Found duplicate section %s, ignoring.\n", result[1])
                 } else {
@@ -414,15 +412,23 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         line, line_offset, line_more = nextline(stdout, line_offset)
     }
     
+    // check if we have truncated the output
+    truncated := false
+    if opcodes_total >= opcodes_max && line_more {
+        truncated = true
+    }
+    
     // After all data is parsed, assemble json
     type AnalysisResult struct {
         Fileformat string               `json:"fileformat"`
         NoOpcodes  int64                `json:"number_of_opcodes"`
+        Truncated  bool                 `json:"truncated"`
         Sections   map[string]*Section  `json:"sections"`
     }
     analysis_result := &AnalysisResult{}
     analysis_result.Fileformat = fileformat
     analysis_result.NoOpcodes  = opcodes_total
+    analysis_result.Truncated  = truncated
     analysis_result.Sections   = map_sections
     analysis_result_json, err := json.Marshal(analysis_result)
     

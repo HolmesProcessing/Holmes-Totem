@@ -3,7 +3,7 @@ Name        = Yara
 Version     = 1.0
 Description = ./README.md
 # Description: Provides Yara signature matching for samples using a collective set of signatures or a provided custom signature.
-Copyright   = Copyright 2015 Holmes Processing
+Copyright   = Copyright 2016 Holmes Group LLC
 License     = ./LICENSE
 
 [settings]

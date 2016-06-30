@@ -113,8 +113,8 @@ abstract class GenericTotemEncoding extends WorkEncoding {
 }
 
 abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
-  val keys = conf.getObject("totem.enrichers").keySet()
-  val en = conf.getObject("totem.enrichers").toConfig
+  val keys = conf.getObject("totem.services").keySet()
+  val en = conf.getObject("totem.services").toConfig
   val services = keys.map(key =>
     (key, Random.shuffle(en.getStringList(s"$key.uri").toList))
   ).toMap[String, List[String]]
@@ -143,8 +143,8 @@ class DemoTotemEncoding(conf: Config) extends WorkEncoding {
    * @param workToDo: a List[String]: A list of the keywords from the ZooWork object.
    */
 
-  val keys = conf.getObject("zoo.enrichers").keySet()
-  val en = conf.getObject("zoo.enrichers").toConfig
+  val keys = conf.getObject("zoo.services").keySet()
+  val en = conf.getObject("zoo.services").toConfig
   val services = keys.map(key =>
     (key, Random.shuffle(en.getStringList(s"$key.uri").toList))
   ).toMap[String, List[String]]

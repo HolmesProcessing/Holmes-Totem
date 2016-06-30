@@ -120,11 +120,11 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
-        case x: PEiDSuccess => conf.getString("totem.enrichers.peid.resultRoutingKey")
-        case x: PEInfoSuccess => conf.getString("totem.enrichers.peinfo.resultRoutingKey")
-        case x: VirustotalSuccess => conf.getString("totem.enrichers.virustotal.resultRoutingKey")
-        case x: YaraSuccess => conf.getString("totem.enrichers.yara.resultRoutingKey")
-        case x: ZipMetaSuccess => conf.getString("totem.enrichers.zipmeta.resultRoutingKey")
+        case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")
+        case x: PEInfoSuccess => conf.getString("totem.services.peinfo.resultRoutingKey")
+        case x: VirustotalSuccess => conf.getString("totem.services.virustotal.resultRoutingKey")
+        case x: YaraSuccess => conf.getString("totem.services.yara.resultRoutingKey")
+        case x: ZipMetaSuccess => conf.getString("totem.services.zipmeta.resultRoutingKey")
         case _ => ""
       }
     }

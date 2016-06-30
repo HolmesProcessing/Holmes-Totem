@@ -67,7 +67,7 @@ totem {
     }
   }
 
-  enrichers {
+  services {
     yara {
       uri = ["http://127.0.0.1:7701/yara/"]
       resultRoutingKey = "yara.result.static.totem"

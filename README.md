@@ -68,10 +68,6 @@ totem {
   }
 
   enrichers {
-    metadata {
-      uri = ["http://127.0.0.1:7703/metadata/", "http://127.0.0.1:7707/metadata/"]
-      resultRoutingKey = "metadata.result.static.totem"
-    }
     yara {
       uri = ["http://127.0.0.1:7701/yara/"]
       resultRoutingKey = "yara.result.static.totem"

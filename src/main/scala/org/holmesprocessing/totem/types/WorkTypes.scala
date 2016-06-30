@@ -6,7 +6,6 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.json4s.JsonAST.{JString, JValue}
 import org.holmesprocessing.totem.services.yara.{YaraSuccess, YaraWork}
-import org.holmesprocessing.totem.services.{MetadataSuccess, MetadataWork}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
@@ -153,8 +152,6 @@ class DemoTotemEncoding(conf: Config) extends WorkEncoding {
 
   def GeneratePartial(work: String): String = {
     work match {
-      case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
-      case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
       case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
       case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
       case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
@@ -163,8 +160,6 @@ class DemoTotemEncoding(conf: Config) extends WorkEncoding {
 
   def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
     val w = workToDo.map({
-      case ("FILE_METADATA", li: List[String]) =>
-        MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
       case ("YARA", li: List[String]) =>
         YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
       case (s: String, li: List[String]) =>
@@ -178,7 +173,6 @@ class DemoTotemEncoding(conf: Config) extends WorkEncoding {
 
   def workRoutingKey(work: WorkResult): String = {
     work match {
-      case x: MetadataSuccess => "metadata.result.static.zoo"
       case x: YaraSuccess => "yara.result.static.zoo"
     }
   }

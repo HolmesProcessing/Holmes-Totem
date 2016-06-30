@@ -82,3 +82,5 @@ totem {
 
 ## Acknowledgment
 Holmes-Totem is derived from the Novetta open source project Totem and The Holmes Group LLC is not in any way related or endorsed by Novetta. We gracelessly thank Novetta for then wonderful contribution and we could not have created this project without their support. 
+
+Holmes Processing would also like to thank the [CRITs] team for their valuable discussions and support they provided.

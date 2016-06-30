@@ -1,5 +1,5 @@
 peid:
-  build: ../src/main/scala/org/novetta/zoo/services/peid
+  build: ../src/main/scala/org/holmesprocessing/totem/services/peid
   ports:
     - "7720:8080"
   restart: unless-stopped
@@ -7,7 +7,7 @@ peid:
     - /tmp:/tmp:ro
 
 peinfo:
-  build: ../src/main/scala/org/novetta/zoo/services/peinfo
+  build: ../src/main/scala/org/holmesprocessing/totem/services/peinfo
   ports:
     - "7705:8080"
   restart: unless-stopped
@@ -15,7 +15,7 @@ peinfo:
     - /tmp:/tmp:ro
 
 virustotal:
-  build: ../src/main/scala/org/novetta/zoo/services/virustotal
+  build: ../src/main/scala/org/holmesprocessing/totem/services/virustotal
   ports:
     - "7710:8080"
   restart: unless-stopped
@@ -23,7 +23,7 @@ virustotal:
    - /tmp:/tmp:ro
 
 yara:
-  build: ../src/main/scala/org/novetta/zoo/services/yara
+  build: ../src/main/scala/org/holmesprocessing/totem/services/yara
   ports:
     - "7701:8080"
   restart: unless-stopped
@@ -31,7 +31,7 @@ yara:
    - /tmp:/tmp:ro
 
 zipmeta:
-  build: ../src/main/scala/org/novetta/zoo/services/zipmeta
+  build: ../src/main/scala/org/holmesprocessing/totem/services/zipmeta
   ports:
     - "7715:8080"
   restart: unless-stopped

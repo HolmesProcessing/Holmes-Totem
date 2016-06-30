@@ -24,6 +24,6 @@ project/plugins/project/
 .yar
 
 # blacklist config files
-src/main/scala/org/novetta/zoo/services/**/service.conf
+src/main/scala/org/holmesprocessing/totem/services/**/service.conf
 config/totem.conf
 config/docker-compose.yml

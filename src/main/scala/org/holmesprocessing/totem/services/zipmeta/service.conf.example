@@ -2,7 +2,7 @@
 Name        = ZipMeta
 Version     = 1.0
 Description = ./README.md
-Copyright   = Copyright 2015 Holmes Processing
+Copyright   = Copyright 2016 Holmes Group LLC
 License     = ./LICENSE
 
 [settings]

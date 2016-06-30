@@ -45,7 +45,7 @@ totem {
     }
   }
 
-  enrichers {
+  services {
     peid {
       uri = ["http://127.0.0.1:7720/peid/"]
       resultRoutingKey = "peid.result.static.totem"

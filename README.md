@@ -1,4 +1,4 @@
-# TOTEM: A Framework for large-scale file analysis.
+# Holmes-TOTEM: A Framework for large-scale file analysis [![Build Status](https://travis-ci.org/HolmesProcessing/Holmes-Totem.svg?branch=master)](https://travis-ci.org/HolmesProcessing/Holmes-Totem)
 
 ## Compilation:
 

@@ -86,8 +86,8 @@ object driver extends App with Instrumented {
       work match {
         case "FILE_METADATA" => Random.shuffle(services.getOrElse("metadata", List())).head
         case "HASHES" => Random.shuffle(services.getOrElse("hashes", List())).head
-        case "PE_ID" => Random.shuffle(services.getOrElse("peid", List())).head
-        case "PE_INFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
+        case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
+        case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
@@ -99,11 +99,11 @@ object driver extends App with Instrumented {
         case ("FILE_METADATA", li: List[String]) =>
           MetadataWork(key, filename, 60, "FILE_METADATA", GeneratePartial("FILE_METADATA"), li)
 
-        case ("PE_ID", li: List[String]) =>
-          PEiDWork(key, filename, 60, "PE_ID", GeneratePartial("PE_ID"), li)
+        case ("PEID", li: List[String]) =>
+          PEiDWork(key, filename, 60, "PEID", GeneratePartial("PEID"), li)
 
-        case ("PE_INFO", li: List[String]) =>
-          PEInfoWork(key, filename, 60, "PE_INFO", GeneratePartial("PE_INFO"), li)
+        case ("PEINFO", li: List[String]) =>
+          PEInfoWork(key, filename, 60, "PEINFO", GeneratePartial("PEINFO"), li)
 
         case ("VIRUSTOTAL", li: List[String]) =>
           VirustotalWork(key, filename, 60, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)

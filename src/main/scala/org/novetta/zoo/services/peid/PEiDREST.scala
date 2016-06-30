@@ -59,8 +59,8 @@ case class PEiDWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: S
  * @constructor Create a new YaraResult.
  *
  */
-case class PEiDSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "peid.result.static.totem", WorkType: String = "PE_ID") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
-case class PEiDFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "PE_ID") extends WorkFailure //want to add a time of completion? might also need to change ID to the original taskedwork
+case class PEiDSuccess(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "peid.result.static.totem", WorkType: String = "PEID") extends WorkSuccess //want to add a time of completion? might also need to change ID to the original taskedwork
+case class PEiDFailure(status: Boolean, data: JValue, Arguments: List[String], routingKey: String = "", WorkType: String = "PEID") extends WorkFailure //want to add a time of completion? might also need to change ID to the original taskedwork
 
 object PEiDREST {
   def constructURL(root: String, filename: String, arguments: List[String]): String = {

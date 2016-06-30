@@ -13,7 +13,7 @@ WORKDIR /service/library
 # to overcome the caching issue, the correct revision must go here
 RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
-ADD LICENSE README.md service.meta /service/
+ADD LICENSE README.md service.conf /service/
 ADD zipmeta.py ZipParser.py extra_field_parse.py /service/
 
 # create a new user with limited access

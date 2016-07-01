@@ -108,7 +108,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
   def receive = {
     case Send(message: RMQSendMessage) =>
       sendMessage(message)
-      log.info("RabbitProducer: Sent to RMQ -> {}", new String(message.body))
+      log.info("RabbitProducer: sent to RMQ -> {}", new String(message.body))
 
     case r: Result =>
       val json = (

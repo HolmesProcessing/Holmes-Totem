@@ -105,12 +105,12 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     .map({
       case Some(v: Array[Byte]) =>
         new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
-        log.info ("WorkActor: successfully downloaded {} using the primary URI", filename)
+        log.info("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
 
         SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
-        log.info("WorkActor: could not download {} using ANY URI", filename)
+        log.warning("WorkActor: could not download {} using ANY URI", filename)
 
         FailedDownload()
 
@@ -138,17 +138,17 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
 
   def prepareFailedWork(res: List[WorkResult]): ZooWork = {
     val z = ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
-    log.info("WorkActor: input to failedwork -> {}", res)
+    log.debug("WorkActor: input to failedwork -> {}", res)
     val nones = res.collect({
       case i: WorkFailure =>
-        log.info("WorkActor: we have a workfailure {}", i)
+        log.warning("WorkActor: we have a workfailure {}", i)
         i
     })
-    log.info("WorkActor: failures -> {}",nones)
+    log.debug("WorkActor: failures -> {}",nones)
     val f = nones.foldLeft(z)(
         (b, a) => b + a
       )
-    log.info("WorkActor: emitted failures -> {}", f)
+    log.debug("WorkActor: emitted failures -> {}", f)
     f
   }
   /**
@@ -169,15 +169,15 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   def monitoredReceive = {
     case FailedDownload() =>
       val time = timeDelta(Some(created), DateTime.now())
-      log.info("WorkActor: Evicting for Work {} due to {}. Evict message took {} to be generated", key, "Failed Download", time)
-      log.info("WorkActor: We failed to download the file! Nack and Die!")
+      log.warning("WorkActor: evicting for Work {} due to {}. Evict message took {} to be generated", key, "Failed Download", time)
+      log.warning("WorkActor: we failed to download the file! Nack and Die!")
       self ! LocalResolution(true)
       context.parent ! NAck(key)
 
     case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
-      log.info("WorkActor: Downloaded {} successfully, in {}!", md5sum, time)
-      log.info("WorkActor: workload -> {}", workToDo)
+      log.info("WorkActor: downloaded {} successfully in {}!", sha256sum, time)
+      log.debug("WorkActor: workload -> {}", workToDo)
       val w = workToDo.map(k =>
         k.doWork()
       )
@@ -185,7 +185,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
       FutureResults.foreach(li => {
         val failures = prepareFailedWork(li)
         val successes = prepareCompletedWork(li)
-        log.info("WorkActor: successes -> {}", successes)
+        log.debug("WorkActor: successes -> {}", successes)
 
         if (successes.nonEmpty) {
           val time = timeDelta(Some(created), DateTime.now())
@@ -195,10 +195,10 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         } else {
           self ! ResultResolution(true)
         }
-        log.info("WorkActor: failures: {}", failures)
+        log.debug("WorkActor: failures: {}", failures)
         if (failures.tasks.nonEmpty) {
           val time = timeDelta(Some(created), DateTime.now())
-          log.info("WorkActor: we have nonempty failures. sending {} to producer. Took {} to generate", failures, time)
+          log.warning("WorkActor: we have nonempty failures. sending {} to producer. Took {} to generate", failures, time)
 
           producer ! failures
         } else {
@@ -210,14 +210,14 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
 
     case d: Resolution =>
       standoff += d
-      log.info("WorkActor: {}", standoff)
+      log.debug("WorkActor: standoff {}", standoff)
       if(AckState(standoff)){
         log.info("WorkActor: Ackking message")
         context.parent ! Ack(key)
       }
       if(NackState(standoff)) {
         myHttp.client.close()
-        log.info("WorkActor: nackked - poisioning")
+        log.warning("WorkActor: nackked - poisioning")
         self ! PoisonPill
       }
       if(StandoffResolved(standoff)) {
@@ -225,11 +225,11 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
 
         log.info("WorkActor: standoff resolved! Took: {}", time)
         val fi = new File(downloadconfig.download_directory, filename)
-        log.info("WorkActor: Deleting {}", fi.toString)
+        log.info("WorkActor: deleting temporary file {}", fi.toString)
         fi.delete()
         self ! PoisonPill
       }
     case msg =>
-      log.info("WorkActor: received a message I cannot match against: {}", sender(), msg)
+      log.error("WorkActor: received a message I cannot match against: {}", sender(), msg)
   }
 }

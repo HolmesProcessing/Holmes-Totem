@@ -118,7 +118,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                                  envelope: Envelope,
                                  properties: AMQP.BasicProperties,
                                  body: Array[Byte]) = {
-      log.info("handle delivery {}, {}, {}", envelope.getDeliveryTag, envelope.isRedeliver, channel.hashCode())
+      log.info("RabbitConsumer: handle delivery {}, {}, {}", envelope.getDeliveryTag, envelope.isRedeliver, channel.hashCode())
 
       self ! new RabbitMessage(envelope.getDeliveryTag, body)
     }
@@ -129,7 +129,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
         try {
           parse(new String(body)).extract[T] match {
             case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
-              log.info("Created a ZooWork, {}", filename)
+              log.info("RabbitConsumer: created a ZooWork, {}", filename)
               val uuid_filename: String = UUID.randomUUID().toString
               WorkGroupActor ! Create(
                 deliveryTag,
@@ -148,27 +148,27 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                 ),
                 config
               )
-              log.info("We sent a create message!")
+              log.info("RabbitConsumer: sent a create message!")
               totalDemand -= 1
             case msg =>
-              log.error("RabbitConsumerActor has received a RabbitMessage that cannot be cast to a ZooWork {}", msg)
+              log.error("RabbitConsumer: received a RabbitMessage that cannot be cast to a ZooWork {}", msg)
           }
         } catch {
           case e: org.json4s.MappingException =>
-            log.info(e.msg)
+            log.info("RabbitConsumer: parsing error -> {}", e.msg)
         }
 
     case Ack(n: Long) =>
       this.channel.basicAck(n, false)
       sender ! ConsumerResolution(true)
-      log.info("just acked {} successfully", n)
+      log.info("RabbitConsumer: just acked {} successfully", n)
 
     case NAck(n: Long) =>
       this.channel.basicNack(n, false, true)
       sender ! NackResolution(true)
-      log.info("just nacked {} successfully", n)
+      log.info("RabbitConsumer: just nacked {} successfully", n)
 
     case msg =>
-      log.error("RabbitConsumerActor has received a message it cannot match against: {}", msg)
+      log.error("RabbitConsumer: received a message I cannot match against: {}", msg)
   }
 }

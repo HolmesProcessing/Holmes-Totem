@@ -145,7 +145,6 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
           ("attempts" -> incremented_attempts)
         )
       val j = compact(render(json))
-      //val j = compact(render(json)) //this can be made generic to +ZooWork (ZooWorkC), see the scala worksheet.
 
       // TODO: set attemts as a config object
       if(incremented_attempts <= 3) {
@@ -157,23 +156,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
         }
         sender ! RemainderResolution(true)
         log.info("emitting gunslinger from {}", sender().path)
-    /*
-    case msg: ZooWorkC =>
-      val incremented_attempts = attempts + 1
 
-      val j = write(msg)
-
-      if(incremented_attempts <= 3) {
-        sendMessage(RMQSendMessage(j.getBytes, requeueKey))
-        log.info("emitting a ZooWork {} to RMQ", j)
-      } else {
-        sendMessage(RMQSendMessage(j.getBytes, misbehaveKey))
-        log.info("emitting misbehaving ZooWork {} to RMQ", j)
-      }
-      sender ! RemainderResolution(true)
-      log.info("emitting gunslinger from {}", sender().path)
-
-    */
     case msg =>
       log.error("RabbitProducerActor has received a message it cannot match against: {}", msg)
   }

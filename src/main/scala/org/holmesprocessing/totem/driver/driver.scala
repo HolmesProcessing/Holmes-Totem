@@ -78,8 +78,7 @@ object driver extends App with Instrumented {
     conf.getBoolean("totem.rabbit_settings.misbehavequeue.autodelete")
   )
 
-
-  println("Configuring Services")
+  println("Configuring setting for Services")
   class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) { //this is a class, but we can probably make it an object. No big deal, but it helps on mem. pressure.
     def GeneratePartial(work: String): String = {
       work match {
@@ -136,7 +135,7 @@ object driver extends App with Instrumented {
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, misbehaveQueueConfig, encoding, conf.getString("totem.requeueKey")), "producer")
 
-  println("Totem version " + conf.getString("totem.version") + " is up and running")
+  println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
 
   //////
   // Demo & Debug Zone

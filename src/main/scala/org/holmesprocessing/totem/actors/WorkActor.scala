@@ -105,12 +105,12 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     .map({
       case Some(v: Array[Byte]) =>
         new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
-        log.info("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
+        log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
 
         SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
 
       case None =>
-        log.warning("WorkActor: could not download {} using ANY URI", filename)
+        log.debug("WorkActor: could not download {} using ANY URI", filename)
 
         FailedDownload()
 
@@ -169,14 +169,14 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   def monitoredReceive = {
     case FailedDownload() =>
       val time = timeDelta(Some(created), DateTime.now())
-      log.warning("WorkActor: evicting for Work {} due to {}. Evict message took {} to be generated", key, "Failed Download", time)
+      log.warning("WorkActor: evicting task {} due to a failed download. Evict message took {} to be generated", key, time)
       log.warning("WorkActor: we failed to download the file! Nack and Die!")
       self ! LocalResolution(true)
       context.parent ! NAck(key)
 
     case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
-      log.info("WorkActor: downloaded {} successfully in {}!", sha256sum, time)
+      log.info("WorkActor: sucessfully downloaded {} to {} in {}!", sha256sum, filepath, time)
       log.debug("WorkActor: workload -> {}", workToDo)
       val w = workToDo.map(k =>
         k.doWork()
@@ -190,7 +190,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
         if (successes.nonEmpty) {
           val time = timeDelta(Some(created), DateTime.now())
 
-          log.info("WorkActor: we have nonempty successes. sending {} to producer. Took {} to generate", successes, time)
+          log.info("WorkActor: we have nonempty successes! sending {} to producer. Took {} to generate", successes, time)
           producer ! ResultPackage(hashfilename, successes, tags, md5sum, sha1sum, sha256sum)
         } else {
           self ! ResultResolution(true)

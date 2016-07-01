@@ -118,7 +118,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                                  envelope: Envelope,
                                  properties: AMQP.BasicProperties,
                                  body: Array[Byte]) = {
-      log.info("RabbitConsumer: handle delivery tag - {}, redeliver - {}, channel - {}", envelope.getDeliveryTag, envelope.isRedeliver, channel.hashCode())
+      log.debug("RabbitConsumer: handle delivery tag - {}, is redeliver - {}, channel - {}", envelope.getDeliveryTag, envelope.isRedeliver, channel.hashCode())
 
       self ! new RabbitMessage(envelope.getDeliveryTag, body)
     }

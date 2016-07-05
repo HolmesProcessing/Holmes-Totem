@@ -46,6 +46,10 @@ totem {
   }
 
   services {
+    objdump {
+      uri = ["http://127.0.0.1:7730/objdump/"]
+      resultRoutingKey = "objdump.result.static.totem"
+    }
     peid {
       uri = ["http://127.0.0.1:7720/peid/"]
       resultRoutingKey = "peid.result.static.totem"

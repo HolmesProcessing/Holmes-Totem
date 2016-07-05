@@ -4,6 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.holmesprocessing.totem.actors._
+import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
 import org.holmesprocessing.totem.services.peid.{PEiDSuccess, PEiDWork}
 import org.holmesprocessing.totem.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.holmesprocessing.totem.services.virustotal.{VirustotalSuccess, VirustotalWork}
@@ -83,6 +84,7 @@ object driver extends App with Instrumented {
   class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) { //this is a class, but we can probably make it an object. No big deal, but it helps on mem. pressure.
     def GeneratePartial(work: String): String = {
       work match {
+        case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
@@ -93,6 +95,8 @@ object driver extends App with Instrumented {
 
     def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
+        case ("OBJDUMP", li: List[String]) =>
+          ObjdumpWork(key, filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PEID", li: List[String]) =>
           PEiDWork(key, filename, 60, "PEID", GeneratePartial("PEID"), li)
 
@@ -120,6 +124,7 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
+        case x: ObjdumpSuccess => conf.getString("totem.services.objdump.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.services.peinfo.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.services.virustotal.resultRoutingKey")

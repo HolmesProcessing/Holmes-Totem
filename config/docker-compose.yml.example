@@ -1,3 +1,11 @@
+objdump:
+  build: ../src/main/scala/org/holmesprocessing/totem/services/objdump
+  ports:
+    - "7730:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
+
 peid:
   build: ../src/main/scala/org/holmesprocessing/totem/services/peid
   ports:

@@ -92,7 +92,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
     // Setting up the misbehaved queue
     this.channel.queueDeclare(misbehaveQueue.queueName, misbehaveQueue.durable, misbehaveQueue.exclusive, misbehaveQueue.autodelete, null)
     this.channel.queueBind(misbehaveQueue.queueName, exchange.exchangeName, misbehaveQueue.routingKey)
-    log.info("Exchange {} should be made", exchange.exchangeName)
+    log.info("RabbitProducer: exchange {} should be made", exchange.exchangeName)
 
   }
   /**
@@ -108,7 +108,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
   def receive = {
     case Send(message: RMQSendMessage) =>
       sendMessage(message)
-      log.info("Sent to RMQ: {}", new String(message.body))
+      log.info("RabbitProducer: sent to RMQ -> {}", new String(message.body))
 
     case r: Result =>
       val json = (
@@ -133,7 +133,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
         sendMessage(RMQSendMessage(j.getBytes, encoding.workRoutingKey(result)))
       })
       sender ! ResultResolution(true)
-      log.info("emitting result {} to RMQ", sender().path)
+      log.info("RabbitProducer: emitting result {} to RMQ", sender().path)
 
     case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
       val incremented_attempts = attempts + 1
@@ -150,13 +150,13 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       // TODO: set attemts as a config object
       if(incremented_attempts <= 3) {
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
-          log.info("emitting a ZooWork {} to RMQ", j)
+          log.info("RabbitProducer: emitting a ZooWork {} to RMQ", j)
         } else {
           sendMessage(RMQSendMessage(j.getBytes, misbehaveQueue.routingKey))
-          log.info("emitting misbehaving ZooWork {} to RMQ", j)
+          log.info("RabbitProducer: emitting misbehaving ZooWork {} to RMQ", j)
         }
         sender ! RemainderResolution(true)
-        log.info("emitting gunslinger from {}", sender().path)
+        log.info("RabbitProducer: emitting gunslinger from {}", sender().path)
     /*
     case msg: ZooWorkC =>
       val incremented_attempts = attempts + 1
@@ -175,6 +175,6 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
 
     */
     case msg =>
-      log.error("RabbitProducerActor has received a message it cannot match against: {}", msg)
+      log.error("RabbitProducer: received a message I cannot match against: {}", msg)
   }
 }

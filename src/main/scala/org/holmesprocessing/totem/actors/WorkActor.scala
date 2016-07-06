@@ -89,7 +89,8 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     execServ.shutdown()
   }
   val httpconfig = new AsyncHttpClientConfig.Builder()
-    .setRequestTimeout( downloadconfig.request_timeout ) //should have a config value for this
+    //TODO: set config for maxconnections
+    .setRequestTimeout( downloadconfig.request_timeout )
     .setExecutorService(execServ)
     .setAllowPoolingConnections(true)
     .setConnectTimeout( downloadconfig.connect_timeout )

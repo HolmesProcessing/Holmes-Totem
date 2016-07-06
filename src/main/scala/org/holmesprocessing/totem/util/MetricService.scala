@@ -16,12 +16,6 @@ object MetricService extends InstrumentedBuilder {
   reporter.start()
   sys.addShutdownHook(reporter.stop())
 
-  //val reporter2: ConsoleReporter = ConsoleReporter.forRegistry(metricRegistry)
-  //  .convertRatesTo(TimeUnit.SECONDS)
-  //  .convertDurationsTo(TimeUnit.MILLISECONDS)
-  //  .build()
-  //reporter2.start(1, TimeUnit.SECONDS)
-
   //Register some metrics
   metrics.gauge("totalMemory")(Runtime.getRuntime.totalMemory)
   metrics.gauge("usedMemory")(Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory)

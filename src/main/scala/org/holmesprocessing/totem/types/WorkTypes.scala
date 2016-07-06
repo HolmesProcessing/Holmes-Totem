@@ -125,59 +125,6 @@ abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
   def workRoutingKey(work: WorkResult): String
 }
 
-/**
- * This is a helper object, with one purpose - to ensure that JSON blobs can be properly decoded into useful work that Totem
- * can understand as a native Scala object.
- *
- * @constructor Create a new WorkEncoding Object.
- *
- */
-class DemoTotemEncoding(conf: Config) extends WorkEncoding {
-  /**
-   * Logic to create and route TaskedWork objects based on keywords in JSON blobs. In the event we get a blob and keyword
-   * that we cannot deal with, we return nothing. Silently. Because we want to punish the developer for their arrogance.
-   *
-   * @return a List[TaskedWork]: We always return some work to be done. We purge Units from this list.
-   * @param key: a String: ID of the message that generated this work.
-   * @param filename: a String: The filename to be used as a reference to the file on disk.
-   * @param workToDo: a List[String]: A list of the keywords from the ZooWork object.
-   */
-
-  val keys = conf.getObject("zoo.services").keySet()
-  val en = conf.getObject("zoo.services").toConfig
-  val services = keys.map(key =>
-    (key, Random.shuffle(en.getStringList(s"$key.uri").toList))
-  ).toMap[String, List[String]]
-  val log = Logger(LoggerFactory.getLogger("name"))
-
-  def GeneratePartial(work: String): String = {
-    work match {
-      case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
-      case "VTSAMPLE" => Random.shuffle(services.getOrElse("vtsample", List())).head
-      case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
-    }
-  }
-
-  def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
-    val w = workToDo.map({
-      case ("YARA", li: List[String]) =>
-        YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
-      case (s: String, li: List[String]) =>
-        UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
-      case _ => Unit
-    }).collect({
-      case x: TaskedWork => x
-    })
-    w.toList
-  }
-
-  def workRoutingKey(work: WorkResult): String = {
-    work match {
-      case x: YaraSuccess => "yara.result.static.zoo"
-    }
-  }
-}
-
 trait Resolution {
   val status: Boolean
 }

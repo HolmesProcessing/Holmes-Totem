@@ -76,7 +76,6 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
   var channel: Channel =_
 
   val resultCounts: Histogram = metricRegistry.histogram(classOf[RabbitConsumerActor[ZooWork]].getName + "ack-map-counts")
-  //resultCounts.update(totalDemand)
 
   override def preStart() ={
     val reconnectionDelay: FiniteDuration = 10.seconds

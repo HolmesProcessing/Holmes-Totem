@@ -95,6 +95,7 @@ trait WorkResult {
   val WorkType: String
   val Arguments: List[String]
 }
+
 abstract class WorkSuccess extends WorkResult
 abstract class WorkFailure extends WorkResult
 
@@ -143,5 +144,4 @@ case class Conflict(consumer: Boolean, result: Boolean, remainder: Boolean, loca
     case LocalResolution(status: Boolean) => Conflict(this.consumer, this.result, this.remainder, status, this.nack)
     case NackResolution(status: Boolean) => Conflict(this.consumer, this.result, this.remainder, this.local, status)
   }
-
 }

@@ -44,5 +44,4 @@ trait MonitoredActor extends Actor with Instrumented {
     }
 
   def monitoredReceive: Actor.Receive
-
 }

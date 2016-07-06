@@ -49,7 +49,7 @@ class WorkGroup extends Actor with ActorLogging with MonitoredActor {
   def monitoredReceive = {
     case Create(key: Long, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings) =>
       val child = context.child(key.toString).getOrElse({
-        log.info("Instantiating a new actor for message: {}", key)
+        log.info("WorkGroup: instantiating a new actor for message {}", key)
         context.watch(
           context.actorOf(
             WorkActor.props(key, value.filename, value.hashfilename, primaryURI,secondaryURI, value.workToDo, tags, value.attempts, config), key.toString
@@ -58,16 +58,16 @@ class WorkGroup extends Actor with ActorLogging with MonitoredActor {
 
       })
     case t: Ack =>
-      log.info("Got an Ack from {}, moving up the chain", sender())
+      log.info("WorkGroup: Ack from {}, moving up the chain", sender())
       context.parent.tell(t, sender())
 
     case t: NAck =>
-      log.info("Got an NAck from {}, moving up the chain", sender())
+      log.warning("WorkGroup: NAck from {}, moving up the chain", sender())
       context.parent.tell(t, sender())
 
     case Terminated(t: ActorRef) =>
-      log.info("child {} terminated", t)
+      log.info("WorkGroup: child {} terminated", t)
     case msg =>
-      log.info("WorkGroup has received a message it cannot match against:{}", msg)
+      log.error("WorkGroup: received a message I cannot match against -> {}", msg)
   }
 }

@@ -18,7 +18,7 @@ class WorkGroupTest extends TestKit(
     val WorkGroupRef = TestActorRef(new WorkGroup())
     "log a message when it gets a message it does not understand" in {
 
-      EventFilter.info(pattern = "WorkGroup has received a message *", occurrences = 1) intercept {
+      EventFilter.error(pattern = "WorkGroup: received a message I cannot match against *", occurrences = 1) intercept {
         WorkGroupRef ! "A string! This shouldn't be parsable."
       }
 

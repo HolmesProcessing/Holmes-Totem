@@ -98,22 +98,16 @@ object driver extends App with Instrumented {
           ObjdumpWork(key, filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PEID", li: List[String]) =>
           PEiDWork(key, filename, 60, "PEID", GeneratePartial("PEID"), li)
-
         case ("PEINFO", li: List[String]) =>
           PEInfoWork(key, filename, 60, "PEINFO", GeneratePartial("PEINFO"), li)
-
         case ("VIRUSTOTAL", li: List[String]) =>
           VirustotalWork(key, filename, 60, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
-
         case ("YARA", li: List[String]) =>
           YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
-
         case ("ZIPMETA", li: List[String]) =>
           ZipMetaWork(key, filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
-
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
-
         case _ => Unit
       }).collect({
         case x: TaskedWork => x

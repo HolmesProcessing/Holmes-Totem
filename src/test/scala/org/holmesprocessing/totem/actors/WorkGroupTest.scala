@@ -24,5 +24,4 @@ class WorkGroupTest extends TestKit(
 
     }
   }
-
 }

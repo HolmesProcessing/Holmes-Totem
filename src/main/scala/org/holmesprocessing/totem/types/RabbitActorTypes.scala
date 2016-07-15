@@ -1,6 +1,6 @@
 package org.holmesprocessing.totem.types
 
-case class QueueSettings(queueName: String, routingKey: String, durable: Boolean, exclusive: Boolean, autodelete: Boolean)
+case class QueueSettings(queueName: String, routingKey: List[String], durable: Boolean, exclusive: Boolean, autodelete: Boolean)
 case class ExchangeSettings(exchangeName: String, exchangeType: String, durable: Boolean)
 case class HostSettings(host: String, port: Int, user: String, password: String, vhost: String)
 

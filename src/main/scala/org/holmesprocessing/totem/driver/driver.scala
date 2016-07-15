@@ -56,16 +56,22 @@ object driver extends App with Instrumented {
     conf.getString("totem.rabbit_settings.exchange.type"),
     conf.getBoolean("totem.rabbit_settings.exchange.durable")
   )
+
+  val workqueueKeys = List[String](
+      conf.getString("totem.rabbit_settings.workqueue.routing_key"),
+      conf.getString("totem.requeueKey")
+  )
+
   val workqueueConfig = QueueSettings(
     conf.getString("totem.rabbit_settings.workqueue.name"),
-    conf.getString("totem.rabbit_settings.workqueue.routing_key"),
+    workqueueKeys,
     conf.getBoolean("totem.rabbit_settings.workqueue.durable"),
     conf.getBoolean("totem.rabbit_settings.workqueue.exclusive"),
     conf.getBoolean("totem.rabbit_settings.workqueue.autodelete")
   )
   val resultQueueConfig = QueueSettings(
     conf.getString("totem.rabbit_settings.resultsqueue.name"),
-    conf.getString("totem.rabbit_settings.resultsqueue.routing_key"),
+    List[String](conf.getString("totem.rabbit_settings.resultsqueue.routing_key")),
     conf.getBoolean("totem.rabbit_settings.resultsqueue.durable"),
     conf.getBoolean("totem.rabbit_settings.resultsqueue.exclusive"),
     conf.getBoolean("totem.rabbit_settings.resultsqueue.autodelete")
@@ -73,7 +79,7 @@ object driver extends App with Instrumented {
 
   val misbehaveQueueConfig = QueueSettings(
     conf.getString("totem.rabbit_settings.misbehavequeue.name"),
-    conf.getString("totem.rabbit_settings.misbehavequeue.routing_key"),
+    List[String](conf.getString("totem.rabbit_settings.misbehavequeue.routing_key")),
     conf.getBoolean("totem.rabbit_settings.misbehavequeue.durable"),
     conf.getBoolean("totem.rabbit_settings.misbehavequeue.exclusive"),
     conf.getBoolean("totem.rabbit_settings.misbehavequeue.autodelete")
@@ -140,6 +146,7 @@ object driver extends App with Instrumented {
   val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, misbehaveQueueConfig, encoding, conf.getString("totem.requeueKey")), "producer")
 
+  println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
   println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
 
   //////

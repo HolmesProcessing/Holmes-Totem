@@ -85,13 +85,18 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
     // Setting up the results queue
     this.channel.exchangeDeclare(exchange.exchangeName, exchange.exchangeType, exchange.durable)
     this.channel.queueDeclare(resultsQueue.queueName, resultsQueue.durable, resultsQueue.exclusive, resultsQueue.autodelete, null)
-    this.channel.queueBind(resultsQueue.queueName, exchange.exchangeName, resultsQueue.routingKey)
-
+    resultsQueue.routingKey.foreach(routingKey => {
+      this.channel.queueBind(resultsQueue.queueName, exchange.exchangeName, routingKey)
+    })
     //TODO: this is where the requeue queue information will go.
 
     // Setting up the misbehaved queue
     this.channel.queueDeclare(misbehaveQueue.queueName, misbehaveQueue.durable, misbehaveQueue.exclusive, misbehaveQueue.autodelete, null)
-    this.channel.queueBind(misbehaveQueue.queueName, exchange.exchangeName, misbehaveQueue.routingKey)
+
+    misbehaveQueue.routingKey.foreach(routingKey => {
+      this.channel.queueBind(misbehaveQueue.queueName, exchange.exchangeName, routingKey)
+    })
+    
     log.info("RabbitProducer: exchange {} should be made", exchange.exchangeName)
 
   }
@@ -141,18 +146,22 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
         ("primaryURI" -> primaryURI) ~
           ("secondaryURI" -> secondaryURI) ~
           ("filename" -> filename) ~
-          ("tasks" -> Serialization.write(tasks)) ~
+          ("tasks" -> tasks) ~
           ("attempts" -> incremented_attempts)
         )
       val j = compact(render(json))
 
       // TODO: set attemts as a config object
+      log.info("RabbitProducer: we have had an error, we have an incremented_attempts of {}", incremented_attempts)
       if(incremented_attempts <= 3) {
+
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
-          log.info("RabbitProducer: emitting a ZooWork {} to RMQ", j)
+          log.info("RabbitProducer: emitting a ZooWork {} to RMQ with routing key {} because incremented_attempts is {}", j, requeueKey, incremented_attempts)
         } else {
-          sendMessage(RMQSendMessage(j.getBytes, misbehaveQueue.routingKey))
-          log.info("RabbitProducer: emitting misbehaving ZooWork {} to RMQ", j)
+          misbehaveQueue.routingKey.foreach(routingKey => {
+            sendMessage(RMQSendMessage(j.getBytes, routingKey))
+          })
+          log.info("RabbitProducer: emitting misbehaving ZooWork {} to RMQ with routing_key {} because incremented_attempts is {}", j, misbehaveQueue.routingKey, incremented_attempts)
         }
         sender ! RemainderResolution(true)
 

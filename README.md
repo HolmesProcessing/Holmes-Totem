@@ -3,19 +3,22 @@
 ## Overview
 The Holmes-TOTEM Planner is responsible for turning data into information by performing feature extraction against submitted objects. When tasked, Holmes-TOTEM schedules the execution of its services which are capable of performing static and dynamic analysis as well as gather data from third parties.
 
-This particular Investigation Planner is optimized for executing Services that complete in a few seconds, i.e. static analysis and 3rd party queries. When dealing with services that take longer to complete, we recommend pairing the Holmes-TOTEM Planner with [Holmes-TOTEM-Long](https://github.com/HolmesProcessing/Holmes-Totem-Long).
+The Holmes-TOTEM Investigation Planner is optimized for executing extraction services that complete in a few seconds, i.e. static analysis and 3rd party queries. When dealing with services that take longer to complete, we recommend pairing the Holmes-TOTEM Planner with [Holmes-TOTEM-Long](https://github.com/HolmesProcessing/Holmes-Totem-Long).
 
 ## Dependencies
-Holmes-TOTEM requires an HTTP server for delivering files, a database for storing results, and a queuing server for organizing tasking. When building and executing Holmes-Totem, we require [Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) and recommend the [SBT](http://www.scala-sbt.org/) build tool. Most services rely on [Docker](https://docs.docker.com/) and [Docker-Compose](https://docs.docker.com/compose/).
-
-### Serving Files and Storing Results
-[Holmes-Storage](https://github.com/HolmesProcessing/Holmes-Storage) is the Holmes Processing recommendation for managing the sample repository and storing Holmes-TOTEM results. While not strictly required, Holmes-Storage will ease the creation of the databases and provide the information in the expected format for other Holmes Processing solutions. 
-
-### Queuing Server
-[RabbitMQ](https://www.rabbitmq.com/) is the queuing server of choice for Holmes Processing. Other AMQP complaint services should work but are unsupported and untested. For sending tasking to the queuing server, we recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. 
+Holmes-TOTEM is built with the [Akka Toolkit](http://akka.io/) and performs best with [Oracle's Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html). When executing tasks, Holmes-TOTEM requires an HTTP complaint server for delivering files, a database for storing results, and a queuing server for organizing tasking.
 
 ### Compiling and Executing
-Holmes-Totem requires [Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) and we recommend using the [SBT](http://www.scala-sbt.org/) build tool.
+Holmes-Totem requires [Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) and we used the [SBT](http://www.scala-sbt.org/) build tool for dependency management and assembling.
+
+### Queuing Server
+[RabbitMQ](https://www.rabbitmq.com/) is the queuing server of choice for Holmes Processing. Other AMQP complaint services should work but are untested by Holmes Processing. For sending tasking to the queuing server, we recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. 
+
+### Serving Files and Storing Results
+[Holmes-Storage](https://github.com/HolmesProcessing/Holmes-Storage) is the Holmes Processing recommendation for managing the sample repository and storing Holmes-TOTEM results. While not strictly required, Holmes-Storage will ease the creation of the databases and supply the information in the expected format for other Holmes Processing solutions. 
+
+### Using Supplied Services
+The supplied services rely on [Docker](https://docs.docker.com/) and [Docker-Compose](https://docs.docker.com/compose/).
 
 ## Installation
 
@@ -30,7 +33,7 @@ cd Holmes-Totem
 ```
 
 2. Compile Holmes-TOTEM
-Use SBT to download all dependencies and compile the source into a working JAR file.
+Holmes-TOTEM uses SBT to download all dependencies and compile the source into a working JAR file.
 ```
 sbt assembly
 ```
@@ -49,20 +52,13 @@ After the files are created, please perform any adjustments to the configuration
 Holmes-TOTEM provides a number of standard services that are packaged as Docker containers. These containers will manage all dependencies but configuration is still required. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf`. However, some services will require an API key or additional information to execute. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
 
 ## Running Holmes-TOTEM
-1. Start the Services
-```
-docker-compose -f ./config/docker-compose.yml up -d
-```
-
-2. Execute Holmes-TOTEM
-```
-java -jar ./target/scala-2.11/totem-assembly-1.0.jar
-```
+1. Start the Services```docker-compose -f ./config/docker-compose.yml up -d```
+2. Execute Holmes-TOTEM```java -jar ./target/scala-2.11/totem-assembly-1.0.jar```
 
 ## Tasking Holmes-TOTEM
 
 ### SKALD Tasking (Recommended)
-we recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. Please visit the Gateway Repository for details on how to execute tasking.
+We recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. Please visit the Holmes-Gateway repository for further information.
 
 ### Manual Tasking with Holmes-Toolbox
 [Holmes-Toolbox](https://github.com/HolmesProcessing/Holmes-Toolbox)  provides a Command Line Interface (CLI) for sending tasking to Holmes-TOTEM.

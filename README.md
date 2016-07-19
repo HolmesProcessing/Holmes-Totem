@@ -27,14 +27,14 @@ The supplied services rely on [Docker](https://docs.docker.com/) and [Docker-Com
 
 ### Manual
 1) Clone the Git Repository and Change Directory
-```bash
+```shell
 git clone https://github.com/HolmesProcessing/Holmes-Totem.git
 cd Holmes-Totem
 ```
 
 2) Compile Holmes-TOTEM
 Holmes-TOTEM uses SBT to download all dependencies and compile the source into a working JAR file.
-```bash
+```shell
 sbt assembly
 ```
 The assembled jar file will be located in `./target/scala-2.11/totem-assembly-1.0.jar`
@@ -42,7 +42,7 @@ The assembled jar file will be located in `./target/scala-2.11/totem-assembly-1.
 ## Configuration
 1) Perform Totem Configuration
 Holmes-TOTEM is packaged with sane configuration defaults for Holmes-TOTEM and Docker-Compose. These configuration settings will configure the system to use all available Holmes-TOTEM services. These default configuration can be used by removing the `.example` tag at the end of the file name.
-```bash
+```shell
 cp ./config/totem.conf.example ./config/totem.conf
 cp ./config/docker-compose.yml.example ./config/docker-compose.yml.example
 ```
@@ -53,12 +53,12 @@ Holmes-TOTEM provides a number of standard services that are packaged as Docker 
 
 ## Running Holmes-TOTEM
 1) Start the Services
-```bash
+```shell
 docker-compose -f ./config/docker-compose.yml up -d
 ```
 
 2) Execute Holmes-TOTEM
-```bash
+```shell
 java -jar ./target/scala-2.11/totem-assembly-1.0.jar
 ```
 
@@ -73,12 +73,12 @@ We recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-G
 ### Manual Tasking with AMQP
 Holmes-TOTEM can be manually tasked using custom created AMQP message using JSON as the message body. The following minimal example will task Holmes-TOTEM to execute PEID, YARA, and PEINFO against a sample. 
 ```python
-s = <sample>
-URI = "<Storage URL>"+s
+SAMPLE = <sample>
+URI = "<Storage URL>" + SAMPLE
         jdict = {
                 "primaryURI": URI,
                 "secondaryURI": URI,
-                "filename": s,
+                "filename": SAMPLE,
                 "tasks": {
                         "PEID": []
                         "YARA": [],

@@ -17,101 +17,78 @@ Holmes-TOTEM requires an HTTP server for delivering files, a database for storin
 ### Compiling and Executing
 Holmes-Totem requires [Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) and we recommend using the [SBT](http://www.scala-sbt.org/) build tool.
 
-## Basic Compilation and Setup
+## Installation
+
+### Automated
+[Holmes-Toolbox](https://github.com/HolmesProcessing/Holmes-Toolbox) provides install scripts for quick installation. 
+
+### Manual
 1. Clone the Git Repository and Change Directory
 ```
 git clone https://github.com/HolmesProcessing/Holmes-Totem.git
 cd Holmes-Totem
 ```
 
-2. Perform Totem Configuration
-Create configurations from the example defaults. This will configure the system to use all available Holmes-TOTEM services.
-```
-cp ./config/totem.conf.example ./config/totem.conf
-cp ./config/docker-compose.yml.example ./config/docker-compose.yml.example
-```
-Please perform any adjustments to the configuration to match your environment and needs. You will most likely need to adjust the `rabbit_settings`.
-
-3. Perform Service Configuration
-Holmes-TOTEM services will require configuring. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf`. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
-
-4. Compile Holmes-TOTEM
+2. Compile Holmes-TOTEM
 Use SBT to download all dependencies and compile the source into a working JAR file.
 ```
 sbt assembly
 ```
+The assembled jar file will be located in `./target/scala-2.11/totem-assembly-1.0.jar`
 
-5. Start the Services
+## Configuration
+1. Perform Totem Configuration
+Holmes-TOTEM is packaged with sane configuration defaults for Holmes-TOTEM and Docker-Compose. These configuration settings will configure the system to use all available Holmes-TOTEM services. These default configuration can be used by removing the `.example` tag at the end of the file name.
+```
+cp ./config/totem.conf.example ./config/totem.conf
+cp ./config/docker-compose.yml.example ./config/docker-compose.yml.example
+```
+After the files are created, please perform any adjustments to the configuration to match your environment and needs. You will most likely need to adjust the values for `rabbit_settings`.
+
+2. Perform Service Configuration
+Holmes-TOTEM provides a number of standard services that are packaged as Docker containers. These containers will manage all dependencies but configuration is still required. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf`. However, some services will require an API key or additional information to execute. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
+
+## Running Holmes-TOTEM
+1. Start the Services
 ```
 docker-compose -f ./config/docker-compose.yml up -d
 ```
 
-6. Execute Totem
+2. Execute Holmes-TOTEM
 ```
-java -jar target/scala-2.11/totem-assembly-1.0.jar
+java -jar ./target/scala-2.11/totem-assembly-1.0.jar
 ```
 
-## Services:
-Included services mostly depend on pythons HTTP framework "Tornado", this can be installed via `pip install tornado`.
-Also most services provide a Dockerfile you can use to build the service without having to worry about the dependencies.
-Check the `README.md` file of each service to get an introduction how to run the service.
+## Tasking Holmes-TOTEM
 
-## Dataflow:
-The general case data workflow between actors is as follows:
+### SKALD Tasking (Recommended)
+we recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. Please visit the Gateway Repository for details on how to execute tasking.
 
-Consumer <-> WorkGroup <-> WorkActor -> Producer
+### Manual Tasking with Holmes-Toolbox
+[Holmes-Toolbox](https://github.com/HolmesProcessing/Holmes-Toolbox)  provides a Command Line Interface (CLI) for sending tasking to Holmes-TOTEM.
 
-## Config Settings:
-All of the below settings can be seen within the `totem.conf.example` file in the `<TOTEM_ROOT>/config/` directory. It is advised that you copy the config and create your own `totem.conf`.
-The required settings have been replicated below - there are no defaults hardcoded into TOTEM
-
-
+### Manual Tasking with AMQP
+Holmes-TOTEM can be manually tasked using custom created AMQP message using JSON as the message body. The following minimal example will task Holmes-TOTEM to execute PEID, YARA, and PEINFO against a sample. 
 ```
-totem {
-  version = "1.0.0"
-  download_directory = "/tmp/"
-  requeueKey = "requeue.static.totem"
-  misbehaveKey = "misbehave.static.totem"
-
-  rabbit_settings {
-    host {
-      server = "127.0.0.1"
-      port = 5672
-      username = "guest"
-      password = "guest"
-      vhost = "/"
-    }
-    exchange {
-      name = "totem"
-      type = "topic"
-      durable = true
-    }
-    workqueue {
-      name = "totem_input"
-      routing_key = "work.static.totem"
-      durable = true
-      exclusive = false
-      autodelete = false
-    }
-    resultsqueue {
-      name = "totem_output"
-      routing_key = "*.result.static.totem"
-      durable = true
-      exclusive = false
-      autodelete = false
-    }
-  }
-
-  services {
-    yara {
-      uri = ["http://127.0.0.1:7701/yara/"]
-      resultRoutingKey = "yara.result.static.totem"
-    }
-  }
-}
+s = <sample>
+URI = "<Storage URL>"+s
+        jdict = {
+                "primaryURI": URI,
+                "secondaryURI": URI,
+                "filename": s,
+                "tasks": {
+                        "PEID": []
+                        "YARA": [],
+                        "PEINFO": [],
+                },
+                "tags": [
+                        "totem-test"
+                ],
+                "attempts": 0
+        }
 ```
 
 ## Acknowledgment
-Holmes-Totem is derived from the Novetta open source project Totem and The Holmes Group LLC is not in any way related or endorsed by Novetta. We gracelessly thank Novetta for then wonderful contribution and we could not have created this project without their support. 
+Holmes-Totem is derived from the Novetta open source project Totem and Holmes Group LLC is not related or endorsed by Novetta. We gracelessly thank Novetta for their contribution and we could not have created this project without their support. 
 
 Holmes Processing would also like to thank the [CRITs](https://crits.github.io/) team for their valuable discussions and support they provided.

@@ -4,6 +4,7 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.holmesprocessing.totem.actors._
+import org.holmesprocessing.totem.services.gogadget.{GoGadgetSuccess, GoGadgetWork}
 import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
 import org.holmesprocessing.totem.services.peid.{PEiDSuccess, PEiDWork}
 import org.holmesprocessing.totem.services.peinfo.{PEInfoSuccess, PEInfoWork}
@@ -89,6 +90,7 @@ object driver extends App with Instrumented {
   class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) { //this is a class, but we can probably make it an object. No big deal, but it helps on mem. pressure.
     def GeneratePartial(work: String): String = {
       work match {
+        case "GOGADGET" => Random.shuffle(services.getOrElse("gogadget", List())).head
         case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
@@ -100,6 +102,8 @@ object driver extends App with Instrumented {
 
     def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
+        case ("GOGADGET", li: List[String]) =>
+          GoGadgetWork(key, filename, 60, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
           ObjdumpWork(key, filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PEID", li: List[String]) =>
@@ -123,6 +127,7 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
+        case x: GoGadgetSuccess => conf.getString("totem.services.gogadget.resultRoutingKey")
         case x: ObjdumpSuccess => conf.getString("totem.services.objdump.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.services.peinfo.resultRoutingKey")

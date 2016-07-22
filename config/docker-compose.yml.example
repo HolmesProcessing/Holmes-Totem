@@ -1,3 +1,11 @@
+gogadget:
+  build: ../src/main/scala/org/holmesprocessing/totem/services/gogadget
+  ports:
+    - "7740:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
+
 objdump:
   build: ../src/main/scala/org/holmesprocessing/totem/services/objdump
   ports:

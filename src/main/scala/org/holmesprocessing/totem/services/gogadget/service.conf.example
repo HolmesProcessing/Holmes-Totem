@@ -1,0 +1,13 @@
+[metadata]
+Name        = GoGadget
+Version     = 1.0
+Description = ./README.md
+Copyright   = Copyright 2016 Holmes Group LLC
+License     = ./LICENSE
+
+[settings]
+Port        = 8080
+InfoURL     = /
+AnalysisURL = /gogadget
+MaxNumberOfGadgets = 10000
+SearchDepth = 10

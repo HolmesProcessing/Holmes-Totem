@@ -46,6 +46,10 @@ totem {
   }
 
   services {
+    gogadget {
+      uri = ["http://127.0.0.1:7740/gogadget/"]
+      resultRoutingKey = "gogadget.result.static.totem"
+    }
     objdump {
       uri = ["http://127.0.0.1:7730/objdump/"]
       resultRoutingKey = "objdump.result.static.totem"

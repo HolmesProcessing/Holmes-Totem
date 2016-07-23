@@ -94,7 +94,9 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
 
   this.channel.exchangeDeclare(exchange.exchangeName, exchange.exchangeType, exchange.durable)
   this.channel.queueDeclare(queue.queueName, queue.durable, queue.exclusive, queue.autodelete, null)
-  this.channel.queueBind(queue.queueName, exchange.exchangeName, queue.routingKey)
+  queue.routingKey.foreach(routingKey => {
+    this.channel.queueBind(queue.queueName, exchange.exchangeName, routingKey)
+  })
 
   def consumeOne() = {
     val autoAck: Boolean = false

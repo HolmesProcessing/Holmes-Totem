@@ -13,13 +13,6 @@ import org.holmesprocessing.totem.util.{DownloadSettings, DownloadMethods, Monit
 import scala.concurrent.Future
 import scala.language.postfixOps
 
-/**
-  * Need three workers.
-  *
-  * A worker that does not attempt to download anything
-  *
-  *
-  */
 trait DownloadStatus
 case class FailedDownload() extends DownloadStatus
 case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: String, SHA1Hash: String, SHA256Hash: String) extends DownloadStatus
@@ -67,8 +60,7 @@ object WorkActor {
  *   }
  *
  * }}}
-  *
-  * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
+ * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
  * @param downloadconfig: a DownloadSettings, provides configuration options when downloading a file
  * @param deliverytag: a Long, represents the message's ID from RMQ.
  * @param filename: a String, the name of the file we are downloading.
@@ -162,6 +154,16 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
     log.debug("WorkActor: emitted failures -> {}", f)
     f
   }
+
+  def prepareFailedDownloadWork(res: List[TaskedWork]): ZooWork = {
+
+    log.debug("WorkActor: input to FailedDownloadWork -> {}", res)
+    //workToDo: List[TaskedWork]
+    val readywork = workToDo.map(tw => {
+      (tw.WorkType -> tw.Arguments)
+    }).toMap
+    ZooWork(download, primaryURI, secondaryURI, hashfilename, readywork, tags, attempts)
+  }
   /**
    *
    * @param completionState
@@ -181,9 +183,15 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
     case FailedDownload() =>
       val time = timeDelta(Some(created), DateTime.now())
       log.warning("WorkActor: evicting task {} due to a failed download. Evict message took {} to be generated", key, time)
-      log.warning("WorkActor: we failed to download the file! Nack and Die!")
+      log.warning("WorkActor: we failed to download the file! Increment attempts and move on!")
+      //workToDo: List[TaskedWork], translate to {worktype: arguments}
+      //producer ! ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
+      log.info("we are trying to prepare some failed downloaded work {}", prepareFailedDownloadWork(workToDo))
+      producer ! prepareFailedDownloadWork(workToDo)
+      self ! ResultResolution(true)
       self ! LocalResolution(true)
-      context.parent ! NAck(key)
+
+      //context.parent ! NAck(key)
 
     case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
@@ -229,6 +237,8 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
       if(NackState(standoff)) {
         myHttp.client.close()
         log.warning("WorkActor: nackked - poisioning")
+        context.parent ! Ack(key)
+
         self ! PoisonPill
       }
       if(StandoffResolved(standoff)) {

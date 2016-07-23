@@ -135,7 +135,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       sender ! ResultResolution(true)
       log.info("RabbitProducer: emitting result {} to RMQ", sender().path)
 
-    case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
+    case ZooWork(download: Boolean, primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
       val incremented_attempts = attempts + 1
       val json = (
         ("primaryURI" -> primaryURI) ~
@@ -149,10 +149,11 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       // TODO: set attemts as a config object
       if(incremented_attempts <= 3) {
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
-          log.info("RabbitProducer: emitting a ZooWork {} to RMQ", j)
+          log.info("We are sending a failed ZooWork back to RMQ")
+          log.info("RabbitProducer: emitting a ZooWork {} with retries {} to RMQ at queue {}", j, incremented_attempts, requeueKey)
         } else {
           sendMessage(RMQSendMessage(j.getBytes, misbehaveQueue.routingKey))
-          log.info("RabbitProducer: emitting misbehaving ZooWork {} to RMQ", j)
+          log.info("RabbitProducer: emitting misbehaving ZooWork {} to RMQ at queue {}", j, misbehaveQueue.queueName)
         }
         sender ! RemainderResolution(true)
 

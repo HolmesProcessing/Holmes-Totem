@@ -13,6 +13,13 @@ import org.holmesprocessing.totem.util.{DownloadSettings, DownloadMethods, Monit
 import scala.concurrent.Future
 import scala.language.postfixOps
 
+/**
+  * Need three workers.
+  *
+  * A worker that does not attempt to download anything
+  *
+  *
+  */
 trait DownloadStatus
 case class FailedDownload() extends DownloadStatus
 case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: String, SHA1Hash: String, SHA256Hash: String) extends DownloadStatus
@@ -21,8 +28,8 @@ case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: Str
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, download, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -60,7 +67,8 @@ object WorkActor {
  *   }
  *
  * }}}
- * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
+  *
+  * @constructor Create a new WorkActor which holds and manages state for each message (ZooWork) that the consumer receives.
  * @param downloadconfig: a DownloadSettings, provides configuration options when downloading a file
  * @param deliverytag: a Long, represents the message's ID from RMQ.
  * @param filename: a String, the name of the file we are downloading.
@@ -71,7 +79,7 @@ object WorkActor {
  *
  */
 
-class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
@@ -101,21 +109,23 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   lazy val asyncHttpClient = new AsyncHttpClient(httpconfig)
   implicit lazy val myHttp = new Http(asyncHttpClient)
 
-  val downloadResult = myHttp(url(primaryURI) OK as.Bytes)
-    .option
-    .map({
-      case Some(v: Array[Byte]) =>
-        new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
-        log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
+  if(download) {
+    val downloadResult = myHttp(url(primaryURI) OK as.Bytes)
+      .option
+      .map({
+        case Some(v: Array[Byte]) =>
+          new FileOutputStream(downloadconfig.download_directory + filename, false).write(v) //this filepath can be a conf. variable
+          log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
 
-        SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+          SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v))
 
-      case None =>
-        log.debug("WorkActor: could not download {} using ANY URI", filename)
+        case None =>
+          log.debug("WorkActor: could not download {} using ANY URI", filename)
 
-        FailedDownload()
+          FailedDownload()
 
-  }).foreach(self ! _)
+      }).foreach(self ! _)
+  }
   /**
    * Helper function to compare two JodaTime DateTimes.
    *
@@ -138,7 +148,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   }
 
   def prepareFailedWork(res: List[WorkResult]): ZooWork = {
-    val z = ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
+    val z = ZooWork(download, primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
     log.debug("WorkActor: input to failedwork -> {}", res)
     val nones = res.collect({
       case i: WorkFailure =>

@@ -13,7 +13,7 @@ import org.holmesprocessing.totem.util.DownloadSettings
  * @constructor Generate a Create message. This is used to initiate the creation of a WorkActor
  *
  */
-case class Create(key: Long, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings)
+case class Create(key: Long, download: Boolean, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings)
 
 /**
  * Result case class. Used between the WorkActor and the ProducerActor

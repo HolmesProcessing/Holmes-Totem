@@ -21,8 +21,8 @@ case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: Str
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, download, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -71,7 +71,7 @@ object WorkActor {
  *
  */
 
-class WorkActor(deliverytag: Long, filename: String, hashfilename: String, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
+class WorkActor(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, workToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
   import context.dispatcher
   val key = deliverytag
   val created: DateTime = new DateTime()
@@ -101,21 +101,23 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   lazy val asyncHttpClient = new AsyncHttpClient(httpconfig)
   implicit lazy val myHttp = new Http(asyncHttpClient)
 
-  val downloadResult = myHttp(url(primaryURI) OK as.Bytes)
-    .option
-    .map({
-      case Some(v: Array[Byte]) =>
-        new FileOutputStream (downloadconfig.download_directory + filename, false).write (v) //this filepath can be a conf. variable
-        log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
+  if(download) {
+    val downloadResult = myHttp(url(primaryURI) OK as.Bytes)
+      .option
+      .map({
+        case Some(v: Array[Byte]) =>
+          new FileOutputStream(downloadconfig.download_directory + filename, false).write(v) //this filepath can be a conf. variable
+          log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
 
-        SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v) )
+          SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v))
 
-      case None =>
-        log.debug("WorkActor: could not download {} using ANY URI", filename)
+        case None =>
+          log.debug("WorkActor: could not download {} using ANY URI", filename)
 
-        FailedDownload()
+          FailedDownload()
 
-  }).foreach(self ! _)
+      }).foreach(self ! _)
+  }
   /**
    * Helper function to compare two JodaTime DateTimes.
    *
@@ -138,7 +140,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
   }
 
   def prepareFailedWork(res: List[WorkResult]): ZooWork = {
-    val z = ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
+    val z = ZooWork(download, primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
     log.debug("WorkActor: input to failedwork -> {}", res)
     val nones = res.collect({
       case i: WorkFailure =>
@@ -151,6 +153,16 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
       )
     log.debug("WorkActor: emitted failures -> {}", f)
     f
+  }
+
+  def prepareFailedDownloadWork(res: List[TaskedWork]): ZooWork = {
+
+    log.debug("WorkActor: input to FailedDownloadWork -> {}", res)
+    //workToDo: List[TaskedWork]
+    val readywork = workToDo.map(tw => {
+      (tw.WorkType -> tw.Arguments)
+    }).toMap
+    ZooWork(download, primaryURI, secondaryURI, hashfilename, readywork, tags, attempts)
   }
   /**
    *
@@ -171,9 +183,15 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
     case FailedDownload() =>
       val time = timeDelta(Some(created), DateTime.now())
       log.warning("WorkActor: evicting task {} due to a failed download. Evict message took {} to be generated", key, time)
-      log.warning("WorkActor: we failed to download the file! Nack and Die!")
+      log.warning("WorkActor: we failed to download the file! Increment attempts and move on!")
+      //workToDo: List[TaskedWork], translate to {worktype: arguments}
+      //producer ! ZooWork(primaryURI, secondaryURI, hashfilename, Map[String, List[String]](), tags, attempts)
+      log.info("we are trying to prepare some failed downloaded work {}", prepareFailedDownloadWork(workToDo))
+      producer ! prepareFailedDownloadWork(workToDo)
+      self ! ResultResolution(true)
       self ! LocalResolution(true)
-      context.parent ! NAck(key)
+
+      //context.parent ! NAck(key)
 
     case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
@@ -219,6 +237,8 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, prima
       if(NackState(standoff)) {
         myHttp.client.close()
         log.warning("WorkActor: nackked - poisioning")
+        context.parent ! Ack(key)
+
         self ! PoisonPill
       }
       if(StandoffResolved(standoff)) {

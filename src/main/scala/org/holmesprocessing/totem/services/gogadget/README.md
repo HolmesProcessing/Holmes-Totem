@@ -4,6 +4,21 @@
 
 A simple service to extract the ROP Gadgets of a binary file.
 
+### Output
+results = {
+	total_unique_gadgets: <#>,
+	total_gadgets_recorded: <#>,
+	truncated: <true/false>,
+	search_depth: <#>,
+	gadgets: [
+		offset: <hex>
+		instructions: [
+			(opcodes),
+			(opcodes),
+			...
+		]
+}
+
 ## Usage
 
 Build and start the docker container using the included Dockerfile.

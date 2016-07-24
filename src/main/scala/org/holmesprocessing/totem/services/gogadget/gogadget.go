@@ -267,45 +267,32 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
     }
     
     // Prepare helper variables and regular expressions.
-    // Allocate one big opcode array, for blocks only save slices - way more
-    // efficient, no copy actions.
-    // Another efficiency messure is to have expected values, trimming down on
-    // regex comparisons.
-    // If a type is not expected, it is not tested for and the most likely type
-    // is tested first. Opcodes are the most likely, followed by block, followed
-    // by section. The file format should only be specified once and it must be
-    // first.
+    // Allocate one big gadget array, 
     // Unexpected output is deemed an error and results in an exit.
     // By using this expectance feature, we potentially reduce the amount of
     // regular expressions executed to a minimum.
-    type Block struct {
+    type Instruction struct {
         Name        string      `json:"name"`
-        Offset      string      `json:"offset"`
-        Start_index int64       `json:"-"`
         Opcodes     []string    `json:"opcodes"`
     }
-    type Section struct {
-        Name    string          `json:"name"`
-        // offset  string          `json:"offset"`
-        Blocks  []*Block        `json:"blocks"`
+    type Gadget struct {
+        Name          string          `json:"name"`
+        offset        string          `json:"offset"`
+        instructions  []*Instruction  `json:"instructions"`
     }
-    map_sections := make(map[string]*Section)
+    map_gadgets := make(map[string]*Gadget)
     
     var (
         line            string
         line_offset     int
         line_more       bool
-        opcodes_max     int64
+        gadget_max      int64
         opcodes_total   int64
-        opcodes_index   int64
-        fileformat      string
-        cur_section     *Section
-        cur_block       *Block
         processed       bool
     )
     
-    opcodes_max, _   = strconv.ParseInt(config.settings.MaxNumberOfOpcodes, 10, 64)
-    opcodes         := make([]string, opcodes_max)
+    gadget_max, _   = strconv.ParseInt(config.settings.MaxNumberOfGadgets, 10, 64)
+    gadgets         := make([]string, gadget_max)
     
     expect_format   := 0x1
     expect_section  := 0x2
@@ -321,8 +308,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
     re_opcode       := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
     re_ellipsis     := regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
     
-    opcodes_total = 0
-    opcodes_index = 0
+    gadget_total  = 0
     
     line, line_offset, line_more = nextline(stdout, 0)
     for line_more {
@@ -331,8 +317,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         
         processed = false
         
-        // This is the most likely case, as there should be much more opcodes
-        // than blocks or sections. As such this should be checked for first.
+        // Match Gadgets. This is the most likely case and should be checked for first.
         if (expected & expect_opcode) != 0 {
             if result := re_opcode.FindStringSubmatch(line); len(result)>0 {
                 opcodes[opcodes_total] = result[2]
@@ -340,7 +325,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
                 // just saves a start and an end pointer.
                 cur_block.Opcodes = opcodes[cur_block.Start_index:opcodes_total+1]
                 opcodes_total += 1
-                if opcodes_total >= opcodes_max {
+                if opcodes_total >= gadget_max {
                     // we reached our max opcodes!
                     line, line_offset, line_more = nextline(stdout, line_offset)
                     break
@@ -357,47 +342,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
             }
         }
         
-        // The second most likely occurence is that we have a block (each
-        // section may have multiple blocks).
-        if !processed && (expected & expect_block) != 0 {
-            if result := re_block.FindStringSubmatch(line); len(result)>0 {
-                // Create a new section block, depending on whether we can
-                // detect a name, we create a named block or not.
-                if len(result)>=4 {
-                    cur_block = &Block{Name: result[3], Offset: result[1]}
-                } else {
-                    cur_block = &Block{Name: "unknown", Offset: result[1]}
-                }
-                cur_block.Offset = result[1]
-                opcodes_index = opcodes_total
-                cur_block.Start_index = opcodes_index
-                // Make sure to update the section.
-                cur_section.Blocks = append(cur_section.Blocks, cur_block)
-                // To be as open as possible, enable section, block and opcode
-                // as next expected. Theoretically it should be only opcode ...
-                expected = expect_opcode
-                processed = true
-            }
-        }
-        
-        // Then we have the sections, which we should have a couple in each
-        // binary. Next to the file format this is the least likely to be hit.
-        // Whilst there is only one file format there may be quite a bunch of
-        // sections.
-        if !processed && (expected & expect_section) != 0 {
-            if result := re_section.FindStringSubmatch(line); len(result)>0 {
-                if _, exists := map_sections[result[1]]; exists {
-                    log.Printf("Error: Found duplicate section %s, ignoring.\n", result[1])
-                } else {
-                    cur_section = &Section{Name: result[1]}
-                    map_sections[result[1]] = cur_section
-                }
-                expected = expect_block
-                processed = true
-            }
-        }
-        
-        // This should only happen once and only at the start of the input.
+        // This should only happen once and only at the end of the input.
         // As such this comparison is last.
         if !processed && (expected & expect_format) != 0 {
             if result := re_fileformat.FindStringSubmatch(line); len(result)>0 {
@@ -425,30 +370,32 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
     
     // check if we have truncated the output
     truncated := false
-    if opcodes_total >= opcodes_max && line_more {
+    if gadget_total >= gadget_max && line_more {
         truncated = true
     }
     
     // After all data is parsed, assemble json
     type AnalysisResult struct {
-        Fileformat string               `json:"fileformat"`
-        NoOpcodes  int64                `json:"number_of_opcodes"`
-        Truncated  bool                 `json:"truncated"`
-        Sections   map[string]*Section  `json:"sections"`
+        UniqueGadgets string               `json:"total_unique_gadgets"`
+        NoGadgets     int64                `json:"number_of_gadgets"`
+        Truncated     bool                 `json:"truncated"`
+        SearchDepth   bool                 `json:"search_depth"`       
+        Gadgets       map[string]*Gadget   `json:"gadgets"`
     }
     analysis_result := &AnalysisResult{}
-    analysis_result.Fileformat = fileformat
-    analysis_result.NoOpcodes  = opcodes_total
-    analysis_result.Truncated  = truncated
-    analysis_result.Sections   = map_sections
-    analysis_result_json, err := json.Marshal(analysis_result)
+    analysis_result.UniqueGadgets = opcodes_total
+    analysis_result.NoGadgets     = gadget_total
+    analysis_result.Truncated     = truncated
+    analysis_result.SearchDepth   = config.settings.SearchDepth
+    analysis_result.Gadgets       = map_sections
+    analysis_result_json, err     := json.Marshal(analysis_result)
     
     // fmt.Println(string(analysis_result_json))
     f_response.Header().Set("Content-Type","text/json; charset=utf-8")
     fmt.Fprint(f_response, string(analysis_result_json))
     
     elapsed_time := time.Since(start_time)
-    log.Printf("Done, read a total of %d opcodes in %s.\n", opcodes_total, elapsed_time)
+    log.Printf("Done, read a total of %d gadgets in %s.\n", opcodes_total, elapsed_time)
 }
 
 

@@ -118,7 +118,7 @@ object driver extends App with Instrumented {
           ZipMetaWork(key, filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
-        case _ => Unit
+        case _ => Unit //need to set this to a non Unit type.
       }).collect({
         case x: TaskedWork => x
       })

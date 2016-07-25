@@ -96,7 +96,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
     misbehaveQueue.routingKey.foreach(routingKey => {
       this.channel.queueBind(misbehaveQueue.queueName, exchange.exchangeName, routingKey)
     })
-    
+
     log.info("RabbitProducer: exchange {} should be made", exchange.exchangeName)
 
   }
@@ -140,7 +140,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
       sender ! ResultResolution(true)
       log.info("RabbitProducer: emitting result {} to RMQ", sender().path)
 
-    case ZooWork(primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
+    case ZooWork(download: Boolean, primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
       val incremented_attempts = attempts + 1
       val json = (
         ("primaryURI" -> primaryURI) ~

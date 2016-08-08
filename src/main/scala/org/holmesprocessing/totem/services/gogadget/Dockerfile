@@ -4,7 +4,7 @@ FROM golang:1.6.2
 RUN apt-get update
 RUN apt-get install -y --force-yes --fix-missing python-pip build-essential python-dev
 RUN pip install capstone
-RUM pip install ropgadget
+RUN pip install ropgadget
 
 # Add relevant files to the container.
 RUN mkdir -p /service

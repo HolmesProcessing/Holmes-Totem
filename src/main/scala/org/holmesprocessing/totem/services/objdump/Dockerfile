@@ -1,8 +1,7 @@
 FROM golang:1.6.2
 
 # Install objdump if not yet installed.
-RUN apt-get update
-RUN apt-get install -y --force-yes --fix-missing binutils
+RUN apt-get update && apt-get install -y --force-yes --fix-missing binutils
 
 # Add relevant files to the container.
 RUN mkdir -p /service

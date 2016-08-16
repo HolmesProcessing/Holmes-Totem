@@ -1,8 +1,7 @@
 FROM ubuntu:14.04
 
 # install what you need here
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y --fix-missing python3-pip
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --fix-missing python3-pip
 
 
 # install python3 dependencies

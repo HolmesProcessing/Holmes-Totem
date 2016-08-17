@@ -54,7 +54,7 @@ type Settings struct {
 }
 
 type Config struct {
-	Metadata Metadata //cvp: if the name of a struct field is not uppercase it can't be accessed, 'metdata' will never work as you intend it to work
+	Metadata Metadata
 	Settings Settings
 }
 
@@ -98,7 +98,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
-//cvp: I dumped the bloated ini stuff; use json, it has typing and is easier to parse.
 // Parse a configuration file into a Config structure.
 func load_config(configPath string) (*Config, error) {
 	config := &Config{}
@@ -106,7 +105,7 @@ func load_config(configPath string) (*Config, error) {
 	// if no path is supplied look in the current dir
 	if configPath == "" {
 		configPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-		configPath += "/service.conf.json"
+		configPath += "/service.conf"
 	}
 
 	cfile, _ := os.Open(configPath)
@@ -201,7 +200,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	if result.Truncated {
-		// if we readched the max amount of gadgets and breaked we need to throw the rest away
+		// if we reached the max amount of gadgets and breaked we need to throw the rest away
 		for line.Text() != "" {
 			line.Scan()
 		}

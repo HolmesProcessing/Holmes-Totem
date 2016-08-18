@@ -76,16 +76,16 @@ Holmes-TOTEM can be manually tasked using custom created AMQP message using JSON
 SAMPLE = <sample>
 URI = "<Storage URL>" + SAMPLE
         jdict = {
-                "download": True,     \\specifies if TOTEM should download the file
-                "primaryURI": URI,    \\first URI to download the file
-                "secondaryURI": URI,  \\back up URI to download the file
-                "filename": SAMPLE,   \\filename of the sample, or identifier (i.e. domain name) if !download 
-                "tasks": {            \\list or tasks to execute with optional arguments
+                "download": True,     #specifies if TOTEM should download the file
+                "primaryURI": URI,    #first URI to download the file
+                "secondaryURI": URI,  #back up URI to download the file
+                "filename": SAMPLE,   #filename of the sample, or identifier (i.e. domain name) if !download 
+                "tasks": {            #list or tasks to execute with optional arguments
                         "PEID": []
                         "YARA": [],
                         "PEINFO": [],
                 },
-                "tags": [             \\add an optional source tag
+                "tags": [             #add an optional source tag
                         "totem-test"
                 ],
                 "attempts": 0

@@ -1,9 +1,12 @@
-FROM golang:latest
+FROM golang:alpine
 
-# Install objdump if not yet installed.
-RUN apt-get update && apt-get install -y \
+# Get Go dependencies and binutils
+RUN apk add --no-cache \
+		git \
 		binutils \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/cache/apk/*
+RUN go get "github.com/go-ini/ini"
+RUN go get "github.com/julienschmidt/httprouter"
 
 # Add relevant files to the container.
 RUN mkdir -p /service
@@ -16,8 +19,6 @@ ADD objdump.go /service
 WORKDIR /service
 
 # Build Objdump.
-RUN go get "github.com/go-ini/ini"
-RUN go get "github.com/julienschmidt/httprouter"
 RUN go build objdump.go
 
 CMD ["/service/objdump", "--config=service.conf"]

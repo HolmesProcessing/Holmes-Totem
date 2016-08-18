@@ -1,7 +1,9 @@
-FROM ubuntu:14.04
+FROM debian:jessie
 
 # install what you need here
-RUN apt-get update && apt-get install -y --fix-missing python3-pip
+RUN apt-get update && apt-get install -y \
+		python3-pip \
+	&& rm -rf /var/lib/apt/lists/*
 
 
 # install python3 dependencies

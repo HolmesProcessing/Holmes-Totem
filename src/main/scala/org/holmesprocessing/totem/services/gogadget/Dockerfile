@@ -1,7 +1,13 @@
-FROM golang:1.6.2
+FROM golang:latest
 
 # Install ropgadget if not yet installed.
-RUN apt-get update && apt-get install -y --force-yes --fix-missing python-pip build-essential python-dev
+RUN apt-get update && apt-get install -y \
+		python-pip \
+		build-essential \
+		python-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+
 RUN pip install capstone
 RUN pip install ropgadget
 

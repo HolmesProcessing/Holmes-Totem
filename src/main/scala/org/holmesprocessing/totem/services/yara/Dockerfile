@@ -1,8 +1,17 @@
-FROM ubuntu:14.04
+FROM debian:jessie
 
 # install what you need here
-RUN apt-get update && apt-get install -y --fix-missing python3-pip wget build-essential checkinstall dh-autoreconf libssl-dev libmagic-dev python-dev git
-
+RUN apt-get update && apt-get install -y \
+		python3-pip \
+		wget \
+		build-essential \
+		checkinstall \
+		dh-autoreconf \
+		libssl-dev \
+		libmagic-dev \
+		python-dev \
+		git \
+	&& rm -rf /var/lib/apt/lists/*
 
 # install python3 dependencies
 RUN pip3 install requests tornado

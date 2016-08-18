@@ -1,7 +1,13 @@
 FROM ubuntu:14.04
 
 # install what you need here
-RUN apt-get update && apt-get install -y --fix-missing python-pip build-essential python-dev git
+RUN apt-get update && apt-get install -y \
+		python-pip \
+		build-essential \
+		python-dev \
+		git \
+	&& rm -rf /var/lib/apt/lists/*
+
 RUN pip install tornado
 
 # add the files to the container

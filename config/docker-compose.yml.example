@@ -1,7 +1,7 @@
 gogadget:
   build: ../src/main/scala/org/holmesprocessing/totem/services/gogadget
   ports:
-    - "7740:8080"
+    - "7700:8080"
   restart: unless-stopped
   volumes:
     - /tmp:/tmp:ro
@@ -9,7 +9,7 @@ gogadget:
 objdump:
   build: ../src/main/scala/org/holmesprocessing/totem/services/objdump
   ports:
-    - "7730:8080"
+    - "7710:8080"
   restart: unless-stopped
   volumes:
     - /tmp:/tmp:ro
@@ -25,7 +25,7 @@ peid:
 peinfo:
   build: ../src/main/scala/org/holmesprocessing/totem/services/peinfo
   ports:
-    - "7705:8080"
+    - "7730:8080"
   restart: unless-stopped
   volumes:
     - /tmp:/tmp:ro
@@ -33,7 +33,7 @@ peinfo:
 virustotal:
   build: ../src/main/scala/org/holmesprocessing/totem/services/virustotal
   ports:
-    - "7710:8080"
+    - "7740:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro
@@ -41,7 +41,7 @@ virustotal:
 yara:
   build: ../src/main/scala/org/holmesprocessing/totem/services/yara
   ports:
-    - "7701:8080"
+    - "7750:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro
@@ -49,7 +49,7 @@ yara:
 zipmeta:
   build: ../src/main/scala/org/holmesprocessing/totem/services/zipmeta
   ports:
-    - "7715:8080"
+    - "7760:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro

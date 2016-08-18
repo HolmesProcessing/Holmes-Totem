@@ -47,11 +47,11 @@ totem {
 
   services {
     gogadget {
-      uri = ["http://127.0.0.1:7740/gogadget/"]
+      uri = ["http://127.0.0.1:7700/gogadget/"]
       resultRoutingKey = "gogadget.result.static.totem"
     }
     objdump {
-      uri = ["http://127.0.0.1:7730/objdump/"]
+      uri = ["http://127.0.0.1:7710/objdump/"]
       resultRoutingKey = "objdump.result.static.totem"
     }
     peid {
@@ -59,19 +59,19 @@ totem {
       resultRoutingKey = "peid.result.static.totem"
     }
     peinfo {
-      uri = ["http://127.0.0.1:7705/peinfo/"]
+      uri = ["http://127.0.0.1:7730/peinfo/"]
       resultRoutingKey = "peinfo.result.static.totem"
     }
     virustotal {
-      uri = ["http://127.0.0.1:7710/"]
+      uri = ["http://127.0.0.1:7740/"]
       resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
-      uri = ["http://127.0.0.1:7701/yara/"]
+      uri = ["http://127.0.0.1:7750/yara/"]
       resultRoutingKey = "yara.result.static.totem"
     }
     zipmeta {
-      uri = ["http://127.0.0.1:7715/zipmeta/"]
+      uri = ["http://127.0.0.1:7760/zipmeta/"]
       resultRoutingKey = "zipmeta.result.static.totem"
     }
   }

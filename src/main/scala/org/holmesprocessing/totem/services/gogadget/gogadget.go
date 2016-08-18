@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -113,16 +114,27 @@ func load_config(configPath string) (*Config, error) {
 		return config, err
 	}
 
+	if config.Metadata.Description != "" {
+		if data, err := ioutil.ReadFile(string(config.Metadata.Description)); err == nil {
+			config.Metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
+		}
+	}
+	if config.Metadata.License != "" {
+		if data, err := ioutil.ReadFile(string(config.Metadata.License)); err == nil {
+			config.Metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
+		}
+	}
+
 	return config, nil
 }
 
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprintf(f_response, `<p>%s - %s</p>
-        <hr>
-        <p>%s</p>
-        <hr>
-        <p>%s</p>
-        `,
+		<hr>
+		<p>%s</p>
+		<hr>
+		<p>%s</p>
+		`,
 		config.Metadata.Name,
 		config.Metadata.Version,
 		config.Metadata.Description,

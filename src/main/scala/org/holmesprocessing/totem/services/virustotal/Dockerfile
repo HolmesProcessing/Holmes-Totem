@@ -1,6 +1,7 @@
-FROM golang
+FROM golang:alpine
 
 # Get Go dependencies
+RUN apk add --no-cache git
 RUN go get github.com/julienschmidt/httprouter
 
 # Setup service

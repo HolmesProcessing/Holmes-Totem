@@ -1,4 +1,4 @@
-FROM golang:1.6.2
+FROM golang:latest
 
 # Install objdump if not yet installed.
 RUN apt-get update && apt-get install -y \

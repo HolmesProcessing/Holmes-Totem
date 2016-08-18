@@ -6,7 +6,7 @@ A simple service to extract the ROP Gadgets of a binary file.
 
 ### Output
 results = {
-	total_unique_gadgets: <#>,
+    total_unique_gadgets: <#>,
 	total_gadgets_recorded: <#>,
 	truncated: <true/false>,
 	search_depth: <#>,

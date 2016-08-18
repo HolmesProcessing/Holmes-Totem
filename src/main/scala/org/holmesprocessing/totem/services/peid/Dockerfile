@@ -61,12 +61,4 @@ WORKDIR /service
 RUN python3 getrules.py
 
 
-# create a new user with limited access
-RUN useradd -s /bin/bash service
-RUN chown -R service /service
-
-
-USER service
-
-
 CMD ["python3", "/service/peid_worker.py"]

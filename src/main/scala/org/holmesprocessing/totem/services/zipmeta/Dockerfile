@@ -10,21 +10,18 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install tornado
 
-# add the files to the container
+# get holmeslibrary
 RUN mkdir -p /service
 WORKDIR /service
-RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git library
-WORKDIR /service/library
-# to overcome the caching issue, the correct revision must go here
+RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git holmeslibrary
+WORKDIR /service/holmeslibrary
 RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
-ADD LICENSE README.md service.conf /service/
-ADD zipmeta.py ZipParser.py extra_field_parse.py /service/
+# add the files to the container
+ADD service.conf /service
+ADD LICENSE /service
+ADD README.md /service
+ADD zipmeta.py ZipParser.py extra_field_parse.py /service
 
-# create a new user with limited access
-RUN useradd -s /bin/bash service
-RUN chown -R service /service
-
-USER service
 WORKDIR /service
 CMD ["python2", "/service/zipmeta.py"]

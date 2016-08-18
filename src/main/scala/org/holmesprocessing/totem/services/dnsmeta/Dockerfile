@@ -26,5 +26,4 @@ USER service
 WORKDIR /service
 
 
-EXPOSE 7720
 CMD ["python3", "/service/dnsmeta.py"]

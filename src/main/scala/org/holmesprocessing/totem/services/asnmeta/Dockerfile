@@ -26,5 +26,4 @@ USER service
 WORKDIR /service
 
 
-EXPOSE 7730
 CMD ["python3", "/service/asnmeta.py"]

@@ -13,7 +13,6 @@ RUN pip install ropgadget
 
 # Add relevant files to the container.
 RUN mkdir -p /service
-ADD service.conf /service
 ADD LICENSE /service
 ADD README.md /service
 ADD gogadget.go /service
@@ -25,5 +24,9 @@ WORKDIR /service
 RUN go get "github.com/go-ini/ini"
 RUN go get "github.com/julienschmidt/httprouter"
 RUN go build gogadget.go
+
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["/service/gogadget", "--config=service.conf"]

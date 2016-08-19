@@ -48,7 +48,6 @@ RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
 
 # add the core files to the container
-ADD service.conf /service
 ADD LICENSE README.md /service/
 ADD getrules.py /service
 ADD yara_worker.py /service
@@ -59,5 +58,8 @@ ADD rules.yar /service
 WORKDIR /service
 RUN python3 getrules.py
 
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["python3", "/service/yara_worker.py"]

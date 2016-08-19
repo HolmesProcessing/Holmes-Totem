@@ -226,19 +226,17 @@ func load_config (configPath string) Config {
 }
 
 
-func handler_info (f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-    result := fmt.Sprintf(`
-        <p>%s - %s</p>
+func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+    fmt.Fprintf(f_response, `<p>%s - %s</p>
         <hr>
-        <p>%s</p>
+        <pre>%s</pre>
         <hr>
         <p>%s</p>
         `,
-        config.metadata.Name,
-        config.metadata.Version,
-        config.metadata.Description,
-        config.metadata.License)
-    fmt.Fprint(f_response, result)
+        config.Metadata.Name,
+        config.Metadata.Version,
+        config.Metadata.Description,
+        config.Metadata.License)
 }
 
 

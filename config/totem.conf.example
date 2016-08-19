@@ -63,7 +63,7 @@ totem {
       resultRoutingKey = "peinfo.result.static.totem"
     }
     virustotal {
-      uri = ["http://127.0.0.1:7740/"]
+      uri = ["http://127.0.0.1:7740/virustotal/"]
       resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {

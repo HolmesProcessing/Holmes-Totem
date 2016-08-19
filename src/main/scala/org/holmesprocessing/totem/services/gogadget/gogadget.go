@@ -119,6 +119,7 @@ func load_config(configPath string) (*Config, error) {
 			config.Metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
+	
 	if config.Metadata.License != "" {
 		if data, err := ioutil.ReadFile(string(config.Metadata.License)); err == nil {
 			config.Metadata.License = strings.Replace(string(data), "\n", "<br>", -1)

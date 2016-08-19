@@ -22,64 +22,68 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type config struct {
-	ApiKey               string
-	UploadUnknownSamples bool
-	HTTPBinding          string
-}
-
 type VTResponse struct {
 	ResponseCode int    `json:"response_code"`
 	ScanId       string `json:"scan_id"`
 	VerboseMsg   string `json:"verbose_msg"`
 }
 
+// config structs
+type Metadata struct {
+	Name        string
+	Version     string
+	Description string
+	Copyright   string
+	License     string
+}
+
+//TODO: unifying info url. saving cvp's comments from gogadget as they should be addressed
+type Settings struct {
+	HTTPBinding          string //cvp: saving port is an unnecessary limitation; the binding allows for assigning the IP address too which is nicer
+	InfoURL              string //cvp: is this really necessary? Hardcoded seems fine, I don't know why the URLs should change
+	AnalysisURL          string //cvp: same as above
+	ApiKey               string
+	UploadUnknownSamples bool
+}
+
+type Config struct {
+	Metadata Metadata
+	Settings Settings
+}
+
 var (
-	conf   = &config{}
-	client = &http.Client{}
+	config *Config
 	info   *log.Logger
+	client = &http.Client{}
 )
 
 func main() {
 	var (
-		err      error
-		confPath string
+		err        error
+		configPath string
 	)
 
 	// setup logging
 	info = log.New(os.Stdout, "", log.Ltime|log.Lshortfile)
 
 	// load config
-	flag.StringVar(&confPath, "config", "", "Path to the config file")
+	flag.StringVar(&configPath, "config", "", "Path to the config file")
 	flag.Parse()
 
-	if confPath == "" {
-		confPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-		confPath += "/service.conf"
+	config, err = load_config(configPath)
+	if err != nil {
+		log.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
-
-	cfile, _ := os.Open(confPath)
-	if err = json.NewDecoder(cfile).Decode(&conf); err != nil {
-		log.Println("Couldn't decode config file without errors!", err.Error())
-		return
-	}
-
-	// validate ApiKey
-	_, err = hex.DecodeString(conf.ApiKey)
-	if len(conf.ApiKey) != 64 || err != nil {
-		log.Println("Apikey seems to be invalid! Please supply a valid key!")
-		return
-	}
-
-	info.Println("Start listening", conf.HTTPBinding)
 
 	router := httprouter.New()
-	router.GET("/:file", handler)
-	log.Fatal(http.ListenAndServe(conf.HTTPBinding, router))
+	router.GET("/virustotal/:file", handler_analyze)
+	router.GET("/", handler_info)
+	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	info.Println("NotFound")
+	info.Println("Cannot find file!")
 	http.NotFound(w, r)
 }
 
@@ -90,7 +94,58 @@ func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	fmt.Fprint(w, "500 - "+err.Error())
 }
 
-func handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// Parse a configuration file into a Config structure.
+func load_config(configPath string) (*Config, error) {
+	config := &Config{}
+
+	// if no path is supplied look in the current dir
+	if configPath == "" {
+		configPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		configPath += "/service.conf"
+	}
+
+	cfile, _ := os.Open(configPath)
+	if err := json.NewDecoder(cfile).Decode(&config); err != nil {
+		return config, err
+	}
+
+	if config.Metadata.Description != "" {
+		if data, err := ioutil.ReadFile(string(config.Metadata.Description)); err == nil {
+			config.Metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
+		}
+	}
+
+	if config.Metadata.License != "" {
+		if data, err := ioutil.ReadFile(string(config.Metadata.License)); err == nil {
+			config.Metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
+		}
+	}
+
+	// validate ApiKey
+	_, err := hex.DecodeString(config.Settings.ApiKey)
+	if len(config.Settings.ApiKey) != 64 || err != nil {
+		log.Println("Apikey seems to be invalid! Please supply a valid key!")
+		return config, err
+	}
+
+	return config, nil
+}
+
+func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fmt.Fprintf(f_response, `<p>%s - %s</p>
+		<hr>
+		<pre>%s</pre>
+		<hr>
+		<p>%s</p>
+		`,
+		config.Metadata.Name,
+		config.Metadata.Version,
+		config.Metadata.Description,
+		config.Metadata.License)
+}
+
+func handler_analyze(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//TODO: Remove error if file isn't found. File isn't needed unless upload is specified
 	f := "/tmp/" + ps.ByName("file")
 	if _, err := os.Stat(f); os.IsNotExist(err) {
 		http.NotFound(w, r)
@@ -99,6 +154,7 @@ func handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	info.Println("Handling", f)
 
+	//TODO: VT will now accept sha256 or md5. Maybe adjust or just use filename
 	hash, err := CalculateMD5(f)
 	if err != nil {
 		InternalServerError(w, r, err)
@@ -129,7 +185,7 @@ func vtWork(hash, fPath string) (string, error) {
 	// 0 = unknwon
 	// 1 = found
 	// 2 = processing
-	if vtr.ResponseCode == 0 && conf.UploadUnknownSamples {
+	if vtr.ResponseCode == 0 && config.Settings.UploadUnknownSamples {
 		hash, err = uploadSample(fPath)
 		if err != nil {
 			return "", err
@@ -170,7 +226,7 @@ func getReport(md5 string) ([]byte, error) {
 
 	form := url.Values{}
 	form.Add("resource", md5)
-	form.Add("apikey", conf.ApiKey)
+	form.Add("apikey", config.Settings.ApiKey)
 
 	req, err := http.NewRequest("POST", "https://www.virustotal.com/vtapi/v2/file/report", strings.NewReader(form.Encode()))
 	req.PostForm = form
@@ -214,7 +270,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	_, err = io.Copy(part, file)
 
-	err = writer.WriteField("apikey", conf.ApiKey)
+	err = writer.WriteField("apikey", config.Settings.ApiKey)
 	if err != nil {
 		return "", err
 	}

@@ -146,7 +146,6 @@ object driver extends App with Instrumented {
   val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, misbehaveQueueConfig, encoding, conf.getString("totem.requeueKey")), "producer")
 
   println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
-  println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
 
   //////
   // Demo & Debug Zone

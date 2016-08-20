@@ -73,8 +73,8 @@ class Info(tornado.web.RequestHandler):
 class ASNApp(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', Info),
-            (r'/asnmeta/(.*)', ASNMetaProcess),
+            (Config.settings.infourl + r'', Info),
+            (Config.settings.analysisurl + r'/(.*)', ASNMetaProcess),
             #(r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
         ]
         settings = dict(

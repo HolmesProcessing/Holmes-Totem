@@ -1,10 +1,6 @@
-# imports for PEInfo
-from __future__ import division
-
 # imports for tornado
 import tornado
-from tornado import web, httpserver
-from tornado.options import options, parse_config_file
+from tornado import web, httpserver, ioloop
 
 # imports for logging
 import traceback
@@ -15,16 +11,22 @@ from os import path
 import gatherdns
 from time import localtime, strftime
 
+# imports for services
+from holmeslibrary.services import ServiceConfig
+
+# Get service meta information and configuration
+Config = ServiceConfig("./service.conf")
+Config.dnsmeta.rdtypes = [item.strip() for item in Config.dnsmeta.rdtypes.split(',')]
 
 def DNSMetaRun(domain):
     data = {}
 
-    dnsinfo = gatherdns.GatherDNS(domain, options.dns_server)
+    dnsinfo = gatherdns.GatherDNS(domain, Config.dnsmeta.dns_server)
     data['auth'] = dnsinfo.find_authoritative_nameserver(domain)
 
     # query for specified types and add to dictionary
-    dnsinfo.query_domain(options.rdtypes)
-    for rdtype in options.rdtypes:
+    dnsinfo.query_domain(Config.dnsmeta.rdtypes)
+    for rdtype in Config.dnsmeta.rdtypes:
         function = getattr(dnsinfo, 'get_{}_record'.format(rdtype))
         result = function()
         if result is not None:
@@ -47,22 +49,26 @@ class DNSMetaProcess(tornado.web.RequestHandler):
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
-        description = """
-<p>Copyright 2015 Holmes Processing
-
-<p>Description: Gathers DNS information for a Domain address
-
-<p>Configuration:
-{}
-        """.format(options.as_dict())
-        self.write(description)
+        info = """
+            <p>{name:s} - {version:s}</p>
+            <hr>
+            <pre>{description:s}</pre>
+            <hr>
+            <p>{license:s}
+        """.format(
+            name        = str(Config.metadata.name).replace("\n", "<br>"),
+            version     = str(Config.metadata.version).replace("\n", "<br>"),
+            description = str(Config.metadata.description).replace("\n", "<br>"),
+            license     = str(Config.metadata.license).replace("\n", "<br>"),
+        )
+        self.write(info)
 
 
 class DNSApp(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', Info),
-            (r'/dnsmeta/(.*)', DNSMetaProcess),
+            (Config.settings.infourl + r'', Info),
+            (Config.settings.analysisurl + r'/(.*)', DNSMetaProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -73,17 +79,9 @@ class DNSApp(tornado.web.Application):
 
 
 def main():
-    # get config options
-    tornado.options.define('dns_server', default='8.8.8.8', type=str)
-    tornado.options.define('rdtypes', default=['A','AAAA','NS','MX','SOA','CNAME','TXT','PTR'], multiple=True)
-    
-    tornado.options.parse_config_file("/service/service.conf")
-
-    # start the server
     server = tornado.httpserver.HTTPServer(DNSApp())
-    server.listen(7720)
+    server.listen(Config.settings.port)
     tornado.ioloop.IOLoop.instance().start()
-
 
 if __name__ == '__main__':
     main()

@@ -1,18 +1,14 @@
 asnmeta:
   build: ../src/main/scala/org/holmesprocessing/totem/services/asnmeta
   ports:
-    - "7800:8080"
+    - "9700:8080"
   restart: unless-stopped
-  volumes:
-    - /tmp:/tmp:ro
 
 dnsmeta:
   build: ../src/main/scala/org/holmesprocessing/totem/services/dnsmeta
   ports:
-    - "7810:8080"
+    - "9710:8080"
   restart: unless-stopped
-  volumes:
-    - /tmp:/tmp:ro
 
 gogadget:
   build: ../src/main/scala/org/holmesprocessing/totem/services/gogadget

@@ -1,6 +1,3 @@
-# imports for PEInfo
-from __future__ import division
-
 # imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
@@ -88,7 +85,6 @@ class ASNApp(tornado.web.Application):
 def main():
     server = tornado.httpserver.HTTPServer(ASNApp())
     server.listen(Config.settings.port)
-    print("starting the asnmeta worker on port {}".format(Config.settings.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

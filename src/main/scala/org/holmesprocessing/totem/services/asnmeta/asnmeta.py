@@ -3,8 +3,7 @@ from __future__ import division
 
 # imports for tornado
 import tornado
-from tornado import web, httpserver
-from tornado.options import options, parse_config_file
+from tornado import web, httpserver, ioloop
 
 # imports for logging
 import traceback
@@ -15,14 +14,19 @@ from os import path
 import gatherasn
 from time import localtime, strftime
 
+# imports for services
+from holmeslibrary.services import ServiceConfig
+
+# Get service meta information and configuration
+Config = ServiceConfig("./service.conf")
 
 def ASNMetaRun(ipaddress):
     asninfo = gatherasn.GatherASN(ipaddress,
-                                    options.dns_server, 
-                                    options.asn_ipv4_query, 
-                                    options.asn_ipv6_query,
-                                    options.asn_peer_query,
-                                    options.asn_name_query)
+                                    Config.asnmeta.dns_server, 
+                                    Config.asnmeta.asn_ipv4_query, 
+                                    Config.asnmeta.asn_ipv6_query,
+                                    Config.asnmeta.asn_peer_query,
+                                    Config.asnmeta.asn_name_query)
     
     asninfo.query_asn_origin()
 
@@ -51,15 +55,19 @@ class ASNMetaProcess(tornado.web.RequestHandler):
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics
     def get(self):
-        description = """
-<p>Copyright 2015 Holmes Processing
-
-<p>Description: Gathers ASN information for an IP address
-
-<p>Configuration:
-{}
-        """.format(options.as_dict())
-        self.write(description)
+        info = """
+            <p>{name:s} - {version:s}</p>
+            <hr>
+            <pre>{description:s}</pre>
+            <hr>
+            <p>{license:s}
+        """.format(
+            name        = str(Config.metadata.name).replace("\n", "<br>"),
+            version     = str(Config.metadata.version).replace("\n", "<br>"),
+            description = str(Config.metadata.description).replace("\n", "<br>"),
+            license     = str(Config.metadata.license).replace("\n", "<br>")
+        )
+        self.write(info)
 
 
 class ASNApp(tornado.web.Application):
@@ -78,18 +86,9 @@ class ASNApp(tornado.web.Application):
 
 
 def main():
-    # get config options
-    tornado.options.define('dns_server', default='8.8.8.8', type=str)
-    tornado.options.define('asn_ipv4_query', default='origin.asn.cymru.com', type=str)
-    tornado.options.define('asn_ipv6_query', default='origin6.asn.cymru.com', type=str)
-    tornado.options.define('asn_peer_query', default='peer.asn.cymru.com', type=str)
-    tornado.options.define('asn_name_query', default='name.asn.cymru.com', type=str)
-        
-    tornado.options.parse_config_file("/service/service.conf")
-
-    # start the server
     server = tornado.httpserver.HTTPServer(ASNApp())
-    server.listen(7730)
+    server.listen(Config.settings.port)
+    print("starting the asnmeta worker on port {}".format(Config.settings.port))
     tornado.ioloop.IOLoop.instance().start()
 
 

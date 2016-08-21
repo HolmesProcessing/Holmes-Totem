@@ -20,7 +20,7 @@ import collection.mutable
  *
  */
 
-case class YaraWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class YaraWork(key: Long, filename: String, url_path: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
     // Parameters will be send via Post so we dont need the builder here

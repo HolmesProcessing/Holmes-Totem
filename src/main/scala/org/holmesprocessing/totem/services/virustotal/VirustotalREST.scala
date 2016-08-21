@@ -7,7 +7,7 @@ import org.holmesprocessing.totem.types.{TaskedWork, WorkFailure, WorkResult, Wo
 import collection.mutable
 
 
-case class VirustotalWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class VirustotalWork(key: Long, filename: String, url_path: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
     val uri = VirustotalREST.constructURL(Worker, filename, Arguments)

@@ -143,6 +143,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                   filename,
                   servicelist.enumerateWork(
                     deliveryTag,
+                    filename,
                     uuid_filename,
                     tasks
                   ),

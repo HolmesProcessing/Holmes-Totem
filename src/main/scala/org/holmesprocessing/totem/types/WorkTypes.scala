@@ -47,7 +47,8 @@ import scala.util.Random
 trait TaskedWork {
 
   val key: Long
-  val filename: String
+  val filename: String //need to add a URL type here,
+  val url_path: String
   val TimeoutMillis: Int
   val WorkType: String
   val Worker: String
@@ -66,7 +67,7 @@ trait TaskedWork {
  *
  */
 
-case class UnsupportedWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class UnsupportedWork(key: Long, filename: String, url_path: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   import scala.concurrent.ExecutionContext.Implicits.global //this makes me uncomfortable, but this is an edge case to begin with.
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
     Future{UnsupportedFailure(false, JString(""), Arguments, "", WorkType)}
@@ -101,7 +102,7 @@ abstract class WorkFailure extends WorkResult
 
 trait WorkEncoding {
   def GeneratePartial(work: String): String
-  def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
+  def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
   def workRoutingKey(work: WorkResult): String
 }
 
@@ -122,7 +123,7 @@ abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
   val log = Logger(LoggerFactory.getLogger("name"))
 
   def GeneratePartial(work: String): String
-  def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
+  def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
   def workRoutingKey(work: WorkResult): String
 }
 

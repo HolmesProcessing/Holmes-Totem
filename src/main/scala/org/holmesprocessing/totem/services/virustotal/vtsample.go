@@ -145,14 +145,14 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 }
 
 func handler_analyze(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	info.Println("Serving request:", r)
+
 	//TODO: Remove error if file isn't found. File isn't needed unless upload is specified
 	f := "/tmp/" + ps.ByName("file")
 	if _, err := os.Stat(f); os.IsNotExist(err) {
 		http.NotFound(w, r)
 		return
 	}
-
-	info.Println("Handling", f)
 
 	//TODO: VT will now accept sha256 or md5. Maybe adjust or just use filename
 	hash, err := CalculateMD5(f)
@@ -167,7 +167,6 @@ func handler_analyze(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		return
 	}
 
-	info.Println("Done!")
 	fmt.Fprint(w, result)
 }
 
@@ -243,8 +242,7 @@ func getReport(md5 string) ([]byte, error) {
 		return respBody, err
 	}
 
-	info.Println(resp.Status)
-	info.Println(string(respBody))
+	info.Println("VT responded: ", resp.Status)
 
 	if string(respBody) == "" {
 		return respBody, errors.New("VT Get Report Response is empty! " + resp.Status)

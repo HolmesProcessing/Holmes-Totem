@@ -130,8 +130,6 @@ func load_config (configPath string) Config {
     inifile, err := ini.Load(configPath)
     if err != nil {
         log.Fatalf("Unable to read config file %s", configPath)
-    } else {
-        log.Printf("Reading config file %s\n", configPath)
     }
     
     // Get a list of all section names in the INI-File and iterate over them.
@@ -400,7 +398,6 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         // As such this comparison is last.
         if !processed && (expected & expect_format) != 0 {
             if result := re_fileformat.FindStringSubmatch(line); len(result)>0 {
-                log.Printf("Found file format specifier %s\n", result[1])
                 fileformat = result[1]
                 expected = expect_section
                 processed = true

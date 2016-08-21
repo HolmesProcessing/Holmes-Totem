@@ -118,7 +118,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
 
       }).foreach(self ! _)
   } else {
-    SuccessfulDownload(filename, tags, DownloadMethods.MD5(filename.getBytes()), DownloadMethods.SHA1(filename.getBytes()), DownloadMethods.SHA256(filename.getBytes()))
+    self ! SuccessfulDownload(filename, tags, DownloadMethods.MD5(filename.getBytes()), DownloadMethods.SHA1(filename.getBytes()), DownloadMethods.SHA256(filename.getBytes()))
   }
   /**
    * Helper function to compare two JodaTime DateTimes.

@@ -4,8 +4,6 @@ from __future__ import division
 # imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
-import tornado.options
-from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -27,9 +25,6 @@ from holmeslibrary.services import ServiceConfig
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
-
-# Set up Tornado options
-define("port", default=Config.settings.port, help="port to run", type=int)
 
 def _get_pehash(exe):
     #image characteristics
@@ -526,10 +521,8 @@ class PEApp(tornado.web.Application):
 
 
 def main():
-    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(PEApp())
-    server.listen(options.port)
-    print("starting the peinfo worker on port {}".format(options.port))
+    server.listen(Config.settings.port)
     tornado.ioloop.IOLoop.instance().start()
 
 

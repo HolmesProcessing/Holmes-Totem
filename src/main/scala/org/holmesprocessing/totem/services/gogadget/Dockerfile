@@ -1,29 +1,42 @@
-FROM golang:latest
+FROM golang:alpine
 
-# Install ropgadget if not yet installed.
-RUN apt-get update && apt-get install -y \
-		python-pip \
-		build-essential \
-		python-dev \
-	&& rm -rf /var/lib/apt/lists/*
-
-
-RUN pip install capstone
-RUN pip install ropgadget
-
-# Add relevant files to the container.
+# create folder
 RUN mkdir -p /service
-ADD service.conf /service
-ADD LICENSE /service
-ADD README.md /service
-ADD gogadget.go /service
-
-# Change the working directory.
 WORKDIR /service
 
-# Build gogadget.
-RUN go get "github.com/go-ini/ini"
-RUN go get "github.com/julienschmidt/httprouter"
+# get go dependencies
+RUN apk add --no-cache \
+		git \
+	&& go get github.com/julienschmidt/httprouter \
+	&& rm -rf /var/cache/apk/*
+
+###
+# gogadget specific options
+###
+
+# Get Go ROPGadget dependencies
+RUN apk add --no-cache \
+		bash \
+		build-base \
+		python \
+		py-pip \
+	&& rm -rf /var/cache/apk/*
+
+RUN pip install ropgadget
+
+# clean up
+RUN apk del --purge \
+		build-base \
+		git \
+	&& rm -rf /var/cache/apk/* yara-3.5.0
+
+# add the files to the container
+COPY LICENSE /service
+COPY README.md /service
+COPY gogadget.go /service
+COPY service.conf /service
+
+# build gogadget
 RUN go build gogadget.go
 
-CMD ["/service/gogadget", "--config=service.conf"]
+CMD ["./gogadget", "--config=service.conf"]

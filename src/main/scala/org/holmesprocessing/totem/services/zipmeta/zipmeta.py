@@ -1,21 +1,22 @@
+# imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
-import tornado.options
-from tornado.options import define, options
 
+# imports for logging
 import traceback
 import os
 from os import path
 
+# imports for zipmeta
 import ZipParser
 ZipParser = ZipParser.ZipParser
-from library.services import ServiceRequestError, ServiceResultSet, ServiceConfig
-from library.files    import LargeFileReader
+
+# imports for services
+from holmeslibrary.services import ServiceRequestError, ServiceResultSet, ServiceConfig
+from holmeslibrary.files    import LargeFileReader
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
-# Set up Tornado options
-define("port", default=int(Config.settings.port,10), help="port to run", type=int)
 
 class ZipError (ServiceRequestError):
     pass
@@ -121,10 +122,8 @@ class ZipMetaApp(tornado.web.Application):
 
 
 def main():
-    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(options.port)
-    print("starting the zipmeta worker on port {}".format(options.port))
+    server.listen(Config.settings.port)
     tornado.ioloop.IOLoop.instance().start()
 
 

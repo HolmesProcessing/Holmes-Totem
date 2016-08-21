@@ -1,8 +1,6 @@
 # imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
-import tornado.options
-from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -19,8 +17,6 @@ from holmeslibrary.services import ServiceConfig
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
-# Set up Tornado options
-define("port", default=Config.settings.port, help="port to run", type=int)
 
 class YaraHandler(tornado.web.RequestHandler):
     @property
@@ -29,19 +25,21 @@ class YaraHandler(tornado.web.RequestHandler):
 
 class YaraProcess(YaraHandler):
     def process(self, filename, rules=None):
-        if rules:
-            ruleBuff = StringIO()
-            ruleBuff.write(rules)
-            ruleBuff.seek(0)
-            rules = yara.load(file=ruleBuff)
-            results = rules.match(filename[0], externals={'filename': filename[1]})
-        else:
-            results = self.YaraEngine.match(filename[0], externals={'filename': filename[1]})
-        results2 = list(map(lambda x: {"rule": x.rule}, results))
-        return results2
+        try:
+            if rules:
+                ruleBuff = StringIO()
+                ruleBuff.write(rules)
+                ruleBuff.seek(0)
+                rules = yara.load(file=ruleBuff)
+                results = rules.match(filename[0], externals={'filename': filename[1]})
+            else:
+                results = self.YaraEngine.match(filename[0], externals={'filename': filename[1]})
+            results2 = list(map(lambda x: {"rule": x.rule}, results))
+            return results2
+        except Exception as e:
+            return e
 
     def get(self, filename):
-        print("Received get request")
         try:
             fullPath = (os.path.join('/tmp/', filename), filename)
             data = self.process(fullPath)
@@ -50,8 +48,6 @@ class YaraProcess(YaraHandler):
             self.write({"error": traceback.format_exc(e)})
 
     def post(self, filename):
-        print("Received post request")
-        print(self.request.body)
         try:
             fullPath = os.path.join('/tmp/', filename)
             rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
@@ -94,10 +90,8 @@ class YaraApp(tornado.web.Application):
 
 
 def main():
-    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(YaraApp())
-    server.listen(options.port)
-    print("starting the yara worker on port {}".format(options.port))
+    server.listen(Config.settings.port)
     tornado.ioloop.IOLoop.instance().start()
 
 

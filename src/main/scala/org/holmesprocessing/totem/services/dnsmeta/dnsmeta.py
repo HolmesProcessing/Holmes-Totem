@@ -52,7 +52,7 @@ class Info(tornado.web.RequestHandler):
         info = """
             <p>{name:s} - {version:s}</p>
             <hr>
-            <pre>{description:s}</pre>
+            <p>{description:s}</p>
             <hr>
             <p>{license:s}
         """.format(

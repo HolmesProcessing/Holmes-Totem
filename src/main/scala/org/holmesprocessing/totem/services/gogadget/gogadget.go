@@ -132,7 +132,7 @@ func load_config(configPath string) (*Config, error) {
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprintf(f_response, `<p>%s - %s</p>
 		<hr>
-		<pre>%s</pre>
+		<p>%s</p>
 		<hr>
 		<p>%s</p>
 		`,

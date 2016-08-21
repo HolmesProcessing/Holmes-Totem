@@ -95,6 +95,7 @@ object driver extends App with Instrumented {
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
+        case _ => ""
       }
     }
 

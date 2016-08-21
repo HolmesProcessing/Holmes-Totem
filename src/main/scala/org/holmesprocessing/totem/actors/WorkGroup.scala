@@ -48,6 +48,7 @@ class WorkGroup extends Actor with ActorLogging with MonitoredActor {
 
   def monitoredReceive = {
     case Create(key: Long, download: Boolean, primaryURI: String, secondaryURI: String, tags: List[String], value: WorkState, config: DownloadSettings) =>
+      log.debug("Got a set of work {}", value)
       val child = context.child(key.toString).getOrElse({
         log.info("WorkGroup: instantiating a new actor for message {}", key)
         context.watch(

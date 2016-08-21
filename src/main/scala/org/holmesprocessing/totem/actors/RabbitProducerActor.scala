@@ -143,6 +143,7 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
     case ZooWork(download: Boolean, primaryURI: String, secondaryURI: String, filename: String, tasks: Map[String, List[String]], tags: List[String], attempts: Int) =>
       val incremented_attempts = attempts + 1
       val json = (
+        ("download" -> download) ~
         ("primaryURI" -> primaryURI) ~
           ("secondaryURI" -> secondaryURI) ~
           ("filename" -> filename) ~

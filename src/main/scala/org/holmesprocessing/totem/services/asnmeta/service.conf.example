@@ -1,0 +1,18 @@
+[metadata]
+Name        = ASNMeta
+Version     = 1.0
+Description = ./README.md
+Copyright   = Copyright 2016 Holmes Group LLC
+License     = ./LICENSE
+
+[settings]
+Port        = 8080
+InfoURL     = /
+AnalysisURL = /asnmeta
+
+[asnmeta]
+dns_server     = 8.8.8.8
+asn_ipv4_query = origin.asn.cymru.com
+asn_ipv6_query = origin6.asn.cymru.com
+asn_peer_query = peer.asn.cymru.com
+asn_name_query = name.asn.cymru.com

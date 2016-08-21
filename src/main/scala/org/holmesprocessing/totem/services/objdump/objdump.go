@@ -62,8 +62,8 @@ type Settings struct {
     MaxNumberOfOpcodes  string
 }
 type Config struct {
-    metadata Metadata
-    settings Settings
+    Metadata Metadata
+    Settings Settings
 }
 
 // global variables
@@ -107,7 +107,7 @@ func main () {
     router.GET("/objdump/:file", handler_analyze)
     router.GET("/", handler_info)
     
-    port := config.settings.Port
+    port := config.Settings.Port
     address := fmt.Sprintf(":%s",port)
     
     log.Printf("Binding to %s\n", address)
@@ -119,19 +119,17 @@ func main () {
 func load_config (configPath string) Config {
     
     // Create a new config object. Initialize it empty for now.
-    config := Config{metadata: Metadata{}, settings: Settings{}}
+    config := Config{Metadata: Metadata{}, Settings: Settings{}}
     
     // Prepare reflection to be able to set values later.
-    r_metadata := reflect.ValueOf(&(config.metadata)).Elem()
-    r_settings := reflect.ValueOf(&(config.settings)).Elem()
+    r_metadata := reflect.ValueOf(&(config.Metadata)).Elem()
+    r_settings := reflect.ValueOf(&(config.Settings)).Elem()
     
     // Attempt to read the INI-File. If it fails to open and read from the file,
     // throw a fatal error and exit.
     inifile, err := ini.Load(configPath)
     if err != nil {
         log.Fatalf("Unable to read config file %s", configPath)
-    } else {
-        log.Printf("Reading config file %s\n", configPath)
     }
     
     // Get a list of all section names in the INI-File and iterate over them.
@@ -229,7 +227,7 @@ func load_config (configPath string) Config {
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
     fmt.Fprintf(f_response, `<p>%s - %s</p>
         <hr>
-        <pre>%s</pre>
+        <p>%s</p>
         <hr>
         <p>%s</p>
         `,
@@ -303,7 +301,7 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         processed       bool
     )
     
-    opcodes_max, _   = strconv.ParseInt(config.settings.MaxNumberOfOpcodes, 10, 64)
+    opcodes_max, _   = strconv.ParseInt(config.Settings.MaxNumberOfOpcodes, 10, 64)
     opcodes         := make([]string, opcodes_max)
     
     expect_format   := 0x1
@@ -400,7 +398,6 @@ func handler_analyze (f_response http.ResponseWriter, request *http.Request, par
         // As such this comparison is last.
         if !processed && (expected & expect_format) != 0 {
             if result := re_fileformat.FindStringSubmatch(line); len(result)>0 {
-                log.Printf("Found file format specifier %s\n", result[1])
                 fileformat = result[1]
                 expected = expect_section
                 processed = true

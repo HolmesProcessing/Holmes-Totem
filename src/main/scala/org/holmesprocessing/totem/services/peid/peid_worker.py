@@ -1,8 +1,6 @@
 # imports for tornado
 import tornado
 from tornado import web, httpserver, ioloop
-import tornado.options
-from tornado.options import define, options
 
 # imports for logging
 import traceback
@@ -19,9 +17,6 @@ from holmeslibrary.services import ServiceConfig
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
-
-# Set up Tornado options
-define("port", default=Config.settings.port, help="port to run", type=int)
 
 class YaraHandler(tornado.web.RequestHandler):
     @property
@@ -46,7 +41,6 @@ class PEiDProcess(YaraHandler):
             return e
 
     def get(self, filename):
-        print("Received get request")
         try:
             fullPath = (os.path.join('/tmp/', filename), filename)
             data = self.process(fullPath)
@@ -55,8 +49,6 @@ class PEiDProcess(YaraHandler):
             self.write({"error": traceback.format_exc(e)})
 
     def post(self, filename):
-        print("Received post request")
-        print(self.request.body)
         try:
             fullPath = os.path.join('/tmp/', filename)
             rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
@@ -99,10 +91,8 @@ class PEiDApp(tornado.web.Application):
 
 
 def main():
-    tornado.options.parse_command_line()
     server = tornado.httpserver.HTTPServer(PEiDApp())
-    server.listen(options.port)
-    print("starting the peid worker on port {}".format(options.port))
+    server.listen(Config.settings.port)
     tornado.ioloop.IOLoop.instance().start()
 
 

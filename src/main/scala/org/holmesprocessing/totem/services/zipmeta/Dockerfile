@@ -1,27 +1,30 @@
-FROM debian:jessie
+FROM python:2-alpine
 
-# install what you need here
-RUN apt-get update && apt-get install -y \
-		python-pip \
-		build-essential \
-		python-dev \
-		git \
-	&& rm -rf /var/lib/apt/lists/*
-
+# add tornado
 RUN pip install tornado
 
-# get holmeslibrary
+# create folder
 RUN mkdir -p /service
 WORKDIR /service
-RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git holmeslibrary
-WORKDIR /service/holmeslibrary
-RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
+
+# add holmeslibrary
+RUN apk add --no-cache \
+		wget \
+	&& wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
+	&& tar xf v0.1.tar.gz \
+	&& mv Holmes-Totem-Service* holmeslibrary \
+	&& rm -rf /var/cache/apk/* v0.1.tar.gz
+
+###
+# zipmeta specific options
+###
 
 # add the files to the container
-ADD service.conf /service
-ADD LICENSE /service
-ADD README.md /service
-ADD zipmeta.py ZipParser.py extra_field_parse.py /service
+COPY LICENSE /service
+COPY README.md /service
+COPY ZipParser.py /service
+COPY extra_field_parse.py /service
+COPY zipmeta.py /service
+COPY service.conf /service
 
-WORKDIR /service
 CMD ["python2", "/service/zipmeta.py"]

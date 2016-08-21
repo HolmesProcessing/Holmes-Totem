@@ -1,16 +1,31 @@
 FROM golang:alpine
 
-# Get Go dependencies
+# create folder
+RUN mkdir -p /service
+WORKDIR /service
+
+# get go dependencies
 RUN apk add --no-cache \
 		git \
+	&& go get github.com/julienschmidt/httprouter \
 	&& rm -rf /var/cache/apk/*
-RUN go get github.com/julienschmidt/httprouter
 
-# Setup service
-RUN mkdir -p /service
-ADD . /service
+###
+# virustotal specific options
+###
 
-WORKDIR /service
-RUN go build -o vtsample
+# clean up
+RUN apk del --purge \
+		git \
+	&& rm -rf /var/cache/apk/* yara-3.5.0
 
-ENTRYPOINT ["/service/vtsample", "-config=/service/service.conf"] 
+# add the files to the container
+COPY LICENSE /service
+COPY README.md /service
+COPY vtsample.go /service
+COPY service.conf /service
+
+# build vtsample
+RUN go build vtsample.go
+
+CMD ["./vtsample", "-config=service.conf"] 

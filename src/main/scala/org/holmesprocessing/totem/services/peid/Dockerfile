@@ -1,64 +1,68 @@
-FROM debian:jessie
+FROM python:alpine
 
-# install what you need here
-RUN apt-get update && apt-get install -y \
-		python3-pip \
-		wget \
-		build-essential \
-		checkinstall \
-		dh-autoreconf \
-		libssl-dev \
-		libmagic-dev \
-		python-dev \
-		git \
-	&& rm -rf /var/lib/apt/lists/*
+# add tornado
+RUN pip3 install tornado
 
-
-# install python3 dependencies
-RUN pip3 install requests tornado
-
-
-# build yara from source
-RUN mkdir /yara
-WORKDIR /yara
-RUN wget https://github.com/plusvic/yara/archive/v3.4.0.tar.gz
-RUN tar -zxf v3.4.0.tar.gz
-WORKDIR /yara/yara-3.4.0
-RUN ./bootstrap.sh
-RUN ./configure --with-crypto --enable-magic
-RUN make
-RUN make install
-
-
-# build yara-python from source
-WORKDIR /yara/yara-3.4.0/yara-python
-RUN python3 setup.py build
-RUN python3 setup.py install
-
-
-# yaras ubuntu fix
-RUN echo "/usr/local/lib" >> /etc/ld.so.conf
-RUN ldconfig
-
-# get holmeslibrary
+# create folder
 RUN mkdir -p /service
 WORKDIR /service
-RUN git clone https://github.com/HolmesProcessing/Holmes-Totem-Service-Library.git holmeslibrary
-WORKDIR /service/holmeslibrary
-RUN git fetch origin && git checkout 481280325e5e65ca6b83337f678537f22be834cc
 
-# add the core files to the container
-ADD service.conf /service
-ADD LICENSE README.md /service/
-ADD getrules.py /service
-ADD peid_worker.py /service
-ADD rulepack /service/rulepack
+# add holmeslibrary
+RUN apk add --no-cache \
+		wget \
+	&& wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
+	&& tar xf v0.1.tar.gz \
+	&& mv Holmes-Totem-Service* holmeslibrary \
+	&& rm -rf /var/cache/apk/* v0.1.tar.gz
 
+###
+# peid specific options
+###
+
+# get dependencies
+RUN apk add --no-cache \
+		autoconf \
+		automake \
+		build-base \
+		file \
+		file-dev \
+		libtool \
+		libmagic \
+		openssl-dev \
+	&& wget https://github.com/VirusTotal/yara/archive/v3.5.0.tar.gz \
+	&& tar xf v3.5.0.tar.gz \
+	&& rm -rf /var/cache/apk/* yara-3.5.0.tar.gz
+
+# build yara
+WORKDIR /service/yara-3.5.0
+RUN	./bootstrap.sh \
+	&& ./configure \
+		--with-crypto \
+		--enable-magic \
+	&& make \
+	&& make install 
+WORKDIR /service/
+
+# build yara-python
+RUN pip3 install yara-python requests
+
+# clean up
+RUN apk del --purge \
+		autoconf \
+		automake \
+		build-base \
+	&& rm -rf /var/cache/apk/* yara-3.5.0
+
+# add the files to the container
+COPY LICENSE /service
+COPY README.md /service
+COPY getrules.py /service
+COPY peid_worker.py /service
+COPY rulepack /service/rulepack
+COPY service.conf /service
 
 # gather the rules and add them
-ADD rules.yar /service
-WORKDIR /service
+COPY rules.yar /service
 RUN python3 getrules.py
 
-
-CMD ["python3", "/service/peid_worker.py"]
+CMD ["python3", "peid_worker.py"]

@@ -1,24 +1,37 @@
 FROM golang:alpine
 
-# Get Go dependencies and binutils
+# create folder
+RUN mkdir -p /service
+WORKDIR /service
+
+# get go dependencies
 RUN apk add --no-cache \
 		git \
+	&& go get github.com/julienschmidt/httprouter \
+	&& rm -rf /var/cache/apk/*
+
+###
+# objdump specific options
+###
+
+# Get Go dependencies and binutils
+RUN apk add --no-cache \
 		binutils \
 	&& rm -rf /var/cache/apk/*
 RUN go get "github.com/go-ini/ini"
-RUN go get "github.com/julienschmidt/httprouter"
 
-# Add relevant files to the container.
-RUN mkdir -p /service
-ADD service.conf /service
-ADD LICENSE /service
-ADD README.md /service
-ADD objdump.go /service
+# clean up
+RUN apk del --purge \
+		git \
+	&& rm -rf /var/cache/apk/* yara-3.5.0
 
-# Change the working directory.
-WORKDIR /service
+# add the files to the container
+COPY LICENSE /service
+COPY README.md /service
+COPY objdump.go /service
+COPY service.conf /service
 
-# Build Objdump.
+# build Objdump
 RUN go build objdump.go
 
-CMD ["/service/objdump", "--config=service.conf"]
+CMD ["./objdump", "--config=service.conf"]

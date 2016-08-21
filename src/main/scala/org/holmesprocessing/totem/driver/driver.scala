@@ -4,6 +4,8 @@ import java.util.concurrent.{Executors, ExecutorService}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.holmesprocessing.totem.actors._
+import org.holmesprocessing.totem.services.asnmeta.{ASNMetaSuccess, ASNMetaWork}
+import org.holmesprocessing.totem.services.dnsmeta.{DNSMetaSuccess, DNSMetaWork}
 import org.holmesprocessing.totem.services.gogadget.{GoGadgetSuccess, GoGadgetWork}
 import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
 import org.holmesprocessing.totem.services.peid.{PEiDSuccess, PEiDWork}
@@ -90,6 +92,8 @@ object driver extends App with Instrumented {
   class TotemicEncoding(conf: Config) extends ConfigTotemEncoding(conf) { //this is a class, but we can probably make it an object. No big deal, but it helps on mem. pressure.
     def GeneratePartial(work: String): String = {
       work match {
+        case "ASNMETA" => Random.shuffle(services.getOrElse("asnmeta", List())).head
+        case "DNSMETA" => Random.shuffle(services.getOrElse("dnsmeta", List())).head
         case "GOGADGET" => Random.shuffle(services.getOrElse("gogadget", List())).head
         case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
@@ -103,6 +107,10 @@ object driver extends App with Instrumented {
 
     def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
+        case ("ASNMETA", li: List[String]) =>
+          ASNMetaWork(key, filename, 60, "ASNMETA", GeneratePartial("ASNMETA"), li)
+        case ("DNSMETA", li: List[String]) =>
+          DNSMetaWork(key, filename, 60, "DNSMETA", GeneratePartial("DNSMETA"), li)
         case ("GOGADGET", li: List[String]) =>
           GoGadgetWork(key, filename, 60, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
@@ -128,6 +136,8 @@ object driver extends App with Instrumented {
 
     def workRoutingKey(work: WorkResult): String = {
       work match {
+        case x: ASNMetaSuccess => conf.getString("totem.services.asnmeta.resultRoutingKey")
+        case x: DNSMetaSuccess => conf.getString("totem.services.dnsmeta.resultRoutingKey")
         case x: GoGadgetSuccess => conf.getString("totem.services.gogadget.resultRoutingKey")
         case x: ObjdumpSuccess => conf.getString("totem.services.objdump.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")

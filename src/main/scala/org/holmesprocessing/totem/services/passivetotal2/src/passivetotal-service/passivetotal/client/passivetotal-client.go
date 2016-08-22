@@ -21,7 +21,7 @@ func New(username, apikey string, timeout int) *Client {
     self := &Client{}
     self.username = username
     self.apikey   = apikey
-    self.client   = &http.Client{Timeout: 30*time.Second}
+    self.client   = &http.Client{Timeout: time.Duration(timeout)*time.Second}
     return self
 }
 

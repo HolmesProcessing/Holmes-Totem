@@ -25,6 +25,9 @@ COPY README.md /service
 COPY ZipParser.py /service
 COPY extra_field_parse.py /service
 COPY zipmeta.py /service
-COPY service.conf /service
+
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["python2", "/service/zipmeta.py"]

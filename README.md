@@ -51,6 +51,24 @@ After the files are created, please perform any adjustments to the configuration
 2) Perform Service Configuration
 Holmes-TOTEM provides a number of standard services that are packaged as Docker containers. These containers will manage all dependencies but configuration is still required. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf`. However, some services will require an API key or additional information to execute. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
 
+## Using Configuration Files From Holmes-Storage
+Holmes-TOTEM allows you to upload the configuration files for the individual services to Holmes-Storage. You can upload individual files manually:
+```shell
+curl -F config=@${confPath} http://${storageIP}:${storagePort}/config/${serviceName}/service.conf
+```
+or you can use the script to automatically upload all your service.conf-files:
+```shell
+cd config
+./upload_configs.sh ${storageIP}:${storagePath}
+```
+This script will go through each service and look for the file "service.conf" and upload it. If there is no such file, it will upload the file "service.conf.example", if it exists. Before uploading, the script asks for each file individually, since existing configurations on storage are overwritten.
+
+In order to use these uploaded configuration files, use the script
+```shell
+cd config
+./compose_download_conf.sh ${storageIP}:${storagePath}
+```
+
 ## Running Holmes-TOTEM
 1) Start the Services
 ```shell

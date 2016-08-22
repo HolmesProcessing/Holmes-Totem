@@ -34,9 +34,12 @@ RUN apk del --purge \
 COPY LICENSE /service
 COPY README.md /service
 COPY gogadget.go /service
-COPY service.conf /service
 
 # build gogadget
 RUN go build gogadget.go
+
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["./gogadget", "--config=service.conf"]

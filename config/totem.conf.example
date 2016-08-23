@@ -54,6 +54,10 @@ totem {
       uri = ["http://127.0.0.1:9710/dnsmeta/"]
       resultRoutingKey = "dnsmeta.result.static.totem"
     }
+    passivetotal {
+      uri = ["http://127.0.0.1:9720/passivetotal/"]
+      resultRoutingKey = "passivetotal.result.static.totem"
+    }
     gogadget {
       uri = ["http://127.0.0.1:7700/gogadget/"]
       resultRoutingKey = "gogadget.result.static.totem"
@@ -62,28 +66,24 @@ totem {
       uri = ["http://127.0.0.1:7710/objdump/"]
       resultRoutingKey = "objdump.result.static.totem"
     }
-    passivetotal {
-      uri = ["http://127.0.0.1:7720/passivetotal/"]
-      resultRoutingKey = "passivetotal.result.static.totem"
-    }
     peid {
-      uri = ["http://127.0.0.1:7730/peid/"]
+      uri = ["http://127.0.0.1:7720/peid/"]
       resultRoutingKey = "peid.result.static.totem"
     }
     peinfo {
-      uri = ["http://127.0.0.1:7740/peinfo/"]
+      uri = ["http://127.0.0.1:7730/peinfo/"]
       resultRoutingKey = "peinfo.result.static.totem"
     }
     virustotal {
-      uri = ["http://127.0.0.1:7750/virustotal/"]
+      uri = ["http://127.0.0.1:7740/virustotal/"]
       resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
-      uri = ["http://127.0.0.1:7760/yara/"]
+      uri = ["http://127.0.0.1:7750/yara/"]
       resultRoutingKey = "yara.result.static.totem"
     }
     zipmeta {
-      uri = ["http://127.0.0.1:7770/zipmeta/"]
+      uri = ["http://127.0.0.1:7760/zipmeta/"]
       resultRoutingKey = "zipmeta.result.static.totem"
     }
   }

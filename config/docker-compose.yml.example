@@ -10,6 +10,14 @@ dnsmeta:
     - "9710:8080"
   restart: unless-stopped
 
+passivetotal:
+  build: ../src/main/scala/org/holmesprocessing/totem/services/passivetotal
+  ports:
+    - "9720:8080"
+  restart: unless-stopped
+  volumes:
+    - /tmp:/tmp:ro
+
 gogadget:
   build: ../src/main/scala/org/holmesprocessing/totem/services/gogadget
   ports:
@@ -26,18 +34,10 @@ objdump:
   volumes:
     - /tmp:/tmp:ro
 
-passivetotal:
-  build: ../src/main/scala/org/holmesprocessing/totem/services/passivetotal
-  ports:
-    - "7720:8080"
-  restart: unless-stopped
-  volumes:
-    - /tmp:/tmp:ro
-
 peid:
   build: ../src/main/scala/org/holmesprocessing/totem/services/peid
   ports:
-    - "7730:8080"
+    - "7720:8080"
   restart: unless-stopped
   volumes:
     - /tmp:/tmp:ro
@@ -45,7 +45,7 @@ peid:
 peinfo:
   build: ../src/main/scala/org/holmesprocessing/totem/services/peinfo
   ports:
-    - "7740:8080"
+    - "7730:8080"
   restart: unless-stopped
   volumes:
     - /tmp:/tmp:ro
@@ -53,7 +53,7 @@ peinfo:
 virustotal:
   build: ../src/main/scala/org/holmesprocessing/totem/services/virustotal
   ports:
-    - "7750:8080"
+    - "7740:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro
@@ -61,7 +61,7 @@ virustotal:
 yara:
   build: ../src/main/scala/org/holmesprocessing/totem/services/yara
   ports:
-    - "7760:8080"
+    - "7750:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro
@@ -69,7 +69,7 @@ yara:
 zipmeta:
   build: ../src/main/scala/org/holmesprocessing/totem/services/zipmeta
   ports:
-    - "7770:8080"
+    - "7760:8080"
   restart: unless-stopped
   volumes:
    - /tmp:/tmp:ro

@@ -29,9 +29,12 @@ RUN apk del --purge \
 COPY LICENSE /service
 COPY README.md /service
 COPY objdump.go /service
-COPY service.conf /service
 
 # build Objdump
 RUN go build objdump.go
+
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["./objdump", "--config=service.conf"]

@@ -7,6 +7,7 @@ RUN pip3 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
+
 # add holmeslibrary
 RUN apk add --no-cache \
 		wget \
@@ -27,6 +28,8 @@ COPY LICENSE /service
 COPY README.md /service
 COPY gatherdns.py /service
 COPY dnsmeta.py /service
-COPY service.conf /service
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["python3", "dnsmeta.py"]

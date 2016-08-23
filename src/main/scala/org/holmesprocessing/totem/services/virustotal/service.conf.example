@@ -11,6 +11,7 @@
 		"InfoURL": "/",
 		"AnalysisURL": "/gogadget",
 		"ApiKey": "PutYourKeyHere",
-		"UploadUnknownSamples": false
+		"UploadUnknownSamples": false,
+		"RequestTimeout": 60
 	}
 }

@@ -58,10 +58,12 @@ COPY LICENSE /service
 COPY README.md /service
 COPY getrules.py /service
 COPY yara_worker.py /service
-COPY service.conf /service
 
 # gather the rules and add them
 COPY rules.yar /service
 RUN python3 getrules.py
 
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 CMD ["python3", "yara_worker.py"]

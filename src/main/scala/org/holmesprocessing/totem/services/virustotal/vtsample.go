@@ -44,6 +44,7 @@ type Settings struct {
 	AnalysisURL          string //cvp: same as above
 	ApiKey               string
 	UploadUnknownSamples bool
+	RequestTimeout       int
 }
 
 type Config struct {
@@ -54,7 +55,7 @@ type Config struct {
 var (
 	config *Config
 	info   *log.Logger
-	client = &http.Client{}
+	client *http.Client
 )
 
 func main() {
@@ -72,14 +73,15 @@ func main() {
 
 	config, err = load_config(configPath)
 	if err != nil {
-		log.Fatalln("Couldn't decode config file without errors!", err.Error())
+		info.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
+	client = &http.Client{Timeout: time.Duration(config.Settings.RequestTimeout) * time.Second}
 
 	router := httprouter.New()
 	router.GET("/virustotal/:file", handler_analyze)
 	router.GET("/", handler_info)
 	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
+	info.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -124,7 +126,7 @@ func load_config(configPath string) (*Config, error) {
 	// validate ApiKey
 	_, err := hex.DecodeString(config.Settings.ApiKey)
 	if len(config.Settings.ApiKey) != 64 || err != nil {
-		log.Println("Apikey seems to be invalid! Please supply a valid key!")
+		info.Println("Apikey seems to be invalid! Please supply a valid key!")
 		return config, err
 	}
 

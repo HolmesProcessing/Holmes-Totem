@@ -18,13 +18,14 @@ services:
       - "9710:8080"
     restart: unless-stopped
 
-passivetotal:
-  build: ../src/main/scala/org/holmesprocessing/totem/services/passivetotal
-  ports:
-    - "9720:8080"
-  restart: unless-stopped
-  volumes:
-    - /tmp:/tmp:ro
+  passivetotal:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/passivetotal
+      args:
+        conf: ${CONFSTORAGE_PASSIVETOTAL}service.conf
+    ports:
+      - "9720:8080"
+    restart: unless-stopped
 
   gogadget:
     build:

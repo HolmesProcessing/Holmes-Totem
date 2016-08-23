@@ -27,7 +27,8 @@ RUN mkdir -p src/passivetotal-service
 COPY LICENSE /service
 COPY README.md /service
 COPY src/passivetotal-service $GOPATH/src/passivetotal-service
-COPY service.conf /service
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 # build service's packages
 # build service

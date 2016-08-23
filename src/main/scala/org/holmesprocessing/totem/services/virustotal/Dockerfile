@@ -23,9 +23,11 @@ RUN apk del --purge \
 COPY LICENSE /service
 COPY README.md /service
 COPY vtsample.go /service
-COPY service.conf /service
 
 # build vtsample
 RUN go build vtsample.go
 
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 CMD ["./vtsample", "-config=service.conf"] 

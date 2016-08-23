@@ -27,6 +27,8 @@ COPY LICENSE /service
 COPY README.md /service
 COPY gatherasn.py /service
 COPY asnmeta.py /service
-COPY service.conf /service
+# add the configuration file (possibly from a storage uri)
+ARG conf=service.conf
+ADD $conf /service/service.conf
 
 CMD ["python3", "asnmeta.py"]

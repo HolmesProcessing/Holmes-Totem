@@ -20,8 +20,8 @@ import org.json4s.jackson.Serialization
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object RabbitProducerActor {
-  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String): Props = {
-    Props(new RabbitProducerActor(host, exchange, queue, misbehaveQueue, encoding, requeueKey) )
+  def props(host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String, taskingconfig: TaskingSettings): Props = {
+    Props(new RabbitProducerActor(host, exchange, queue, misbehaveQueue, encoding, requeueKey, taskingconfig) )
   }
 }
 
@@ -64,7 +64,7 @@ object RabbitProducerActor {
  * @param requeueKey: the requeueKey from the configuration file, used as the queue that Jobs will be requeued into.
  */
 
-class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, resultsQueue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String) extends Actor with ActorLogging {
+class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, resultsQueue: QueueSettings, misbehaveQueue: QueueSettings, encoding: TotemicEncoding, requeueKey: String, taskingconfig: TaskingSettings) extends Actor with ActorLogging {
   var channel: Channel =_
   var connection: Connection =_
   var totalDemand = 0
@@ -152,9 +152,9 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
         )
       val j = compact(render(json))
 
-      // TODO: set attemts as a config object
+      // TODO: set attempts as a config object
       log.info("RabbitProducer: we have had an error, we have an incremented_attempts of {}", incremented_attempts)
-      if(incremented_attempts <= 3) {
+      if(incremented_attempts <= taskingconfig.retry_attempts) {
 
           sendMessage(RMQSendMessage(j.getBytes, requeueKey))
           log.info("RabbitProducer: emitting a ZooWork {} to RMQ with routing key {} because incremented_attempts is {}", j, requeueKey, incremented_attempts)

@@ -152,7 +152,6 @@ class RabbitProducerActor(host: HostSettings, exchange: ExchangeSettings, result
         )
       val j = compact(render(json))
 
-      // TODO: set attempts as a config object
       log.info("RabbitProducer: we have had an error, we have an incremented_attempts of {}", incremented_attempts)
       if(incremented_attempts <= taskingconfig.retry_attempts) {
 

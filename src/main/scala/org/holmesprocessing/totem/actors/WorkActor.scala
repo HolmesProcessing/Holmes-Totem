@@ -21,8 +21,8 @@ case class SuccessfulDownload(filepath: String, tags: List[String], MD5Hash: Str
  * @constructor This is the companion object to the class. Simplifies Props() nonsense.
  */
 object WorkActor {
-  def props(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, config: DownloadSettings): Props = {
-    Props(new WorkActor(deliverytag, filename, hashfilename, download, primaryURI, secondaryURI, WorkToDo, tags, attempts, config) )
+  def props(deliverytag: Long, filename: String, hashfilename: String, download: Boolean, primaryURI: String, secondaryURI: String, WorkToDo: List[TaskedWork], tags: List[String], attempts: Int, downloadconfig: DownloadSettings): Props = {
+    Props(new WorkActor(deliverytag, filename, hashfilename, download, primaryURI, secondaryURI, WorkToDo, tags, attempts, downloadconfig) )
   }}
 /**
  * This actor represents the state of a message and its associated work within the system. As ScalaDoc's support for match
@@ -92,11 +92,11 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
     //TODO: set config for maxconnections
     .setRequestTimeout( downloadconfig.request_timeout )
     .setExecutorService(execServ)
-    .setAllowPoolingConnections(true)
+    .setAllowPoolingConnections( downloadconfig.connection_pooling )
     .setConnectTimeout( downloadconfig.connect_timeout )
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
-    .setIOThreadMultiplier(4).build()
+    .setIOThreadMultiplier( downloadconfig.thread_multiplier ).build()
   lazy val client = new AsyncHttpClient(httpconfig)
   lazy val asyncHttpClient = new AsyncHttpClient(httpconfig)
   implicit lazy val myHttp = new Http(asyncHttpClient)
@@ -106,7 +106,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
       .option
       .map({
         case Some(v: Array[Byte]) =>
-          new FileOutputStream(downloadconfig.download_directory + filename, false).write(v) //this filepath can be a conf. variable
+          new FileOutputStream(downloadconfig.download_directory + filename, false).write(v)
           log.debug("WorkActor: successfully downloaded {} using the primary URI {}", filename, primaryURI)
 
           SuccessfulDownload(downloadconfig.download_directory + filename, tags, DownloadMethods.MD5(v), DownloadMethods.SHA1(v), DownloadMethods.SHA256(v))
@@ -158,7 +158,6 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
   }
 
   def prepareFailedDownloadWork(res: List[TaskedWork]): ZooWork = {
-
     log.debug("WorkActor: input to FailedDownloadWork -> {}", res)
     //workToDo: List[TaskedWork]
     val readywork = workToDo.map(tw => {
@@ -197,7 +196,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
 
     case SuccessfulDownload(filepath: String, tags: List[String], md5sum: String, sha1sum: String, sha256sum: String) =>
       val time = timeDelta(Some(created), DateTime.now())
-      log.info("WorkActor: sucessfully downloaded {} to {} in {}!", sha256sum, filepath, time)
+      log.info("WorkActor: successfully downloaded {} to {} in {}!", sha256sum, filepath, time)
       log.debug("WorkActor: workload -> {}", workToDo)
       val w = workToDo.map(k =>
         k.doWork()

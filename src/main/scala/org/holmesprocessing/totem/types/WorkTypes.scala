@@ -45,7 +45,6 @@ import scala.util.Random
 //}
 
 trait TaskedWork {
-
   val key: Long
   val filename: String
   val TimeoutMillis: Int
@@ -53,7 +52,6 @@ trait TaskedWork {
   val Worker: String
   val Arguments: List[String]
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult]
-
 }
 /**
  * HashWork case class. Holds the tasking and worker path appropriate for this TaskedWork
@@ -113,6 +111,8 @@ abstract class GenericTotemEncoding extends WorkEncoding {
   def workRoutingKey(work: WorkResult): String
 }
 
+// TODO: look at moving some of this to driver.scala
+case class TaskingSettings(default_service_timeout: Int, prefetch: Int, retry_attempts: Int)
 abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
   val keys = conf.getObject("totem.services").keySet()
   val en = conf.getObject("totem.services").toConfig

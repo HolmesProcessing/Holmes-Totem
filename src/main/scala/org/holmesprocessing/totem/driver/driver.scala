@@ -39,11 +39,20 @@ object driver extends App with Instrumented {
   }
   val system = ActorSystem("totem")
 
+  println("Configuring details for Totem Tasking")
+  val taskingConfig = TaskingSettings(
+    conf.getInt("totem.tasking_settings.default_service_timeout"),
+    conf.getInt("totem.tasking_settings.prefetch"),
+    conf.getInt("totem.tasking_settings.retry_attempts")
+  )
+
   println("Configuring details for downloading objects")
   val downloadConfig = DownloadSettings(
+    conf.getBoolean("totem.download_settings.connection_pooling"),
+    conf.getInt("totem.download_settings.connection_timeout"),
     conf.getString("totem.download_settings.download_directory"),
-    conf.getInt("totem.download_settings.request_timeout"),
-    conf.getInt("totem.download_settings.connection_timeout")
+    conf.getInt("totem.download_settings.thread_multiplier"),
+    conf.getInt("totem.download_settings.request_timeout")
   )
 
   println("Configuring details for Rabbit queues")
@@ -54,6 +63,7 @@ object driver extends App with Instrumented {
     conf.getString("totem.rabbit_settings.host.password"),
     conf.getString("totem.rabbit_settings.host.vhost")
   )
+
   val exchangeConfig = ExchangeSettings(
     conf.getString("totem.rabbit_settings.exchange.name"),
     conf.getString("totem.rabbit_settings.exchange.type"),
@@ -61,10 +71,9 @@ object driver extends App with Instrumented {
   )
 
   val workqueueKeys = List[String](
-      conf.getString("totem.rabbit_settings.workqueue.routing_key"),
-      conf.getString("totem.requeueKey")
+    conf.getString("totem.rabbit_settings.workqueue.routing_key"),
+    conf.getString("totem.rabbit_settings.requeueKey")
   )
-
   val workqueueConfig = QueueSettings(
     conf.getString("totem.rabbit_settings.workqueue.name"),
     workqueueKeys,
@@ -72,6 +81,7 @@ object driver extends App with Instrumented {
     conf.getBoolean("totem.rabbit_settings.workqueue.exclusive"),
     conf.getBoolean("totem.rabbit_settings.workqueue.autodelete")
   )
+
   val resultQueueConfig = QueueSettings(
     conf.getString("totem.rabbit_settings.resultsqueue.name"),
     List[String](conf.getString("totem.rabbit_settings.resultsqueue.routing_key")),
@@ -108,23 +118,23 @@ object driver extends App with Instrumented {
     def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
         case ("ASNMETA", li: List[String]) =>
-          ASNMetaWork(key, filename, 60, "ASNMETA", GeneratePartial("ASNMETA"), li)
+          ASNMetaWork(key, filename, taskingConfig.default_service_timeout, "ASNMETA", GeneratePartial("ASNMETA"), li)
         case ("DNSMETA", li: List[String]) =>
-          DNSMetaWork(key, filename, 60, "DNSMETA", GeneratePartial("DNSMETA"), li)
+          DNSMetaWork(key, filename, taskingConfig.default_service_timeout, "DNSMETA", GeneratePartial("DNSMETA"), li)
         case ("GOGADGET", li: List[String]) =>
-          GoGadgetWork(key, filename, 60, "GOGADGET", GeneratePartial("GOGADGET"), li)
+          GoGadgetWork(key, filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
-          ObjdumpWork(key, filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
+          ObjdumpWork(key, filename, taskingConfig.default_service_timeout, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PEID", li: List[String]) =>
-          PEiDWork(key, filename, 60, "PEID", GeneratePartial("PEID"), li)
+          PEiDWork(key, filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
-          PEInfoWork(key, filename, 60, "PEINFO", GeneratePartial("PEINFO"), li)
+          PEInfoWork(key, filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
-          VirustotalWork(key, filename, 60, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
+          VirustotalWork(key, filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>
-          YaraWork(key, filename, 60, "YARA", GeneratePartial("YARA"), li)
+          YaraWork(key, filename, taskingConfig.default_service_timeout, "YARA", GeneratePartial("YARA"), li)
         case ("ZIPMETA", li: List[String]) =>
-          ZipMetaWork(key, filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+          ZipMetaWork(key, filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
@@ -149,12 +159,13 @@ object driver extends App with Instrumented {
       }
     }
   }
+
   println("Completing configuration")
   val encoding = new TotemicEncoding(conf)
 
   println("Creating Totem Actors")
-  val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
-  val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, misbehaveQueueConfig, encoding, conf.getString("totem.requeueKey")), "producer")
+  val myGetter: ActorRef = system.actorOf(RabbitConsumerActor.props[ZooWork](hostConfig, exchangeConfig, workqueueConfig, encoding, Parsers.parseJ, downloadConfig, taskingConfig).withDispatcher("akka.actor.my-pinned-dispatcher"), "consumer")
+  val mySender: ActorRef = system.actorOf(Props(classOf[RabbitProducerActor], hostConfig, exchangeConfig, resultQueueConfig, misbehaveQueueConfig, encoding, conf.getString("totem.rabbit_settings.requeueKey"), taskingConfig), "producer")
 
   println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
 

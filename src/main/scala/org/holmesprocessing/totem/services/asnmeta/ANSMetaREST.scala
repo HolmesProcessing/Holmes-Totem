@@ -7,7 +7,7 @@ import org.holmesprocessing.totem.types.{TaskedWork, WorkFailure, WorkResult, Wo
 import collection.mutable
 
 //when these work objects are created, we need to provide both the original filename and the uuid one, and when the doWork is called, we use the original, or the uuid as appropriate (if a file)
-case class ASNMetaWork(key: Long, filename: String, url_path: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
+case class ASNMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 
     val uri = ASNMetaREST.constructURL(Worker, filename, Arguments)

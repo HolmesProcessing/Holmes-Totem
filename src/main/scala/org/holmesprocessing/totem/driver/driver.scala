@@ -101,6 +101,9 @@ object driver extends App with Instrumented {
     //maybe we should not have the double filename define, and just simply select the correct one here?
     //Might be a little easier for dev, but is the purpose clear?
     //saves us on some logic and constructor space for the objects.
+    //Yup, this is what we're going with. This allows the user to define their own types easily, and dynamically set whatever they want here.
+    //Simply add the logic needed in the case class. The Orig_Filename is the filename/url provided in the work object, and the UUID name is the generated name.
+    //Use whichever is appropriate
     def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
         case ("OBJDUMP", li: List[String]) =>

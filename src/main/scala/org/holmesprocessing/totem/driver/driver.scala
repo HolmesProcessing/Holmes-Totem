@@ -104,19 +104,19 @@ object driver extends App with Instrumented {
     def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
         case ("OBJDUMP", li: List[String]) =>
-          ObjdumpWork(key, uuid_filename, orig_filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
+          ObjdumpWork(key, uuid_filename, 60, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PEID", li: List[String]) =>
-          PEiDWork(key, uuid_filename, orig_filename, 60, "PEID", GeneratePartial("PEID"), li)
+          PEiDWork(key, uuid_filename, 60, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
-          PEInfoWork(key, uuid_filename, orig_filename, 60, "PEINFO", GeneratePartial("PEINFO"), li)
+          PEInfoWork(key, uuid_filename, 60, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
-          VirustotalWork(key, uuid_filename, orig_filename, 60, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
+          VirustotalWork(key, uuid_filename, 60, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>
-          YaraWork(key, uuid_filename, orig_filename, 60, "YARA", GeneratePartial("YARA"), li)
+          YaraWork(key, uuid_filename, 60, "YARA", GeneratePartial("YARA"), li)
         case ("ZIPMETA", li: List[String]) =>
-          ZipMetaWork(key, uuid_filename, orig_filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+          ZipMetaWork(key, uuid_filename, 60, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case (s: String, li: List[String]) =>
-          UnsupportedWork(key, uuid_filename, orig_filename, 1, s, GeneratePartial(s), li)
+          UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
       }).collect({
         case x: TaskedWork => x

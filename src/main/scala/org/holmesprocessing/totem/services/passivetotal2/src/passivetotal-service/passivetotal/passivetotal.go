@@ -60,9 +60,10 @@ type ApiQuery struct {
     Osint              interface{}   `json:"osint"`
     Malware            interface{}   `json:"malware"`
 
-    Errors                []string   `json:"errors"`
-    QuotaReached          bool       `json:"quota_reached"`
-    InvalidAuthentication bool       `json:"invalid_authentication"`
+    Errors                []string   `json:"-"`
+    ConnectionError       bool       `json:"-"`
+    QuotaReached          bool       `json:"-"`
+    InvalidAuthentication bool       `json:"-"`
 
     object      *queryobject.Object  `json:"-"`
     client      *client.Client       `json:"-"`
@@ -92,6 +93,7 @@ func (self *ApiQuery) checkForErrors(apiResult *client.ApiResult) interface{} {
 
     if apiResult.HttpError != nil {
         hasError = true
+        self.ConnectionError = true
         infoLogger.Printf("Error running %s, connection error: %v\n",
             apiResult.QueryDescription, apiResult.HttpError)
 

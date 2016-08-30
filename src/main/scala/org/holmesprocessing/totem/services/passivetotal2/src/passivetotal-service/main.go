@@ -261,6 +261,10 @@ func doPassiveTotalLookup(r *http.Request, p httprouter.Params) (interface{}, in
             errResult.Error = "Invalid Authentication"
             status = 401
 
+        } else if query.ConnectionError {
+            errResult.Error = "PassiveTotal API Unreachable"
+            status = 502
+
         } else {
             errResult.Error = "Unexpected Error"
             status = 500

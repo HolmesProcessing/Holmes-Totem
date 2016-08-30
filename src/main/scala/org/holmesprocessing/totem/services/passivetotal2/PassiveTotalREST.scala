@@ -17,6 +17,24 @@ case class PassiveTotalWork(key: Long, filename: String, TimeoutMillis: Int, Wor
       case Right(content) =>
         PassiveTotalSuccess(true, JString(content), Arguments)
 
+      case Left(StatusCode(400)) =>
+        PassiveTotalFailure(false, JString("Malformed Request"), Arguments)
+
+      case Left(StatusCode(422)) =>
+        PassiveTotalFailure(false, JString("Unknown Object Type"), Arguments)
+
+      case Left(StatusCode(401)) =>
+        PassiveTotalFailure(false, JString("Invalid Username or API-Key for PassiveTotal"), Arguments)
+
+      case Left(StatusCode(402)) =>
+        PassiveTotalFailure(false, JString("PassiveTotal Quota Reached"), Arguments)
+
+      case Left(StatusCode(404)) =>
+        PassiveTotalFailure(false, JString("Not found (malformed address?)"), Arguments)
+
+      case Left(StatusCode(500)) =>
+        PassiveTotalFailure(false, JString("PassiveTotal service failed, check local logs"), Arguments)
+
       case Left(something) =>
         PassiveTotalFailure(false, JString("wildcard failure: " + something.toString), Arguments)
     })

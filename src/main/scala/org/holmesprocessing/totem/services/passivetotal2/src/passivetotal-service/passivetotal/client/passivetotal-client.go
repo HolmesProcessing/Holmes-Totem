@@ -3,7 +3,7 @@ package client
 import(
     "time"
     "net/http"
-    "github.com/ms-xy/jason"
+    "github.com/antonholmquist/jason"
 )
 
 // This object contains the users credentials as well as the query value and a

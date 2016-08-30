@@ -16,8 +16,7 @@ RUN apk add --no-cache \
 
 # get additional dependencies
 RUN go get "github.com/go-ini/ini" \
-    && go get "github.com/ms-xy/jason" \
-    && go get "github.com/miekg/dns"
+    && go get "github.com/antonholmquist/jason"
 
 # create directory to hold sources for compilation
 RUN mkdir -p src/passivetotal-service
@@ -30,15 +29,14 @@ COPY src/passivetotal-service $GOPATH/src/passivetotal-service
 ARG conf=service.conf
 ADD $conf /service/service.conf
 
+# download TLD list from iana.org
+RUN wget -O TLDList.txt "http://data.iana.org/TLD/tlds-alpha-by-domain.txt"
+
 # build service's packages
 # build service
 # copy service binary to /service
-RUN cd $GOPATH \
-    && go build passivetotal-service/config \
-    && go build passivetotal-service/passivetotal \
-    && go build passivetotal-service/passivetotal/client \
-    && go build passivetotal-service/passivetotal/queryobject \
-    && go build -o passivetotal-service passivetotal-service/main \
+RUN cd $GOPATH/src/passivetotal-service \
+    && go build \
     && cp passivetotal-service /service/passivetotal-service
 
 # clean up git

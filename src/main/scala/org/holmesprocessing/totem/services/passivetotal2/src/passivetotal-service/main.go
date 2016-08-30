@@ -1,11 +1,6 @@
 package main
 
 /*
-Please note that in order to build this service, you should either build it with
-Docker or use the attached Makefile (GNU Make: make get-dependencies build-service)
-*/
-
-/*
  * Imports for messuring execution time of requests
  */
 import (
@@ -25,12 +20,13 @@ import (
 )
 
 /*
- * Imports for serving on a socket and handling routing of incoming request.
+ * Imports for serving on a socket and handling of incoming request.
  */
 import (
     "net/http"
     "github.com/julienschmidt/httprouter"
     "encoding/json"
+    "io/ioutil"
 )
 
 /*
@@ -126,27 +122,69 @@ func handlerAnalyze (f_response http.ResponseWriter, request *http.Request, para
     infoLogger.Println("Serving request:", request)
     startTime := time.Now()
 
-    // retrieve result and marshal it
-    result        := doPassiveTotalLookup(params.ByName("object"))
-    resultJSON, _ := json.Marshal(result)
+    // Get settings and do PT queries.
+    // Marshal result right away, after testing if there was an error.
+    result, status := doPassiveTotalLookup(request, params)
+    var resultJSON []byte
+    if result != nil {
+        resultJSON, _ = json.Marshal(result)
+    } else {
+        resultJSON = []byte("{}")
+    }
 
-    // send back a response of type text/json
+    // Send back a response of type text/json
     f_response.Header().Set("Content-Type","text/json; charset=utf-8")
-    fmt.Fprint(f_response, string(resultJSON))
+    f_response.WriteHeader(status)
+    f_response.Write(resultJSON)
 
     elapsedTime := time.Since(startTime)
     infoLogger.Printf("Done in %s.\n", elapsedTime)
 }
 
 
-func doPassiveTotalLookup(object string) *passivetotal.ApiQuery {
-    user   := cfg.Settings.APIUser
-    apikey := cfg.Settings.APIKey
-    timeout:= cfg.Settings.RequestTimeout
-    query  := passivetotal.NewApiQuery(user, apikey, object, timeout)
-    wg     := &sync.WaitGroup{}
+func doPassiveTotalLookup(r *http.Request, p httprouter.Params) (interface{}, int) {
+    // Generic result object, returned in case of an error instead of the query
+    // object:
+    var errResult struct {
+        Error string `json:"error"`
+    }
 
-    wg.Add(11)
+    // Create a settings object to use with the query, parse parameters passed
+    // via the request body into it (all options can be overriden):
+    aqs           := &passivetotal.ApiQuerySettings{}
+    aqs.Object     = p.ByName("object")
+    aqs.Username   = cfg.Settings.APIUser
+    aqs.ApiKey     = cfg.Settings.APIKey
+    aqs.Timeout    = cfg.Settings.RequestTimeout
+
+    if r.Body != nil {
+        if bytes, err := ioutil.ReadAll(r.Body); err != nil {
+            msg := "Unexpected error reading the request body: "+err.Error()
+            infoLogger.Println(msg)
+            errResult.Error = msg
+            return errResult, 400
+        } else if len(bytes)>0 {
+            if err = json.Unmarshal(bytes, aqs); err != nil {
+                msg := "Unexpected error parsing request settings: "+err.Error()
+                infoLogger.Println(msg)
+                errResult.Error = msg
+                return errResult, 400
+            }
+        }
+    }
+
+    // Create a new query object based on the settings, also check for errors
+    // during query creation. Only errors possible are due to invalid input
+    // (either filtered or unknown type).
+    query, err := passivetotal.NewApiQuery(aqs)
+    if err != nil {
+        infoLogger.Println("Dropping query due to: "+err.Error())
+        errResult.Error = err.Error()
+        return errResult, 422  // Status Code: Unprocessable Entity
+    }
+
+    wg := &sync.WaitGroup{}
+    wg.Add(9)
 
     go func(wg *sync.WaitGroup) {
         defer wg.Done()
@@ -163,15 +201,17 @@ func doPassiveTotalLookup(object string) *passivetotal.ApiQuery {
         query.DoWhoisEmailSearch()
         }(wg)
 
-    go func(wg *sync.WaitGroup) {
-        defer wg.Done()
-        query.DoSslQuery()
-        }(wg)
+    // TODO: ssl query only accepts a certificate hash (sha1), need a per-request option to make this useful
+    // go func(wg *sync.WaitGroup) {
+    //     defer wg.Done()
+    //     query.DoSslQuery()
+    //     }(wg)
 
-    go func(wg *sync.WaitGroup) {
-        defer wg.Done()
-        query.DoSslHistoryQuery()
-        }(wg)
+    // TODO: same as for DoSslQuery above, additionally IP seems to not work unlike specified in the API documentation
+    // go func(wg *sync.WaitGroup) {
+    //     defer wg.Done()
+    //     query.DoSslHistoryQuery()
+    //     }(wg)
 
     go func(wg *sync.WaitGroup) {
         defer wg.Done()
@@ -204,5 +244,30 @@ func doPassiveTotalLookup(object string) *passivetotal.ApiQuery {
         }(wg)
 
     wg.Wait()
-    return query
+
+    // By default assume success, unless the length of errors is not 0.
+    // In that case check if it is a known error (user has reached his paid
+    // quota / user credentials invalid), or if it is an unknown error, in which
+    // case we should return 500 as there should be no error condition that is
+    // unknown (other than maybe a 500 by the PassiveTotal servers, in which
+    // case we should have a 500 too, to indicate the severity of the error).
+    if (len(query.Errors) != 0) {
+        status := 200
+        if query.QuotaReached {
+            errResult.Error = "Quota Reached"
+            status = 402
+
+        } else if query.InvalidAuthentication {
+            errResult.Error = "Invalid Authentication"
+            status = 401
+
+        } else {
+            errResult.Error = "Unexpected Error"
+            status = 500
+        }
+        return errResult, status
+    }
+
+    // Everything is fine.
+    return query, 200
 }

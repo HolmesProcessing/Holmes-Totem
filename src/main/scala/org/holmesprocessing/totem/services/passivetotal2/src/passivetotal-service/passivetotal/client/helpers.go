@@ -1,7 +1,7 @@
 package client
 
 import (
-    "github.com/ms-xy/jason"
+    "github.com/antonholmquist/jason"
 )
 
 // Internal helper function to get a string from a jason.Object

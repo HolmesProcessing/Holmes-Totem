@@ -3,6 +3,7 @@ package passivetotal
 import (
     "log"
     "os"
+    "sync"
     "passivetotal-service/passivetotal/client"
     "passivetotal-service/passivetotal/queryobject"
 )
@@ -19,11 +20,26 @@ var (
 // @param object String containing the query value (Domain, IP, Indicator or Email)
 // @param timeout Int timeout in seconds before a query is interrupted and an
 //                empty result returned.
-func NewApiQuery(user, apikey, object string, timeout int) *ApiQuery {
+//
+// Returns an error if queryobject.New returns an error, which only happens if
+// detectObjectType returns an error (filtered IP range or unknown type).
+func NewApiQuery(cfg *ApiQuerySettings) (*ApiQuery, error) {
     self        := &ApiQuery{}
-    self.object  = queryobject.New(object)
-    self.client  = client.New(user, apikey, timeout)
-    return self
+    o, err      := queryobject.New(cfg.Object, cfg.DefaultType)
+    self.object  = o
+    self.client  = client.New(cfg.Username, cfg.ApiKey, cfg.Timeout)
+    self.lock    = &sync.Mutex{}
+    return self, err
+}
+
+
+// A struct containing settings for an ApiQuery.
+type ApiQuerySettings struct {
+    Username     string  `json="-"`
+    ApiKey       string  `json="-"`
+    Object       string  `json="-"`
+    Timeout      int     `json="-"`
+    DefaultType  string  `json="default_type"`
 }
 
 
@@ -34,8 +50,9 @@ type ApiQuery struct {
     Dns                interface{}   `json:"dns"`
     Whois              interface{}   `json:"whois"`
     WhoisEmailSearch   interface{}   `json:"whois_email_search"`
-    Ssl                interface{}   `json:"ssl"`
-    SslHistory         interface{}   `json:"ssl_history"`
+    // See corresponding TODOs in main.go
+    // Ssl                interface{}   `json:"ssl"`
+    // SslHistory         interface{}   `json:"ssl_history"`
     Subdomain          interface{}   `json:"subdomain"`
     Enrichment         interface{}   `json:"enrichment"`
     Tracker            interface{}   `json:"tracker"`
@@ -43,8 +60,13 @@ type ApiQuery struct {
     Osint              interface{}   `json:"osint"`
     Malware            interface{}   `json:"malware"`
 
-    object *queryobject.Object  `json:"-"`
-    client *client.Client       `json:"-"`
+    Errors                []string   `json:"errors"`
+    QuotaReached          bool       `json:"quota_reached"`
+    InvalidAuthentication bool       `json:"invalid_authentication"`
+
+    object      *queryobject.Object  `json:"-"`
+    client      *client.Client       `json:"-"`
+    lock        *sync.Mutex          `json:"-"`
 }
 
 
@@ -61,31 +83,57 @@ func (self *ApiQuery) hasObjType(supported ...int) bool {
 
 // Internal helper function to log errors.
 func (self *ApiQuery) checkForErrors(apiResult *client.ApiResult) interface{} {
+    // Make sure self is locked to avoid undefined behaviour when writing to
+    // the Errors slice.
+    self.lock.Lock()
+    defer self.lock.Unlock()
+
+    hasError := false
+
     if apiResult.HttpError != nil {
-        infoLogger.Printf("Error running %s, cannot connect to the API: %v\n",
-                           apiResult.QueryDescription,
-                           apiResult.HttpError)
+        hasError = true
+        infoLogger.Printf("Error running %s, connection error: %v\n",
+            apiResult.QueryDescription, apiResult.HttpError)
+
     } else {
         if apiResult.StatusCode != 200 {
-            if apiResult.Error {
-                infoLogger.Printf("Error running %s: (%d) %s, %s\n",
-                                   apiResult.QueryDescription,
-                                   apiResult.StatusCode,
-                                   apiResult.ErrorMessage,
-                                   apiResult.DeveloperMessage)
+            hasError = true
+
+            if apiResult.StatusCode == 401 {
+                self.InvalidAuthentication = true
+                infoLogger.Printf("Error running %s, api error: Invalid Authentication!\n",
+                    apiResult.QueryDescription)
+
+            } else if apiResult.StatusCode == 403 {
+                self.QuotaReached = true
+                infoLogger.Printf("Error running %s, api error: Quota Reached!\n",
+                    apiResult.QueryDescription)
+
+            } else if apiResult.Error {
+                // Unknown other error that is well described.
+                infoLogger.Printf("Error running %s, api error: (HTTP %d) %s, %s\n",
+                    apiResult.QueryDescription, apiResult.StatusCode,
+                    apiResult.ErrorMessage, apiResult.DeveloperMessage)
+
             } else {
-                infoLogger.Printf("Error running %s, unknown API error: (%d) %s\n",
-                                   apiResult.QueryDescription,
-                                   apiResult.StatusCode,
-                                   apiResult.Status)
+                // Unknown other error that we have no description for.
+                infoLogger.Printf("Error running %s, api error : (HTTP %d) %s\n",
+                    apiResult.QueryDescription, apiResult.StatusCode,
+                    apiResult.Status)
             }
         }
         if apiResult.JsonError != nil {
+            hasError = true
             infoLogger.Printf("Error running %s, parser error: %v",
-                               apiResult.QueryDescription,
-                               apiResult.JsonError)
+                apiResult.QueryDescription, apiResult.JsonError)
         }
     }
+
+    if hasError {
+        self.Errors = append(self.Errors, apiResult.QueryDescription)
+        return nil
+    }
+
     return apiResult.Json
 }
 
@@ -94,90 +142,106 @@ func (self *ApiQuery) checkForErrors(apiResult *client.ApiResult) interface{} {
  * Query function definitions for PassiveTotal query object (ApiQuery).
  */
 
+const (
+    baseURL = "https://api.passivetotal.org/v2/"
+)
+
 // Retrieve passive dns information.
 func (self *ApiQuery) DoPassiveDnsQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.IP, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/dns/passive?query="+self.object.Obj
-        self.Dns = self.checkForErrors(self.client.SendApiRequest(url, "DNS query"))
+        url := baseURL + "dns/passive?query=" + self.object.Obj
+        r   := self.client.SendApiRequest(url, "DNS query")
+        self.Dns = self.checkForErrors(r)
     }
 }
 
 // Retrieve whois information.
 func (self *ApiQuery) DoWhoisQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/whois?query="+self.object.Obj
-        self.Whois = self.checkForErrors(self.client.SendApiRequest(url, "Whois query"))
+        url := baseURL + "whois?query=" + self.object.Obj
+        r   := self.client.SendApiRequest(url, "Whois query")
+        self.Whois = self.checkForErrors(r)
     }
 }
 
 // Retrieve whois email search results.
 func (self *ApiQuery) DoWhoisEmailSearch() {
     if self.hasObjType(queryobject.Email, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/whois/search?query="+self.object.Obj+"&field=email"
-        self.WhoisEmailSearch = self.checkForErrors(self.client.SendApiRequest(url, "Whois email search"))
+        url := baseURL + "whois/search?query="+self.object.Obj+"&field=email"
+        r   := self.client.SendApiRequest(url, "Whois email search")
+        self.WhoisEmailSearch = self.checkForErrors(r)
     }
 }
 
-// Retrive SSL information.
-func (self *ApiQuery) DoSslQuery() {
-    if self.hasObjType(queryobject.IP, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/ssl-certificate?query="+self.object.Obj
-        self.Ssl = self.checkForErrors(self.client.SendApiRequest(url, "SSL Certificate query"))
-    }
-}
-
-// Retrieve SSL history.
-func (self *ApiQuery) DoSslHistoryQuery() {
-    if self.hasObjType(queryobject.IP, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/ssl-certificate/history?query="+self.object.Obj
-        self.SslHistory = self.checkForErrors(self.client.SendApiRequest(url, "SSL Certificate history query"))
-    }
-}
+// See corresponding TODOs in main.go
+// // Retrieve SSL information.
+// func (self *ApiQuery) DoSslQuery() {
+//     if self.hasObjType(queryobject.Indicator) {
+//         url := baseURL + "ssl-certificate?query="+self.object.Obj
+//         r   := self.client.SendApiRequest(url, "SSL Certificate query")
+//         self.Ssl = self.checkForErrors(r)
+//     }
+// }
+//
+// // Retrieve SSL history.
+// func (self *ApiQuery) DoSslHistoryQuery() {
+//     if self.hasObjType(queryobject.IP, queryobject.Indicator) {
+//         url := baseURL + "ssl-certificate/history?query="+self.object.Obj
+//         r   := self.client.SendApiRequest(url, "SSL Certificate history query")
+//         self.SslHistory = self.checkForErrors(r)
+//     }
+// }
 
 // Retrieve subdomains.
 func (self *ApiQuery) DoSubdomainQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator) {
-        url := "https://api.passivetotal.org/v2/enrichment/subdomains?query="+self.object.Obj
-        self.Subdomain = self.checkForErrors(self.client.SendApiRequest(url, "Subdomain query"))
+        url := baseURL + "enrichment/subdomains?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Subdomain query")
+        self.Subdomain = self.checkForErrors(r)
     }
 }
 
 // Retrieve enrichment data.
 func (self *ApiQuery) DoEnrichmentQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator, queryobject.IP) {
-        url := "https://api.passivetotal.org/v2/enrichment?query="+self.object.Obj
-        self.Enrichment = self.checkForErrors(self.client.SendApiRequest(url, "Enrichment query"))
+        url := baseURL + "enrichment?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Enrichment query")
+        self.Enrichment = self.checkForErrors(r)
     }
 }
 
 // Retrieve trackers.
 func (self *ApiQuery) DoTrackerQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator, queryobject.IP) {
-        url := "https://api.passivetotal.org/v2/host-attributes/trackers?query="+self.object.Obj
-        self.Tracker = self.checkForErrors(self.client.SendApiRequest(url, "Tracker query"))
+        url := baseURL + "host-attributes/trackers?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Tracker query")
+        self.Tracker = self.checkForErrors(r)
     }
 }
 
 // Retrieve components.
 func (self *ApiQuery) DoComponentQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator, queryobject.IP) {
-        url := "https://api.passivetotal.org/v2/host-attributes/components?query="+self.object.Obj
-        self.Component = self.checkForErrors(self.client.SendApiRequest(url, "Components query"))
+        url := baseURL + "host-attributes/components?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Components query")
+        self.Component = self.checkForErrors(r)
     }
 }
 
 // Retrieve opensource intelligence data.
 func (self *ApiQuery) DoOsintQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator, queryobject.IP) {
-        url := "https://api.passivetotal.org/v2/enrichment/osint?query="+self.object.Obj
-        self.Osint = self.checkForErrors(self.client.SendApiRequest(url, "Osint query"))
+        url := baseURL + "enrichment/osint?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Osint query")
+        self.Osint = self.checkForErrors(r)
     }
 }
 
 // Retrieve malware information.
 func (self *ApiQuery) DoMalwareQuery() {
     if self.hasObjType(queryobject.Domain, queryobject.Indicator, queryobject.IP) {
-        url := "https://api.passivetotal.org/v2/enrichment/malware?query="+self.object.Obj
-        self.Malware = self.checkForErrors(self.client.SendApiRequest(url, "Malware query"))
+        url := baseURL + "enrichment/malware?query="+self.object.Obj
+        r   := self.client.SendApiRequest(url, "Malware query")
+        self.Malware = self.checkForErrors(r)
     }
 }

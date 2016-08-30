@@ -6,7 +6,7 @@ import (
 
 // Internal helper function to get a string from a jason.Object
 func jasonGetString(o *jason.Object, key string) string {
-    if (o == nil || key == "") {
+    if o == nil || key == "" {
         return ""
     }
     v, _ := o.GetString(key)
@@ -15,7 +15,7 @@ func jasonGetString(o *jason.Object, key string) string {
 
 // Internal helper function to get a string slice from a jason.Object
 func jasonGetStringArray(o *jason.Object, key string) []string {
-    if (o == nil || key == "") {
+    if o == nil || key == "" {
         return []string{}
     }
     v, _ := o.GetStringArray(key)

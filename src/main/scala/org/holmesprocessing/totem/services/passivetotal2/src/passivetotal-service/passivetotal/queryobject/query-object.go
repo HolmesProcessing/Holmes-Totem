@@ -8,13 +8,12 @@ import (
 
 // Imports required to determine the type of the object contained in a *Object.
 import (
+    "errors"
+    "io/ioutil"
     "net"
     "net/mail"
-    "errors"
     "strings"
-    "io/ioutil"
 )
-
 
 const (
     // The constants defining what kind of object is saved in a Object.
@@ -24,10 +23,16 @@ const (
     IP
 )
 
-
 var (
     // global type constants map as well as a logger instance
-    typeMap = make(map[int]string)
+    // since iota starts with 0, we can just use a string slice replicating the
+    // offset
+    typeMap = []string{
+        "Domain",
+        "Email",
+        "Indicator",
+        "IP",
+    }
     infoLogger *log.Logger
 
     // address ranges to be filtered out
@@ -37,48 +42,50 @@ var (
     // global tld map, fetched from iana
     tldMap = make(map[string]bool)
 )
-func init() {
-    typeMap[Domain]    = "Domain"
-    typeMap[Email]     = "Email"
-    typeMap[Indicator] = "Indicator"
-    typeMap[IP]        = "IP"
 
+func init() {
+    // initialize our logger instance
     infoLogger = log.New(os.Stdout, "", log.Ltime|log.Lshortfile)
 
     // init address ranges to be filtered out
     // for ipv4 see: https://tools.ietf.org/html/rfc6890
     // for ipv6 see: https://tools.ietf.org/html/rfc4291
-    _, v4thisHostThisNet, _     := net.ParseCIDR("0.0.0.0/8")
-    _, v4loopback, _            := net.ParseCIDR("127.0.0.0/8")
-    _, v4privateUseNetworks, _  := net.ParseCIDR("10.0.0.0/8")
-    _, v4privateUseNetworks2, _ := net.ParseCIDR("172.16.0.0/12")
-    _, v4privateUseNetworks3, _ := net.ParseCIDR("192.168.0.0/16")
-    _, v4limitedBroadcast, _    := net.ParseCIDR("255.255.255.255/32")
-
-    ipv4NetFiltered = append(ipv4NetFiltered,
-        v4thisHostThisNet,
-        v4loopback,
-        v4privateUseNetworks,
-        v4privateUseNetworks2,
-        v4privateUseNetworks3,
-        v4limitedBroadcast)
-
-    _, v6loopback, _    := net.ParseCIDR("::1/128")
-    _, v6unspecified, _ := net.ParseCIDR("::/128")
-    _, v6multicast, _   := net.ParseCIDR("FF00::/8")
-    _, v6linklocal, _   := net.ParseCIDR("FE80::/10")
-
-    ipv6NetFiltered = append(ipv6NetFiltered,
-        v6loopback,
-        v6unspecified,
-        v6multicast,
-        v6linklocal)
+    var v4FilteredSubnets = []string{
+        // this-host-this-net
+        "0.0.0.0/8",
+        // loopback
+        "127.0.0.0/8",
+        // private use networks
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        // limited broadcast
+        "255.255.255.255/32",
+    }
+    var v6FilteredSubnets = []string{
+        // loopback
+        "::1/128",
+        // unspecified address
+        "::/128",
+        // multicast
+        "FF00::/8",
+        // link-local
+        "FE80::/10",
+    }
+    for _, subnet := range v4FilteredSubnets {
+        _, ipnet, _ := net.ParseCIDR(subnet)
+        ipv4NetFiltered = append(ipv4NetFiltered, ipnet)
+    }
+    for _, subnet := range v6FilteredSubnets {
+        _, ipnet, _ := net.ParseCIDR(subnet)
+        ipv6NetFiltered = append(ipv6NetFiltered, ipnet)
+    }
 
     // grab iana tld registry
     infoLogger.Println("Mapping TLDs, reading TLDList.txt ...")
     tlds, err := ioutil.ReadFile("TLDList.txt")
     if err != nil {
-        log.Println("Error reading TLDList.txt: "+err.Error())
+        log.Println("Error reading TLDList.txt: " + err.Error())
     } else {
         for _, tld := range strings.Split(string(tlds), "\n") {
             tld = strings.TrimSpace(tld)
@@ -89,18 +96,16 @@ func init() {
     }
 }
 
-
 // Create a new instance of Object, detect the type of the supplied
 // object and return the instance.
 //
 // Returns an error if detectObjectType returns an error.
 func New(object, defaultType string) (*Object, error) {
-    self     := &Object{}
-    self.Obj  = object
-    err      := self.detectObjectType(defaultType)
+    self := &Object{}
+    self.Obj = object
+    err := self.detectObjectType(defaultType)
     return self, err
 }
-
 
 // Simple wrapper around the actual query value (string), to enable associating
 // a specific type with it. Use queryobject.New(object) to create one.
@@ -109,12 +114,15 @@ type Object struct {
     Type int
 }
 
+// Return a string representation of the type that this object represents.
+func (self *Object) TypeString() string {
+    return typeMap[self.Type]
+}
 
 // constant for error output
 const (
     errBaseStr = "QueryObject Error: "
 )
-
 
 // Internal helper function to determine the object type.
 //
@@ -134,14 +142,14 @@ func (self *Object) detectObjectType(defaultType string) error {
     }
 
     // TODO: support for IP's in decimal form
-    if ip := net.ParseIP(self.Obj); ip!=nil {
+    if ip := net.ParseIP(self.Obj); ip != nil {
         if isFiltered(ip) {
             return errors.New(errBaseStr + "Filtered IP: " + self.Obj)
         }
         self.Type = IP
-        self.Obj  = ip.String()
+        self.Obj = ip.String()
 
-    } else if ip,_,err := net.ParseCIDR(self.Obj); err==nil {
+    } else if ip, _, err := net.ParseCIDR(self.Obj); err == nil {
         if isFiltered(ip) {
             return errors.New(errBaseStr + "Filtered IP: " + self.Obj)
         }
@@ -154,15 +162,15 @@ func (self *Object) detectObjectType(defaultType string) error {
             }
             self.Type = Domain
 
-        } else if email,err := mail.ParseAddress(self.Obj); err == nil {
-            parts  := strings.SplitN(email.Address, "@", 2)
+        } else if email, err := mail.ParseAddress(self.Obj); err == nil {
+            parts := strings.SplitN(email.Address, "@", 2)
             domain := parts[len(parts)-1]
-            parts   = strings.Split(domain, ".")
-            if len(parts)<2 || !isDomainName(domain) || !inTldMap(domain) {
+            parts = strings.Split(domain, ".")
+            if len(parts) < 2 || !isDomainName(domain) || !inTldMap(domain) {
                 return errors.New(errBaseStr + "Email Address Has Invalid Domain")
             }
             self.Type = Email
-            self.Obj  = email.Address
+            self.Obj = email.Address
 
         } else {
             if defaultType == "Domain" {
@@ -174,16 +182,15 @@ func (self *Object) detectObjectType(defaultType string) error {
             } else if defaultType == "IP" {
                 self.Type = IP
             } else {
-                return errors.New("QueryObject Error: Unknown Type: "+self.Obj)
+                return errors.New("QueryObject Error: Unknown Type: " + self.Obj)
             }
         }
     }
 
     infoLogger.Printf("QueryObject.detectObjectType: %s => %s (%d)\n",
-                      self.Obj, typeMap[self.Type], self.Type)
+        self.Obj, self.TypeString(), self.Type)
     return nil
 }
-
 
 // Helper function, checks if the given IP is within one of the reserved IP
 // address ranges. See ipv4NetFiltered and ipv6NetFiltered variable
@@ -206,7 +213,6 @@ func isFiltered(ip net.IP) bool {
 
     return false
 }
-
 
 // Part of golang standard package net:
 // https://golang.org/src/net/dnsclient.go?m=text
@@ -257,7 +263,6 @@ func isDomainName(s string) bool {
 
     return ok
 }
-
 
 // Helper function to determine if a given domains tld is registered with iana.
 func inTldMap(domain string) bool {

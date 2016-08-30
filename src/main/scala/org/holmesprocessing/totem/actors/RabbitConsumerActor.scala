@@ -22,8 +22,8 @@ import org.holmesprocessing.totem.util.DownloadSettings
  * @constructor This is the companion object to the RabbitConsumerActor class.
  */
 object RabbitConsumerActor {
-  def props[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], config: DownloadSettings): Props = {
-    Props(new RabbitConsumerActor(host, exchange, queue, servicelist, decoder, config) )
+  def props[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], downloadconfig: DownloadSettings, taskingconfig: TaskingSettings): Props = {
+    Props(new RabbitConsumerActor(host, exchange, queue, servicelist, decoder, downloadconfig, taskingconfig) )
   }
 }
 /**
@@ -69,7 +69,7 @@ object RabbitConsumerActor {
  * @param decoder: a Parsers.Parser[T], which is responsible for transforming the JSON data into a Scala object.
  */
 
-class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], config: DownloadSettings) extends Actor with ActorLogging with MonitoredActor {
+class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSettings, queue: QueueSettings, servicelist: WorkEncoding, decoder: Parsers.Parser[T], downloadconfig: DownloadSettings, taskingconfig: TaskingSettings) extends Actor with ActorLogging with MonitoredActor {
   implicit val formats = DefaultFormats
   var WorkGroupActor: ActorRef =_
   var totalDemand = 0
@@ -111,7 +111,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
     }
   }
 
-  channel.basicQos(3)  //config me
+  channel.basicQos(taskingconfig.prefetch)
 
   val consumer = new DefaultConsumer(this.channel) {
     override def handleDelivery(
@@ -148,7 +148,7 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                   ),
                   List[WorkResult](), attempts
                 ),
-                config
+                downloadconfig
               )
               log.debug("RabbitConsumer: sent a create message!")
               totalDemand -= 1

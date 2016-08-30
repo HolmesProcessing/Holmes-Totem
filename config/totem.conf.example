@@ -1,15 +1,22 @@
 totem {
-  version = "1.0.0"
-  requeueKey = "requeue.static.totem"
-  misbehaveKey = "misbehave.static.totem"
+  version = "0.5.0"
 
   download_settings {
-    download_directory = "/tmp/"
-    request_timeout = 500
+    connection_pooling = true
     connection_timeout = 500
+    download_directory = "/tmp/"
+    thread_multiplier = 4
+    request_timeout = 500
+  }
+
+  tasking_settings {
+    default_service_timeout = 60
+    prefetch = 3
+    retry_attempts = 3
   }
 
   rabbit_settings {
+    requeueKey = "requeue.static.totem"
     host {
       server = "127.0.0.1"
       port = 5672

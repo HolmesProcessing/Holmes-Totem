@@ -1,16 +1,5 @@
 {
-	"MetaData": {
-		"Name": "GoGadget",
-		"Version": "1.0",
-		"Description": "./README.md",
-		"Copyright": "Copyright 2016 Holmes Group LLC",
-		"License": "./LICENSE"
-	},
-	"Settings": {
-		"HTTPBinding": ":8080",
-		"InfoURL": "/",
-		"AnalysisURL": "/gogadget",
-		"MaxNumberOfGadgets": 10000,
-		"SearchDepth": 10
-	}
+	"HTTPBinding": ":8080",
+	"MaxNumberOfGadgets": 10000,
+	"SearchDepth": 10
 }

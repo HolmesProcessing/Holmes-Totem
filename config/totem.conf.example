@@ -61,6 +61,10 @@ totem {
       uri = ["http://127.0.0.1:9710/dnsmeta/"]
       resultRoutingKey = "dnsmeta.result.static.totem"
     }
+    passivetotal {
+      uri = ["http://127.0.0.1:9720/passivetotal/"]
+      resultRoutingKey = "passivetotal.result.static.totem"
+    }
     gogadget {
       uri = ["http://127.0.0.1:7700/gogadget/"]
       resultRoutingKey = "gogadget.result.static.totem"

@@ -8,6 +8,7 @@ import org.holmesprocessing.totem.services.asnmeta.{ASNMetaSuccess, ASNMetaWork}
 import org.holmesprocessing.totem.services.dnsmeta.{DNSMetaSuccess, DNSMetaWork}
 import org.holmesprocessing.totem.services.gogadget.{GoGadgetSuccess, GoGadgetWork}
 import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
+import org.holmesprocessing.totem.services.passivetotal.{PassiveTotalSuccess, PassiveTotalWork}
 import org.holmesprocessing.totem.services.peid.{PEiDSuccess, PEiDWork}
 import org.holmesprocessing.totem.services.peinfo.{PEInfoSuccess, PEInfoWork}
 import org.holmesprocessing.totem.services.virustotal.{VirustotalSuccess, VirustotalWork}
@@ -26,7 +27,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import scala.util.Random
 
 object driver extends App with Instrumented {
-  // Define constants 
+  // Define constants
   val DefaultPathConfigFile = "./config/totem.conf"
 
   lazy val execServ: ExecutorService = Executors.newFixedThreadPool(4000)
@@ -106,6 +107,7 @@ object driver extends App with Instrumented {
         case "DNSMETA" => Random.shuffle(services.getOrElse("dnsmeta", List())).head
         case "GOGADGET" => Random.shuffle(services.getOrElse("gogadget", List())).head
         case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
+        case "PASSIVETOTAL" => Random.shuffle(services.getOrElse("passivetotal", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
@@ -125,6 +127,8 @@ object driver extends App with Instrumented {
           GoGadgetWork(key, filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
           ObjdumpWork(key, filename, taskingConfig.default_service_timeout, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
+        case ("PASSIVETOTAL", li: List[String]) =>
+          PassiveTotalWork(key, filename, taskingConfig.default_service_timeout, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
         case ("PEID", li: List[String]) =>
           PEiDWork(key, filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
@@ -150,6 +154,7 @@ object driver extends App with Instrumented {
         case x: DNSMetaSuccess => conf.getString("totem.services.dnsmeta.resultRoutingKey")
         case x: GoGadgetSuccess => conf.getString("totem.services.gogadget.resultRoutingKey")
         case x: ObjdumpSuccess => conf.getString("totem.services.objdump.resultRoutingKey")
+        case x: PassiveTotalSuccess => conf.getString("totem.services.passivetotal.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.services.peinfo.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.services.virustotal.resultRoutingKey")

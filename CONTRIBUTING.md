@@ -4,6 +4,7 @@ Contributions are always welcome and appreciated! If you would like to contribut
 
 ## Services
 New Services are simple to create and are always much appreciated. When implementing a Service you will need to provide:
+
 1. A RESTful interface for TOTEM to interact with 
 2. Totem code to teach Totem how to handle the Service
 
@@ -12,6 +13,7 @@ Additionally, please keep in mind that Totem strives to perform rapid parallel a
 ### Core Components
 #### RESTful Endpoints
 The following endpoints are the standard and expected endpoints for totem and totem-dynamic:
+
 | Endpoint | Operation | System |
 | --- | --- | --- |
 | `/` | provide information about the service | Totem and Totem-Dynamic |
@@ -25,7 +27,7 @@ The following endpoints are the standard and expected endpoints for totem and to
 We uses Docker and Docker-Compose to manage services. This provides a few nice benefits: keeps most issues from replicating, allowing for easier restart, easier status information, etc. However, to manage the overhead we request that the following DockerFile templates are used. This is because it speeds up the container build time and reduces the on-disk size.
 
 For Go:
-```
+```dockerfile
 FROM golang:alpine
 
 # create folder
@@ -45,7 +47,7 @@ RUN apk add --no-cache \
 ```
 
 For Python:
-```
+```dockerfile
 FROM python:alpine
 
 # add tornado
@@ -80,6 +82,7 @@ The Totem should be configured and updated. Details on how to do this can be fou
 Internal ports should always be `8080` when using Docker. 
 
 External ports should be listed alphabetically starting with the following range:
+
 | Range | Service Type |
 | --- | --- |
 | 97xx | No File |

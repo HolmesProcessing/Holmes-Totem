@@ -47,20 +47,26 @@ class YaraProcess(YaraHandler):
         except Exception as e:
             return e
 
-    def get(self, filename):
+    def get(self):
         try:
+            filename = self.get_argument("obj", strip=False)
             fullPath = (os.path.join('/tmp/', filename), filename)
             data = self.process(fullPath)
             self.write({"yara": data})
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
-    def post(self, filename):
+    def post(self):
         try:
-            fullPath = os.path.join('/tmp/', filename)
+            filename = self.get_argument("obj", strip=False)
+            fullPath = os.path.join('/tmp/')
             rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
             data = self.process(fullPath, rules)
             self.write({"yara": data})
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -94,7 +100,7 @@ class YaraApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/([a-zA-Z0-9\-\.]*)', YaraProcess),
+            (r'/analyze/', YaraProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

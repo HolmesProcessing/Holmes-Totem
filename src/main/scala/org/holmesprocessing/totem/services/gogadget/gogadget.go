@@ -92,7 +92,7 @@ func main() {
 
 	// setup http handlers
 	router := httprouter.New()
-	router.GET("/analyze/:file", handler_analyze)
+	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
 	info.Printf("Binding to %s\n", config.HTTPBinding)
@@ -146,7 +146,12 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	info.Println("Serving request:", request)
 	start_time := time.Now()
 
-	sample_path := "/tmp/" + params.ByName("file")
+	obj := request.URL.Query().Get("obj")
+	if obj == "" {
+		http.Error(f_response, "Missing argument 'obj'", 400)
+		return
+	}
+	sample_path := "/tmp/" + obj
 	if _, err := os.Stat(sample_path); os.IsNotExist(err) {
 		http.NotFound(f_response, request)
 		info.Printf("Error accessing sample (file: %s):", sample_path)

@@ -44,10 +44,13 @@ def ASNMetaRun(ipaddress):
 
 
 class ASNMetaProcess(tornado.web.RequestHandler):
-    def get(self, ipaddress):
+    def get(self):
         try:
+            ipaddress = self.get_argument('obj', strip=False)
             data = ASNMetaRun(ipaddress)
             self.write(data)
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except gatherasn.IPTypeError:
             raise tornado.web.HTTPError(400)
         except gatherasn.IPFormatError:
@@ -84,7 +87,7 @@ class ASNApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/(.*)', ASNMetaProcess),
+            (r'/analyze/', ASNMetaProcess),
             #(r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
         ]
         settings = dict(

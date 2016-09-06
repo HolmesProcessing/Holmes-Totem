@@ -31,9 +31,10 @@ class ZipError (ServiceRequestError):
     pass
 
 class ZipMetaProcess(tornado.web.RequestHandler):
-    def get(self, filename):
+    def get(self):
         resultset = ServiceResultSet()
         try:
+            filename = self.get_argument("obj", strip=False)
             # read file
             fullPath = os.path.join('/tmp/', filename)
             data     = LargeFileReader(fullPath)
@@ -89,7 +90,8 @@ class ZipMetaProcess(tornado.web.RequestHandler):
                 resultset.add(zipfilename, zipentry.data)
             
             self.write({"filecount": resultset.size, "files": resultset.data})
-        
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except ZipError as ze:
             self.set_status(ze.status, str(ze.error))
             self.write("")
@@ -127,7 +129,7 @@ class ZipMetaApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/([a-zA-Z0-9\-\.]*)', ZipMetaProcess),
+            (r'/analyze/', ZipMetaProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

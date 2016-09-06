@@ -48,11 +48,14 @@ class PEiDProcess(YaraHandler):
         except Exception as e:
             return e
 
-    def get(self, filename):
+    def get(self):
         try:
+            filename = self.get_argument("obj", strip=False)
             fullPath = (os.path.join('/tmp/', filename), filename)
             data = self.process(fullPath)
             self.write({"peid": data})
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -94,7 +97,7 @@ class PEiDApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/([a-zA-Z0-9\-\.]*)', PEiDProcess),
+            (r'/analyze/', PEiDProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

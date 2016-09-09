@@ -1,9 +1,9 @@
 # Holmes-Totem: A Holmes Processing Investigation Planner for Large-scale File Analysis [![Build Status](https://travis-ci.org/HolmesProcessing/Holmes-Totem.svg?branch=master)](https://travis-ci.org/HolmesProcessing/Holmes-Totem)
 
 ## Overview
-The Holmes-TOTEM Planner is responsible for turning data into information by performing feature extraction against submitted objects. When tasked, Holmes-TOTEM schedules the execution of its services which are capable of performing static and dynamic analysis as well as gather data from third parties.
+The Holmes-Totem Planner is responsible for turning data into information by performing feature extraction against submitted objects. When tasked, Holmes-Totem schedules the execution of its services which are capable of performing static and dynamic analysis as well as gather data from third parties.
 
-The Holmes-TOTEM Investigation Planner is optimized for executing extraction services that complete in a few seconds, i.e. static analysis and 3rd party queries. When dealing with services that take longer to complete, we recommend pairing the Holmes-TOTEM Planner with [Holmes-TOTEM-Long](https://github.com/HolmesProcessing/Holmes-Totem-Long).
+The Holmes-Totem Investigation Planner is optimized for executing extraction services that complete in a few seconds, i.e. static analysis and 3rd party queries. When dealing with services that take longer to complete, we recommend pairing the Holmes-Totem Planner with [Holmes-Totem-Dynamic](https://github.com/HolmesProcessing/Holmes-Totem-Dynamic).
 
 ## Dependencies
 Holmes-TOTEM is built with the [Akka Toolkit](http://akka.io/) and performs best with [Oracle's Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html). When executing tasks, Holmes-TOTEM requires an HTTP complaint server for delivering files, a database for storing results, and a queuing server for organizing tasking.

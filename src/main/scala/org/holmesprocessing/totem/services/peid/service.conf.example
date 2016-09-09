@@ -1,14 +1,5 @@
-[metadata]
-Name        = PEiD
-Version     = 1.0
-Description = ./README.md
-Copyright   = Copyright 2016 Holmes Group LLC
-License     = ./LICENSE
-
 [settings]
 Port        = 8080
-InfoURL     = /
-AnalysisURL = /peid
 
 [yara_rules]
 get_remote = False

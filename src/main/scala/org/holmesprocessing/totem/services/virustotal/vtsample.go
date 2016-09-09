@@ -38,24 +38,24 @@ type Metadata struct {
 }
 
 //TODO: unifying info url. saving cvp's comments from gogadget as they should be addressed
-type Settings struct {
+type Config struct {
 	HTTPBinding          string //cvp: saving port is an unnecessary limitation; the binding allows for assigning the IP address too which is nicer
-	InfoURL              string //cvp: is this really necessary? Hardcoded seems fine, I don't know why the URLs should change
-	AnalysisURL          string //cvp: same as above
 	ApiKey               string
 	UploadUnknownSamples bool
 	RequestTimeout       int
 }
 
-type Config struct {
-	Metadata Metadata
-	Settings Settings
-}
-
 var (
-	config *Config
-	info   *log.Logger
-	client *http.Client
+	config   *Config
+	info     *log.Logger
+	client   *http.Client
+	metadata Metadata = Metadata{
+		Name:        "VirusTotal",
+		Version:     "1.0",
+		Description: "./README.md",
+		Copyright:   "Copyright 2016 Holmes Group LLC",
+		License:     "./LICENSE",
+	}
 )
 
 func main() {
@@ -75,13 +75,13 @@ func main() {
 	if err != nil {
 		info.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
-	client = &http.Client{Timeout: time.Duration(config.Settings.RequestTimeout) * time.Second}
+	client = &http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
 
 	router := httprouter.New()
-	router.GET("/virustotal/:file", handler_analyze)
+	router.GET("/analyze/:file", handler_analyze)
 	router.GET("/", handler_info)
-	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
-	info.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.HTTPBinding)
+	info.Fatal(http.ListenAndServe(config.HTTPBinding, router))
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -111,21 +111,21 @@ func load_config(configPath string) (*Config, error) {
 		return config, err
 	}
 
-	if config.Metadata.Description != "" {
-		if data, err := ioutil.ReadFile(string(config.Metadata.Description)); err == nil {
-			config.Metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
+	if metadata.Description != "" {
+		if data, err := ioutil.ReadFile(string(metadata.Description)); err == nil {
+			metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 
-	if config.Metadata.License != "" {
-		if data, err := ioutil.ReadFile(string(config.Metadata.License)); err == nil {
-			config.Metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
+	if metadata.License != "" {
+		if data, err := ioutil.ReadFile(string(metadata.License)); err == nil {
+			metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 
 	// validate ApiKey
-	_, err := hex.DecodeString(config.Settings.ApiKey)
-	if len(config.Settings.ApiKey) != 64 || err != nil {
+	_, err := hex.DecodeString(config.ApiKey)
+	if len(config.ApiKey) != 64 || err != nil {
 		info.Println("Apikey seems to be invalid! Please supply a valid key!")
 		return config, err
 	}
@@ -140,10 +140,10 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 		<hr>
 		<p>%s</p>
 		`,
-		config.Metadata.Name,
-		config.Metadata.Version,
-		config.Metadata.Description,
-		config.Metadata.License)
+		metadata.Name,
+		metadata.Version,
+		metadata.Description,
+		metadata.License)
 }
 
 func handler_analyze(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -186,7 +186,7 @@ func vtWork(hash, fPath string) (string, error) {
 	// 0 = unknwon
 	// 1 = found
 	// 2 = processing
-	if vtr.ResponseCode == 0 && config.Settings.UploadUnknownSamples {
+	if vtr.ResponseCode == 0 && config.UploadUnknownSamples {
 		hash, err = uploadSample(fPath)
 		if err != nil {
 			return "", err
@@ -227,7 +227,7 @@ func getReport(md5 string) ([]byte, error) {
 
 	form := url.Values{}
 	form.Add("resource", md5)
-	form.Add("apikey", config.Settings.ApiKey)
+	form.Add("apikey", config.ApiKey)
 
 	req, err := http.NewRequest("POST", "https://www.virustotal.com/vtapi/v2/file/report", strings.NewReader(form.Encode()))
 	req.PostForm = form
@@ -270,7 +270,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	_, err = io.Copy(part, file)
 
-	err = writer.WriteField("apikey", config.Settings.ApiKey)
+	err = writer.WriteField("apikey", config.ApiKey)
 	if err != nil {
 		return "", err
 	}

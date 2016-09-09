@@ -1,14 +1,5 @@
-[metadata]
-Name        = Passivetotal
-Version     = 1.0
-Description = ./README.md
-Copyright   = Copyright 2016 Holmes Group LLC
-License     = ./LICENSE
-
 [settings]
 Port            = 8080
-InfoURL         = /
-AnalysisURL     = /passivetotal
 APIUser         = YOUR-PASSIVETOTAL-USERNAME
 APIKey          = YOUR-PASSIVETOTAL-APIKEY
 RequestTimeout  = 60

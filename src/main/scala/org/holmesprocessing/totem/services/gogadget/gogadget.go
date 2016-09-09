@@ -46,23 +46,23 @@ type Metadata struct {
 	License     string
 }
 
-type Settings struct {
+type Config struct {
 	HTTPBinding        string //cvp: saving port is an unnecessary limitation; the binding allows for assigning the IP address too which is nicer
-	InfoURL            string //cvp: is this really necessary? Hardcoded seems fine, I don't know why the URLs should change
-	AnalysisURL        string //cvp: same as above
 	MaxNumberOfGadgets int
 	SearchDepth        int
-}
-
-type Config struct {
-	Metadata Metadata
-	Settings Settings
 }
 
 var (
 	config    *Config
 	info      *log.Logger
 	ROPgadget string
+	metadata Metadata = Metadata {
+		Name        : "GoGadget",
+		Version     : "1.0",
+		Description : "./README.md",
+		Copyright   : "Copyright 2016 Holmes Group LLC",
+		License     : "./LICENSE",
+	}
 )
 
 func main() {
@@ -92,11 +92,11 @@ func main() {
 
 	// setup http handlers
 	router := httprouter.New()
-	router.GET("/gogadget/:file", handler_analyze)
+	router.GET("/analyze/:file", handler_analyze)
 	router.GET("/", handler_info)
 
-	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.HTTPBinding, router))
 }
 
 // Parse a configuration file into a Config structure.
@@ -114,15 +114,15 @@ func load_config(configPath string) (*Config, error) {
 		return config, err
 	}
 
-	if config.Metadata.Description != "" {
-		if data, err := ioutil.ReadFile(string(config.Metadata.Description)); err == nil {
-			config.Metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
+	if metadata.Description != "" {
+		if data, err := ioutil.ReadFile(string(metadata.Description)); err == nil {
+			metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 	
-	if config.Metadata.License != "" {
-		if data, err := ioutil.ReadFile(string(config.Metadata.License)); err == nil {
-			config.Metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
+	if metadata.License != "" {
+		if data, err := ioutil.ReadFile(string(metadata.License)); err == nil {
+			metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 
@@ -136,10 +136,10 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 		<hr>
 		<p>%s</p>
 		`,
-		config.Metadata.Name,
-		config.Metadata.Version,
-		config.Metadata.Description,
-		config.Metadata.License)
+		metadata.Name,
+		metadata.Version,
+		metadata.Description,
+		metadata.License)
 }
 
 func handler_analyze(f_response http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -154,7 +154,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.Settings.SearchDepth), "--binary", sample_path)
+	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.SearchDepth), "--binary", sample_path)
 	stdout, err := process.StdoutPipe()
 	if err != nil {
 		http.Error(f_response, "Creating stdout pipe failed", 500)
@@ -174,8 +174,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result := &Result{
 		UniqueGadgets: 0,
 		Truncated:     false,
-		SearchDepth:   config.Settings.SearchDepth,
-		Gadgets:       make([]*Gadget, config.Settings.MaxNumberOfGadgets),
+		SearchDepth:   config.SearchDepth,
+		Gadgets:       make([]*Gadget, config.MaxNumberOfGadgets),
 	}
 
 	// Sanity check for the first line
@@ -206,7 +206,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 		// did we reach the maximum?
 		gadgetCounter += 1
-		if gadgetCounter == config.Settings.MaxNumberOfGadgets {
+		if gadgetCounter == config.MaxNumberOfGadgets {
 			result.Truncated = true
 			break
 		}

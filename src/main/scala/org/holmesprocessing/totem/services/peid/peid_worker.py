@@ -8,6 +8,7 @@ import os
 from os import path
 
 # imports for yara to work
+from io import BytesIO
 import base64
 import yara
 
@@ -70,6 +71,8 @@ class PEiDProcess(YaraHandler):
             rules = base64.b64decode(self.get_body_argument('custom_rule'))
             data = self.process(fullPath, rules)
             self.write({"peid": data})
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 

@@ -67,7 +67,7 @@ class YaraProcess(YaraHandler):
     def post(self):
         try:
             filename = self.get_argument("obj", strip=False)
-            fullPath = (os.path.join('/tmp/',filename), filename)
+            fullPath = (os.path.join('/tmp/', filename), filename)
             rules = base64.b64decode(self.get_body_argument('custom_rule'))
             data = self.process(fullPath, rules)
             self.write({"yara": data})

@@ -8,7 +8,6 @@ import os
 from os import path
 
 # imports for yara to work
-from io import StringIO
 import base64
 import yara
 
@@ -35,14 +34,19 @@ class PEiDProcess(YaraHandler):
     def process(self, filename, rules=None):
         try:
             if rules:
-                ruleBuff = StringIO()
+                ruleBuff = BytesIO()
                 ruleBuff.write(rules)
                 ruleBuff.seek(0)
-
                 rules = yara.load(file=ruleBuff)
                 results = rules.match(filename[0], externals={'filename': filename[1]})
             else:
                 results = self.YaraEngine.match(filename[0], externals={'filename': filename[1]})
+            results2 = list(map(lambda x: {"rule": x.rule}, results))
+            return results2
+        except yara.Error:
+            # Rules are uncompiled -> compile them
+            rules = yara.compile(source=rules.decode('latin-1'))
+            results = rules.match(filename[0], externals={'filename': filename[1]})
             results2 = list(map(lambda x: {"rule": x.rule}, results))
             return results2
         except Exception as e:
@@ -62,8 +66,8 @@ class PEiDProcess(YaraHandler):
     def post(self):
         try:
             filename = self.get_argument("obj", strip=False)
-            fullPath = os.path.join('/tmp/', filename)
-            rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
+            fullPath = (os.path.join('/tmp/', filename), filename)
+            rules = base64.b64decode(self.get_body_argument('custom_rule'))
             data = self.process(fullPath, rules)
             self.write({"peid": data})
         except Exception as e:

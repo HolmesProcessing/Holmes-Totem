@@ -59,8 +59,9 @@ class PEiDProcess(YaraHandler):
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
-    def post(self, filename):
+    def post(self):
         try:
+            filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp/', filename)
             rules = base64.b64decode(self.get_body_argument('custom_rule')).decode('latin-1')
             data = self.process(fullPath, rules)

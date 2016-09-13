@@ -44,10 +44,13 @@ def DNSMetaRun(domain):
 
 
 class DNSMetaProcess(tornado.web.RequestHandler):
-    def get(self, domain):
+    def get(self):
         try:
+            domain = self.get_argument('obj', strip=False)
             data = DNSMetaRun(domain)
             self.write(data)
+        except tornado.web.MissingArgumentError:
+            raise tornado.web.HTTPError(400)
         except gatherdns.DomainError:
             raise tornado.web.HTTPError(404)
         except Exception as e:
@@ -82,7 +85,7 @@ class DNSApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/(.*)', DNSMetaProcess),
+            (r'/analyze/', DNSMetaProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),

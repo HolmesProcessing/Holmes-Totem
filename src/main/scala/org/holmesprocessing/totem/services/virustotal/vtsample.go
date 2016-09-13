@@ -78,7 +78,7 @@ func main() {
 	client = &http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
 
 	router := httprouter.New()
-	router.GET("/analyze/:file", handler_analyze)
+	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 	info.Printf("Binding to %s\n", config.HTTPBinding)
 	info.Fatal(http.ListenAndServe(config.HTTPBinding, router))
@@ -149,8 +149,13 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 func handler_analyze(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	info.Println("Serving request:", r)
 
+	obj := r.URL.Query().Get("obj")
+	if obj == "" {
+		http.Error(w, "Missing argument 'obj'", 400)
+		return
+	}
 	//TODO: Remove error if file isn't found. File isn't needed unless upload is specified
-	f := "/tmp/" + ps.ByName("file")
+	f := "/tmp/" + obj
 	if _, err := os.Stat(f); os.IsNotExist(err) {
 		http.NotFound(w, r)
 		return

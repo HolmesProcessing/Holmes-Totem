@@ -54,43 +54,43 @@ totem {
 
   services {
     asnmeta {
-      uri = ["http://127.0.0.1:9700/analyze/"]
+      uri = ["http://127.0.0.1:9700/analyze/?obj="]
       resultRoutingKey = "asnmeta.result.static.totem"
     }
     dnsmeta {
-      uri = ["http://127.0.0.1:9710/analyze/"]
+      uri = ["http://127.0.0.1:9710/analyze/?obj="]
       resultRoutingKey = "dnsmeta.result.static.totem"
     }
     passivetotal {
-      uri = ["http://127.0.0.1:9720/analyze/"]
+      uri = ["http://127.0.0.1:9720/analyze/?obj="]
       resultRoutingKey = "passivetotal.result.static.totem"
     }
     gogadget {
-      uri = ["http://127.0.0.1:7700/analyze/"]
+      uri = ["http://127.0.0.1:7700/analyze/?obj="]
       resultRoutingKey = "gogadget.result.static.totem"
     }
     objdump {
-      uri = ["http://127.0.0.1:7710/analyze/"]
+      uri = ["http://127.0.0.1:7710/analyze/?obj="]
       resultRoutingKey = "objdump.result.static.totem"
     }
     peid {
-      uri = ["http://127.0.0.1:7720/analyze/"]
+      uri = ["http://127.0.0.1:7720/analyze/?obj="]
       resultRoutingKey = "peid.result.static.totem"
     }
     peinfo {
-      uri = ["http://127.0.0.1:7730/analyze/"]
+      uri = ["http://127.0.0.1:7730/analyze/?obj="]
       resultRoutingKey = "peinfo.result.static.totem"
     }
     virustotal {
-      uri = ["http://127.0.0.1:7740/analyze/"]
+      uri = ["http://127.0.0.1:7740/analyze/?obj="]
       resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
-      uri = ["http://127.0.0.1:7750/analyze/"]
+      uri = ["http://127.0.0.1:7750/analyze/?obj="]
       resultRoutingKey = "yara.result.static.totem"
     }
     zipmeta {
-      uri = ["http://127.0.0.1:7760/analyze/"]
+      uri = ["http://127.0.0.1:7760/analyze/?obj="]
       resultRoutingKey = "zipmeta.result.static.totem"
     }
   }

@@ -96,7 +96,7 @@ func main() {
 
 	// setup http handlers
 	router := httprouter.New()
-	router.GET("/analyze/:object", handlerAnalyze)
+	router.GET("/analyze/", handlerAnalyze)
 	router.GET("/", handlerInfo)
 	port := cfg.Settings.Port
 	address := fmt.Sprintf(":%s", port)
@@ -149,10 +149,15 @@ func doPassiveTotalLookup(r *http.Request, p httprouter.Params) (interface{}, in
 		Error string `json:"error"`
 	}
 
+	obj := r.URL.Query().Get("obj")
+	if obj == "" {
+		errResult.Error = "Missing argument 'obj'"
+		return errResult, 400
+	}
 	// Create a settings object to use with the query, parse parameters passed
 	// via the request body into it (all options can be overriden):
 	aqs := &passivetotal.ApiQuerySettings{
-		Object:   p.ByName("object"),
+		Object:   obj,
 		Username: cfg.Settings.APIUser,
 		ApiKey:   cfg.Settings.APIKey,
 		Timeout:  cfg.Settings.RequestTimeout,

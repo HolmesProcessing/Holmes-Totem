@@ -3,10 +3,10 @@ totem {
 
   download_settings {
     connection_pooling = true
-    connection_timeout = 500
+    connection_timeout = 1000
     download_directory = "/tmp/"
     thread_multiplier = 4
-    request_timeout = 500
+    request_timeout = 1000
   }
 
   tasking_settings {

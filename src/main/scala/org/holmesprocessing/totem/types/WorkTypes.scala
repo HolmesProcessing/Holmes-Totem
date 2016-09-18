@@ -46,7 +46,7 @@ import scala.util.Random
 
 trait TaskedWork {
   val key: Long
-  val filename: String
+  val filename: String //this serves as both a local filepath and URL type,
   val TimeoutMillis: Int
   val WorkType: String
   val Worker: String
@@ -99,7 +99,7 @@ abstract class WorkFailure extends WorkResult
 
 trait WorkEncoding {
   def GeneratePartial(work: String): String
-  def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
+  def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
   def workRoutingKey(work: WorkResult): String
 }
 
@@ -122,7 +122,7 @@ abstract class ConfigTotemEncoding(conf: Config) extends WorkEncoding {
   val log = Logger(LoggerFactory.getLogger("name"))
 
   def GeneratePartial(work: String): String
-  def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
+  def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork]
   def workRoutingKey(work: WorkResult): String
 }
 

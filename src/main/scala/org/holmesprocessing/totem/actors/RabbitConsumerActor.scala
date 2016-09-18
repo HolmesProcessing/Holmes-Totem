@@ -141,8 +141,9 @@ class RabbitConsumerActor[T: Manifest](host: HostSettings, exchange: ExchangeSet
                 WorkState.create(
                   uuid_filename,
                   filename,
-                  servicelist.enumerateWork(
+                  servicelist.enumerateWork( //RIGHT HERE, PASS ALL IN, FILTER HERE
                     deliveryTag,
+                    filename,
                     uuid_filename,
                     tasks
                   ),

@@ -116,31 +116,36 @@ object driver extends App with Instrumented {
         case _ => ""
       }
     }
-
-    def enumerateWork(key: Long, filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
+    //maybe we should not have the double filename define, and just simply select the correct one here?
+    //Might be a little easier for dev, but is the purpose clear?
+    //saves us on some logic and constructor space for the objects.
+    //Yup, this is what we're going with. This allows the user to define their own types easily, and dynamically set whatever they want here.
+    //Simply add the logic needed in the case class. The Orig_Filename is the filename/url provided in the work object, and the UUID name is the generated name.
+    //Use whichever is appropriate
+    def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
         case ("ASNMETA", li: List[String]) =>
-          ASNMetaWork(key, filename, taskingConfig.default_service_timeout, "ASNMETA", GeneratePartial("ASNMETA"), li)
+          ASNMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "ASNMETA", GeneratePartial("ASNMETA"), li)
         case ("DNSMETA", li: List[String]) =>
-          DNSMetaWork(key, filename, taskingConfig.default_service_timeout, "DNSMETA", GeneratePartial("DNSMETA"), li)
+          DNSMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "DNSMETA", GeneratePartial("DNSMETA"), li)
         case ("GOGADGET", li: List[String]) =>
-          GoGadgetWork(key, filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
+          GoGadgetWork(key, uuid_filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
-          ObjdumpWork(key, filename, taskingConfig.default_service_timeout, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
+          ObjdumpWork(key, uuid_filename, taskingConfig.default_service_timeout, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PASSIVETOTAL", li: List[String]) =>
-          PassiveTotalWork(key, filename, taskingConfig.default_service_timeout, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
+          PassiveTotalWork(key, orig_filename, taskingConfig.default_service_timeout, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
         case ("PEID", li: List[String]) =>
-          PEiDWork(key, filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
+          PEiDWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
-          PEInfoWork(key, filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
+          PEInfoWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
-          VirustotalWork(key, filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
+          VirustotalWork(key, uuid_filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>
-          YaraWork(key, filename, taskingConfig.default_service_timeout, "YARA", GeneratePartial("YARA"), li)
+          YaraWork(key, uuid_filename, taskingConfig.default_service_timeout, "YARA", GeneratePartial("YARA"), li)
         case ("ZIPMETA", li: List[String]) =>
-          ZipMetaWork(key, filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+          ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case (s: String, li: List[String]) =>
-          UnsupportedWork(key, filename, 1, s, GeneratePartial(s), li)
+          UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
       }).collect({
         case x: TaskedWork => x

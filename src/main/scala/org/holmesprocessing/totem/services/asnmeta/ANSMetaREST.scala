@@ -6,7 +6,7 @@ import org.json4s.JsonAST.{JString, JValue}
 import org.holmesprocessing.totem.types.{TaskedWork, WorkFailure, WorkResult, WorkSuccess}
 import collection.mutable
 
-
+//when these work objects are created, we need to provide both the original filename and the uuid one, and when the doWork is called, we use the original, or the uuid as appropriate (if a file)
 case class ASNMetaWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
 

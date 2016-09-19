@@ -481,7 +481,7 @@ def PEInfoRun(obj):
 
 
     if callable(getattr(pe, 'get_imphash', None)):
-        data["pehash"] = _get_imphash(pe)
+        data["imphash"] = _get_imphash(pe)
 
     return data
 

@@ -10,7 +10,7 @@ totem {
   }
 
   tasking_settings {
-    default_service_timeout = 60
+    default_service_timeout = 180
     prefetch = 3
     retry_attempts = 3
   }

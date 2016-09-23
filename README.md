@@ -5,6 +5,22 @@ The Holmes-Totem Planner is responsible for turning data into information by per
 
 The Holmes-Totem Investigation Planner is optimized for executing extraction services that complete in a few seconds, i.e. static analysis and 3rd party queries. When dealing with services that take longer to complete, we recommend pairing the Holmes-Totem Planner with [Holmes-Totem-Dynamic](https://github.com/HolmesProcessing/Holmes-Totem-Dynamic).
 
+### Highlights
+Holmes-Totem is pre-packaged with with a number of static analysis and query Services to help you get started. A few highlights:
+
+| Name | Object Type | Description |
+| --- | --- | --- |
+| ASNMeta | IPv4/6 | Collects ASN information from [Team Cymru](http://www.team-cymru.org/IP-ASN-mapping.html) |
+| DNSMeta | Domain | Collects current DNS information from your local resolver and authoritative NS |
+| PassiveTotal | IPv4/6, Domain, Email | Returns available [Passive Total](https://www.passivetotal.org/) information |
+| GoGadget | Binary Executable | Extracts the major gadgets of an executable |
+| Objdump | Binary Executables | Provides a parsed version of the objdump output |
+| PEiD | File | Provides PEiD information (packer, compiler, etc) for files |
+| PEInfo | PE32 | Custom version of CRITs' PEInfo. Includes Rich Header parsing |
+| VirusTotal | Binary | Returns available [VirusTotal](https://www.virustotal.com/) information with a public or private key |
+| Yara | File | Performs [Yara signature](http://virustotal.github.io/yara/) matching with a default rule pack or custom rule |
+| ZipMeta | Zip | Provides meta information contained in zip files |
+
 ## Dependencies
 Holmes-TOTEM is built with the [Akka Toolkit](http://akka.io/) and performs best with [Oracle's Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html). When executing tasks, Holmes-TOTEM requires an HTTP complaint server for delivering files, a database for storing results, and a queuing server for organizing tasking.
 

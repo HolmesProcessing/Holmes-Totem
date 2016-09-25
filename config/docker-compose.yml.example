@@ -71,6 +71,15 @@ services:
     volumes:
       - /tmp:/tmp:ro
 
+  shodan:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/shodan
+      args:
+        conf: ${CONFSTORAGE_SHODAN}service.conf
+    ports:
+      - "7930:8080"
+    restart: unless-stopped
+
   virustotal:
     build:
       context: ../src/main/scala/org/holmesprocessing/totem/services/virustotal

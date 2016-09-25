@@ -256,8 +256,12 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	if err != nil {
 		http.Error(f_response, "Executing objdump failed", 500)
-		infoLogger.Printf("Error executing objdump (file: %s):", sample_path)
-		infoLogger.Println(err)
+		infoLogger.Printf("Error executing objdump (file: %s): %s %s %s",
+			sample_path,
+			err.Error(),
+			strings.Replace(strings.TrimSpace(string(stdout)), "\n", "; ", -1),
+			strings.Replace(strings.TrimSpace(string(err.(*exec.ExitError).Stderr)), "\n", "; ", -1),
+		)
 		return
 	}
 
@@ -290,6 +294,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		line          string
 		line_offset   int
 		line_more     bool
+		line_buffer   []byte = make([]byte, 0x10000)
 		opcodes_max   int64
 		opcodes_total int64
 		opcodes_index int64
@@ -310,16 +315,16 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	re_fileformat := regexp.MustCompile("file format ([^ ]*)")           // 1 format
 	re_section := regexp.MustCompile("^Disassembly of section ([^ :]*)") // 1 name
-	re_block := regexp.MustCompile("^0*([0-9a-f]+)( <([^>]+)>)?:")       // 1 off, 3 name
+	re_block := regexp.MustCompile("^0*([0-9a-f]+)( <([^>]*)>)?:")       // 1 off, 3 name
 	// the opcode params are not of any interest right now
 	// re_opcode       := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t(.*)") // 1 off, 2 op
-	re_opcode := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
+	re_opcode := regexp.MustCompile("^ *0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
 	re_ellipsis := regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
 
 	opcodes_total = 0
 	opcodes_index = 0
 
-	line, line_offset, line_more = nextline(stdout, 0)
+	line, line_offset, line_more = nextline(stdout, 0, line_buffer)
 	for line_more {
 
 		// fmt.Fprint(f_response, line+"\n")
@@ -337,7 +342,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 				opcodes_total += 1
 				if opcodes_total >= opcodes_max {
 					// we reached our max opcodes!
-					line, line_offset, line_more = nextline(stdout, line_offset)
+					line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
 					break
 				}
 				expected = expect_section | expect_block | expect_opcode
@@ -409,12 +414,12 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		// Catch unprocessed error
 		if !processed {
 			http.Error(f_response, fmt.Sprintf("Unexpected output '%s'", line), 500)
-			infoLogger.Printf("Fatal Error: Unable to process unexpected output '% x'.\n", line, expected)
+			infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='%s'.\n", line, strconv.FormatInt(int64(expected), 2))
 			return
 		}
 
 		// Get the next line.
-		line, line_offset, line_more = nextline(stdout, line_offset)
+		line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
 	}
 
 	// check if we have truncated the output
@@ -450,19 +455,19 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 * on the stdout pipe instead of the whole output. TODO: use stdout instead of
 * complete output - might be more efficient (memory wise?)?.
  */
-var nextline_buffer [0x1000]byte
-
-func nextline(s []byte, offset int) (string, int, bool) {
+func nextline(s []byte, offset int, nextline_buffer []byte) (string, int, bool) {
 	var (
-		i    int
-		b    byte
-		size int
+		i       int
+		b       byte
+		size    int
+		lbuffer int
 	)
 
 	i = 0
 	size = len(s)
+	lbuffer = len(nextline_buffer)
 
-	for i < 0x1000 && offset+i < size {
+	for i < lbuffer && offset+i < size {
 		b = s[offset+i]
 
 		nextline_buffer[i] = b
@@ -477,6 +482,11 @@ func nextline(s []byte, offset int) (string, int, bool) {
 			}
 			break
 		}
+	}
+
+	// catch empty last line
+	if i == 0 {
+		return "", offset, false
 	}
 
 	interims := nextline_buffer[0:i]

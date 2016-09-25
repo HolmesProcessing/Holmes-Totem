@@ -27,6 +27,15 @@ services:
       - "9720:8080"
     restart: unless-stopped
 
+  shodan:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/shodan
+      args:
+        conf: ${CONFSTORAGE_SHODAN}service.conf
+    ports:
+      - "9730:8080"
+    restart: unless-stopped
+
   gogadget:
     build:
       context: ../src/main/scala/org/holmesprocessing/totem/services/gogadget
@@ -70,15 +79,6 @@ services:
     restart: unless-stopped
     volumes:
       - /tmp:/tmp:ro
-
-  shodan:
-    build:
-      context: ../src/main/scala/org/holmesprocessing/totem/services/shodan
-      args:
-        conf: ${CONFSTORAGE_SHODAN}service.conf
-    ports:
-      - "9730:8080"
-    restart: unless-stopped
 
   virustotal:
     build:

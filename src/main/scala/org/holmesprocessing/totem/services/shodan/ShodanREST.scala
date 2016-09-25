@@ -18,7 +18,10 @@ case class ShodanWork(key: Long, filename: String, TimeoutMillis: Int, WorkType:
         ShodanSuccess(true, JString(content), Arguments)
 
       case Left(StatusCode(401)) =>
-        ShodanFailure(false, JString("Authentication failed, invalid API KEY"), Arguments)
+        ShodanFailure(false, JString("Invalid IP"), Arguments)
+
+      case Left(StatusCode(404)) =>
+        ShodanFailure(false, JString("API has no information available"), Arguments)
 
       case Left(StatusCode(500)) =>
         ShodanFailure(false, JString("Shodan service failed, check local logs"), Arguments) //would be ideal to print response body here

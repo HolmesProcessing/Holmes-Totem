@@ -14,4 +14,7 @@ def runShodan(api, input):
 
     except shodan.APIError as e:
         print('Error: {}'.format(e))
-        raise HTTPError(401, "API Error: {}".format(e), reason="API Error")
+        if e.value == 'No information available for that IP.':
+            raise HTTPError(404, "API Error: {}".format(e), reason="API Error")
+        else:
+            raise HTTPError(401, "API Error: {}".format(e), reason="API Error")

@@ -313,7 +313,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	re_block := regexp.MustCompile("^0*([0-9a-f]+)( <([^>]+)>)?:")       // 1 off, 3 name
 	// the opcode params are not of any interest right now
 	// re_opcode       := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t(.*)") // 1 off, 2 op
-	re_opcode := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
+	re_opcode := regexp.MustCompile("^ *0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
 	re_ellipsis := regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
 
 	opcodes_total = 0
@@ -409,7 +409,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		// Catch unprocessed error
 		if !processed {
 			http.Error(f_response, fmt.Sprintf("Unexpected output '%s'", line), 500)
-			infoLogger.Printf("Fatal Error: Unable to process unexpected output '% x'.\n", line, expected)
+			infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='%'.\n", line, strconv.FormatInt(int64(expected), 2))
 			return
 		}
 
@@ -477,6 +477,11 @@ func nextline(s []byte, offset int) (string, int, bool) {
 			}
 			break
 		}
+	}
+
+	// catch empty last line
+	if i == 0 {
+		return "", offset, false
 	}
 
 	interims := nextline_buffer[0:i]

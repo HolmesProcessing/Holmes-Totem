@@ -127,27 +127,27 @@ object driver extends App with Instrumented {
     def enumerateWork(key: Long, orig_filename: String, uuid_filename: String, workToDo: Map[String, List[String]]): List[TaskedWork] = {
       val w = workToDo.map({
         case ("ASNMETA", li: List[String]) =>
-          ASNMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "ASNMETA", GeneratePartial("ASNMETA"), li)
+          ASNMetaWork(key, orig_filename, List(taskingConfig.default_service_timeout, 300).max, "ASNMETA", GeneratePartial("ASNMETA"), li)
         case ("DNSMETA", li: List[String]) =>
-          DNSMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "DNSMETA", GeneratePartial("DNSMETA"), li)
+          DNSMetaWork(key, orig_filename, List(taskingConfig.default_service_timeout, 300).max, "DNSMETA", GeneratePartial("DNSMETA"), li)
         case ("GOGADGET", li: List[String]) =>
-          GoGadgetWork(key, uuid_filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
+          GoGadgetWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "GOGADGET", GeneratePartial("GOGADGET"), li)
         case ("OBJDUMP", li: List[String]) =>
-          ObjdumpWork(key, uuid_filename, taskingConfig.default_service_timeout, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
+          ObjdumpWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "OBJDUMP", GeneratePartial("OBJDUMP"), li)
         case ("PASSIVETOTAL", li: List[String]) =>
-          PassiveTotalWork(key, orig_filename, taskingConfig.default_service_timeout, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
+          PassiveTotalWork(key, orig_filename, List(taskingConfig.default_service_timeout, 300).max, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
         case ("PEID", li: List[String]) =>
-          PEiDWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
+          PEiDWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
-          PEInfoWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
+          PEInfoWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("SHODAN", li: List[String]) =>
-          ShodanWork(key, orig_filename, taskingConfig.default_service_timeout, "SHODAN", GeneratePartial("SHODAN"), li)
+          ShodanWork(key, orig_filename, List(taskingConfig.default_service_timeout, 300).max, "SHODAN", GeneratePartial("SHODAN"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
           VirustotalWork(key, uuid_filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>
-          YaraWork(key, uuid_filename, taskingConfig.default_service_timeout, "YARA", GeneratePartial("YARA"), li)
+          YaraWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "YARA", GeneratePartial("YARA"), li)
         case ("ZIPMETA", li: List[String]) =>
-          ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
+          ZipMetaWork(key, uuid_filename, List(taskingConfig.default_service_timeout, 300).max, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.

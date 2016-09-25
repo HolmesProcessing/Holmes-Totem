@@ -77,7 +77,7 @@ services:
       args:
         conf: ${CONFSTORAGE_SHODAN}service.conf
     ports:
-      - "7930:8080"
+      - "9730:8080"
     restart: unless-stopped
 
   virustotal:

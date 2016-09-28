@@ -69,7 +69,7 @@ var (
 	objdump_binary_path string
 	metadata            Metadata = Metadata{
 		Name:        "Objdump",
-		Version:     "1.0",
+		Version:     "1.1.0",
 		Description: "./README.md",
 		Copyright:   "Copyright 2016 Holmes Group LLC",
 		License:     "./LICENSE",
@@ -282,11 +282,14 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		Offset      string   `json:"offset"`
 		Start_index int64    `json:"-"`
 		Opcodes     []string `json:"opcodes"`
+		Truncated   bool
 	}
 	type Section struct {
-		Name string `json:"name"`
+		Name      string   `json:"name"`
+		Blocks    []*Block `json:"blocks"`
+		Truncated bool
+		// TODO: add offset maybe?
 		// offset  string          `json:"offset"`
-		Blocks []*Block `json:"blocks"`
 	}
 	map_sections := make(map[string]*Section)
 
@@ -335,16 +338,25 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		// than blocks or sections. As such this should be checked for first.
 		if (expected & expect_opcode) != 0 {
 			if result := re_opcode.FindStringSubmatch(line); len(result) > 0 {
-				opcodes[opcodes_total] = result[2]
-				// Assigning a slice is as fast as it can possibly get, this
-				// just saves a start and an end pointer.
-				cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
-				opcodes_total += 1
-				if opcodes_total >= opcodes_max {
-					// we reached our max opcodes!
-					line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
-					break
+				// TODO: continue to go on if limit is reached, but not record, only record
+				// missed sections
+				if opcodes_total < opcodes_max {
+					opcodes[opcodes_total] = result[2]
+					// Assigning a slice is as fast as it can possibly get, this
+					// just saves a start and an end pointer.
+					cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
+				} else {
+					cur_block.Truncated = true
+					cur_section.Truncated = true
 				}
+				opcodes_total += 1
+				// Do not break upon reaching max opcode count anymore, we want those
+				// other section names and a note that we truncated:
+				// if opcodes_total >= opcodes_max {
+				// 	// we reached our max opcodes!
+				// 	line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
+				// 	break
+				// }
 				expected = expect_section | expect_block | expect_opcode
 				processed = true
 			}
@@ -423,8 +435,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	// check if we have truncated the output
-	truncated := false
-	if opcodes_total >= opcodes_max && line_more {
+	truncated := cur_section.Truncated
+	if !truncated && opcodes_total >= opcodes_max && line_more {
 		truncated = true
 	}
 

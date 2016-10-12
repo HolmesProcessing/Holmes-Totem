@@ -40,12 +40,6 @@ import (
 	"strconv"
 )
 
-// declare json structs
-type JSONResult struct {
-	Offsets      []int
-	Instructions []string
-}
-
 // config structs
 type Metadata struct {
 	Name        string
@@ -67,9 +61,10 @@ var (
 	config              Config // = &Config{}
 	infoLogger          *log.Logger
 	objdump_binary_path string
+	opcodes_max         int64
 	metadata            Metadata = Metadata{
 		Name:        "Objdump",
-		Version:     "1.0",
+		Version:     "1.1.0",
 		Description: "./README.md",
 		Copyright:   "Copyright 2016 Holmes Group LLC",
 		License:     "./LICENSE",
@@ -79,7 +74,7 @@ var (
 // main logic
 func main() {
 	var (
-		// err error
+		err        error
 		configPath string
 	)
 
@@ -104,6 +99,10 @@ func main() {
 	}
 
 	config = load_config(configPath)
+	opcodes_max, err = strconv.ParseInt(config.Settings.MaxNumberOfOpcodes, 10, 64)
+	if err != nil {
+		panic(err)
+	}
 
 	// find objdump binary path
 	if binary, err := exec.LookPath("objdump"); err != nil {
@@ -231,6 +230,61 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 		metadata.License)
 }
 
+// Result structures.
+// Each result contains all sections that a file contains, but blocks are only
+// listed as long as the opcode limit is not reached.
+type Block struct {
+	Name        string   `json:"name"`
+	Offset      string   `json:"offset"`
+	Start_index int64    `json:"-"`
+	Opcodes     []string `json:"opcodes"`
+	Truncated   bool     `json:"truncated"`
+}
+type Section struct {
+	Name      string   `json:"name"`
+	Flags     []string `json:"flags"`
+	Blocks    []*Block `json:"blocks"`
+	Truncated bool     `json:"truncated"`
+	// TODO: add offset maybe?
+	// offset  string          `json:"offset"`
+	// Internal settings
+	initialized bool
+}
+
+// Initialize all constants for parsing.
+// - Expectancy constants (binary flags)
+// - Regular expressions
+var (
+	expect_header_start int = 0x10
+	expect_header_entry int = 0x20
+
+	expect_format  int = 0x1
+	expect_section int = 0x2
+	expect_block   int = 0x4
+	expect_opcode  int = 0x8
+
+	// 1 index, 2 name, 3 flags (comma separated)
+	re_header_table_start = regexp.MustCompile("^Idx +Name +Size +VMA +LMA +File +off +Algn +Flags")
+	re_header_table_entry = regexp.MustCompile("^ *([0-9]+) +([^ ]+) +[0-9a-f]+ +[0-9a-f]+ +[0-9a-f]+ +[0-9a-f]+ +[^ ]+ +(.*)")
+
+	re_fileformat = regexp.MustCompile("file format ([^ ]*)")              // 1 format
+	re_section    = regexp.MustCompile("^Disassembly of section ([^ :]*)") // 1 name
+	re_block      = regexp.MustCompile("^0*([0-9a-f]+)( <([^>]*)>)?:")     // 1 off, 3 name
+	// the opcode params are not of any interest right now, as such this is sufficient:
+	re_opcode   = regexp.MustCompile("^ *0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
+	re_ellipsis = regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
+)
+
+func execute_objdump_error(w http.ResponseWriter, samplepath string, err error, stdout []byte) {
+	http.Error(w, "Executing objdump failed", 500)
+	infoLogger.Printf("Error executing objdump (file: %s): %s %s %s",
+		samplepath,
+		err.Error(),
+		strings.Replace(strings.TrimSpace(string(stdout)), "\n", "; ", -1),
+		strings.Replace(strings.TrimSpace(string(err.(*exec.ExitError).Stderr)), "\n", "; ", -1),
+	)
+}
+
 func handler_analyze(f_response http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	infoLogger.Println("Serving request:", request)
 	start_time := time.Now()
@@ -248,28 +302,11 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	// Run objdump
-	// -d: disassemble
-	// -w: wide output (not delimited to 80 chars)
-	objdump := exec.Command(objdump_binary_path, "-w", "-d", sample_path)
-	stdout, err := objdump.Output()
-
-	if err != nil {
-		http.Error(f_response, "Executing objdump failed", 500)
-		infoLogger.Printf("Error executing objdump (file: %s): %s %s %s",
-			sample_path,
-			err.Error(),
-			strings.Replace(strings.TrimSpace(string(stdout)), "\n", "; ", -1),
-			strings.Replace(strings.TrimSpace(string(err.(*exec.ExitError).Stderr)), "\n", "; ", -1),
-		)
-		return
-	}
-
 	// Prepare helper variables and regular expressions.
 	// Allocate one big opcode array, for blocks only save slices - way more
 	// efficient, no copy actions.
-	// Another efficiency messure is to have expected values, trimming down on
-	// regex comparisons.
+	// Another efficiency measure is to have expected values, reducing the number
+	// of regular expressions executed.
 	// If a type is not expected, it is not tested for and the most likely type
 	// is tested first. Opcodes are the most likely, followed by block, followed
 	// by section. The file format should only be specified once and it must be
@@ -277,74 +314,88 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	// Unexpected output is deemed an error and results in an exit.
 	// By using this expectance feature, we potentially reduce the amount of
 	// regular expressions executed to a minimum.
-	type Block struct {
-		Name        string   `json:"name"`
-		Offset      string   `json:"offset"`
-		Start_index int64    `json:"-"`
-		Opcodes     []string `json:"opcodes"`
-	}
-	type Section struct {
-		Name string `json:"name"`
-		// offset  string          `json:"offset"`
-		Blocks []*Block `json:"blocks"`
-	}
 	map_sections := make(map[string]*Section)
-
+	opcodes := make([]string, opcodes_max)
 	var (
-		line          string
-		line_offset   int
-		line_more     bool
-		line_buffer   []byte = make([]byte, 0x10000)
-		opcodes_max   int64
-		opcodes_total int64
-		opcodes_index int64
+		opcodes_total int64 = 0
+		opcodes_index int64 = 0
 		fileformat    string
 		cur_section   *Section
 		cur_block     *Block
 		processed     bool
+		expected      int
 	)
 
-	opcodes_max, _ = strconv.ParseInt(config.Settings.MaxNumberOfOpcodes, 10, 64)
-	opcodes := make([]string, opcodes_max)
+	// Run objdump header dump mode
+	// -w: wide output (not delimited to 80 chars)
+	// -h: print headers
+	objdump := exec.Command(objdump_binary_path, "-w", "-h", sample_path)
+	stdout, err := objdump.Output()
+	if err != nil {
+		execute_objdump_error(f_response, sample_path, err, stdout)
+		return
+	}
 
-	expect_format := 0x1
-	expect_section := 0x2
-	expect_block := 0x4
-	expect_opcode := 0x8
-	expected := expect_format
+	expected = expect_header_start
+	lines := make(chan string, 0x100)
+	go process_lines(stdout, lines)
+	for line := range lines {
+		if expected == expect_header_start {
+			if result := re_header_table_start.FindStringSubmatch(line); len(result) > 0 {
+				expected = expect_header_entry
+			}
+		} else {
+			if result := re_header_table_entry.FindStringSubmatch(line); len(result) > 0 {
+				flags := strings.Split(result[3], ", ")
+				map_sections[result[2]] = &Section{
+					Name:  result[2],
+					Flags: flags,
+				}
+			}
+		}
+	}
 
-	re_fileformat := regexp.MustCompile("file format ([^ ]*)")           // 1 format
-	re_section := regexp.MustCompile("^Disassembly of section ([^ :]*)") // 1 name
-	re_block := regexp.MustCompile("^0*([0-9a-f]+)( <([^>]*)>)?:")       // 1 off, 3 name
-	// the opcode params are not of any interest right now
-	// re_opcode       := regexp.MustCompile("^  0*([0-9a-f]+):\\t[^\\t]+\\t(.*)") // 1 off, 2 op
-	re_opcode := regexp.MustCompile("^ *0*([0-9a-f]+):\\t[^\\t]+\\t([^ ]*)") // 1 off, 2 op
-	re_ellipsis := regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
+	// Run objdump dissassemble mode
+	// -w: wide output (not delimited to 80 chars)
+	// -d: disassemble
+	objdump = exec.Command(objdump_binary_path, "-w", "-d", sample_path)
+	stdout, err = objdump.Output()
+	if err != nil {
+		execute_objdump_error(f_response, sample_path, err, stdout)
+		return
+	}
 
-	opcodes_total = 0
-	opcodes_index = 0
-
-	line, line_offset, line_more = nextline(stdout, 0, line_buffer)
-	for line_more {
-
-		// fmt.Fprint(f_response, line+"\n")
-
+	expected = expect_format
+	lines = make(chan string, 0x100)
+	go process_lines(stdout, lines)
+	for line := range lines {
+		// Indicator if the line was processed.
 		processed = false
-
 		// This is the most likely case, as there should be much more opcodes
 		// than blocks or sections. As such this should be checked for first.
 		if (expected & expect_opcode) != 0 {
 			if result := re_opcode.FindStringSubmatch(line); len(result) > 0 {
-				opcodes[opcodes_total] = result[2]
-				// Assigning a slice is as fast as it can possibly get, this
-				// just saves a start and an end pointer.
-				cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
-				opcodes_total += 1
-				if opcodes_total >= opcodes_max {
-					// we reached our max opcodes!
-					line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
+				// TODO: continue to go on if limit is reached, but not record, only record
+				// missed sections
+				if opcodes_total < opcodes_max {
+					opcodes[opcodes_total] = result[2]
+					// Assigning a slice is as fast as it can possibly get, this
+					// just saves a start and an end pointer.
+					cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
+				} else {
+					// We are finished with parsing, we reached our limit for opcodes.
+					cur_block.Truncated = true
+					cur_section.Truncated = true
 					break
 				}
+				opcodes_total += 1
+				// Do not break upon reaching max opcode count anymore, we want those
+				// other section names and a note that we truncated:
+				// if opcodes_total >= opcodes_max {
+				// 	// we reached our max opcodes!
+				// 	line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
+				// 	break
+				// }
 				expected = expect_section | expect_block | expect_opcode
 				processed = true
 			}
@@ -386,11 +437,14 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		// sections.
 		if !processed && (expected&expect_section) != 0 {
 			if result := re_section.FindStringSubmatch(line); len(result) > 0 {
-				if _, exists := map_sections[result[1]]; exists {
+				if section, exists := map_sections[result[1]]; exists && section.initialized {
 					infoLogger.Printf("Error: Found duplicate section %s, ignoring.\n", result[1])
+				} else if exists {
+					cur_section = section
+					cur_section.initialized = true
 				} else {
-					cur_section = &Section{Name: result[1]}
-					map_sections[result[1]] = cur_section
+					// TODO: should this be a fatal error?
+					infoLogger.Println("Error: Found a section that was not described in the header: " + result[1])
 				}
 				expected = expect_block
 				processed = true
@@ -414,17 +468,14 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		// Catch unprocessed error
 		if !processed {
 			http.Error(f_response, fmt.Sprintf("Unexpected output '%s'", line), 500)
-			infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='%s'.\n", line, strconv.FormatInt(int64(expected), 2))
+			infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='0x%s'.\n", line, strconv.FormatInt(int64(expected), 16))
 			return
 		}
-
-		// Get the next line.
-		line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
 	}
 
 	// check if we have truncated the output
-	truncated := false
-	if opcodes_total >= opcodes_max && line_more {
+	truncated := cur_section.Truncated
+	if line, more := <-lines; line != "" || more {
 		truncated = true
 	}
 
@@ -442,9 +493,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	analysis_result.Sections = map_sections
 	analysis_result_json, err := json.Marshal(analysis_result)
 
-	// fmt.Println(string(analysis_result_json))
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
-	fmt.Fprint(f_response, string(analysis_result_json))
+	f_response.Write(analysis_result_json)
 
 	elapsed_time := time.Since(start_time)
 	infoLogger.Printf("Done, read a total of %d opcodes in %s.\n", opcodes_total, elapsed_time)
@@ -455,50 +505,71 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 * on the stdout pipe instead of the whole output. TODO: use stdout instead of
 * complete output - might be more efficient (memory wise?)?.
  */
-func nextline(s []byte, offset int, nextline_buffer []byte) (string, int, bool) {
+func process_lines(s []byte, out chan string) {
 	var (
-		i       int
-		b       byte
-		size    int
-		lbuffer int
+		i    int
+		a    int = 0
+		size int = len(s)
 	)
-
-	i = 0
-	size = len(s)
-	lbuffer = len(nextline_buffer)
-
-	for i < lbuffer && offset+i < size {
-		b = s[offset+i]
-
-		nextline_buffer[i] = b
-		i = i + 1
-
-		if b == '\n' {
-			// ignore empty lines
-			if i == 1 {
-				offset += i
-				i = 0
-				continue
+	for i = 0; i < size; i++ {
+		if s[i] == '\n' {
+			if i > a {
+				out <- string(s[a:i])
 			}
-			break
+			a = i + 1
 		}
 	}
-
-	// catch empty last line
-	if i == 0 {
-		return "", offset, false
+	if i > a {
+		out <- string(s[a:i])
 	}
-
-	interims := nextline_buffer[0:i]
-	if interims[i-1] == '\n' {
-		interims = interims[0 : i-1]
-	}
-
-	result := string(interims)
-
-	if offset+i < size {
-		return result, offset + i, true
-	} else {
-		return result, offset + i, false
-	}
+	close(out)
 }
+
+// func nextline(s []byte, offset int, nextline_buffer []byte) (string, int, bool) {
+// 	//
+// 	var (
+// 		i       int
+// 		b       byte
+// 		size    int
+// 		lbuffer int
+// 	)
+
+// 	i = 0
+// 	size = len(s)
+// 	lbuffer = len(nextline_buffer)
+
+// 	for i < lbuffer && offset+i < size {
+// 		b = s[offset+i]
+
+// 		nextline_buffer[i] = b
+// 		i = i + 1
+
+// 		if b == '\n' {
+// 			// ignore empty lines
+// 			if i == 1 {
+// 				offset += i
+// 				i = 0
+// 				continue
+// 			}
+// 			break
+// 		}
+// 	}
+
+// 	// catch empty last line
+// 	if i == 0 {
+// 		return "", offset, false
+// 	}
+
+// 	interims := nextline_buffer[0:i]
+// 	if interims[i-1] == '\n' {
+// 		interims = interims[0 : i-1]
+// 	}
+
+// 	result := string(interims)
+
+// 	if offset+i < size {
+// 		return result, offset + i, true
+// 	} else {
+// 		return result, offset + i, false
+// 	}
+// }

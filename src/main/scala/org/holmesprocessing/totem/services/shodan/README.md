@@ -9,15 +9,15 @@ A simple service for gathering Shodan information about an ip address.
  "host": {
   "region_code": "<string>",
   "ip": "<string>",
-  "area_code": <int>,
+  "area_code": "<int>",
   "country_name": "<string>", "hostnames": ["<string>"],
   "postal_code": "<string>",
-  "dma_code": <int>,
+  "dma_code": "<int>",
   "country_code": "<string>",
   "data": [
    {
     "product": "<string>",
-    "os": null,
+    "os": "<string>",
     "timestamp": "<string>",
     "isp": "<string>",
     "asn": "<string>",
@@ -27,23 +27,23 @@ A simple service for gathering Shodan information about an ip address.
     "location": {
      "city": "<string>",
      "region_code": "<string>",
-     "area_code": <int>,
-     "longitude": <double>,
+     "area_code": "<int>",
+     "longitude": "<double>",
      "country_code3": "<string>",
      "country_name": "<string>",
      "postal_code": "<string>",
-     "dma_code": <int>,
+     "dma_code": "<int>",
      "country_code": "<string>",
-     "latitude": <double>
+     "latitude": "<double>"
     },
     "ip": "<string>",
     "domains": ["<string>"],
     "org": "<string>",
-    "port": <int>,
+    "port": "<int>",
     "opts": {"<string>"}
    },
    {
-    "os": null,
+    "os": "<string>",
     "timestamp": "<string>",
     "isp": "<string>",
     "asn": "<string>",
@@ -52,27 +52,27 @@ A simple service for gathering Shodan information about an ip address.
     "location": {
      "city": "<string>",
      "region_code": "<string>",
-     "area_code": <int>,
-     "longitude": <double>,
+     "area_code": "<int>",
+     "longitude": "<double>",
      "country_code3": "<string>",
      "country_name": "<string>",
      "postal_code": "<string>",
-     "dma_code": <int>,
+     "dma_code": "<int>",
      "country_code": "<string>",
-     "latitude": <double>
+     "latitude": "<double>"
     },
     "ip": "<string>",
     "domains": ["<string>"],
     "org": "<string>",
-    "port": <int>,
+    "port": "<int>",
     "opts": {"<string>"}
    }
   ],
   "city": "<string>",
-  "longitude": <double>,
+  "longitude": "<double>",
   "country_code3": "<string>",
-  "latitude": <double>,
-  "os": null,
+  "latitude": "<double>",
+  "os": "<string>",
   "ports": [<int>, <int>]
  },
 }

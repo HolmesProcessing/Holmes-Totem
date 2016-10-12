@@ -73,7 +73,7 @@ A simple service for gathering Shodan information about an ip address.
   "country_code3": "<string>",
   "latitude": "<double>",
   "os": "<string>",
-  "ports": [<int>, <int>]
+  "ports": ["<int>", "<int>"]
  },
 }
 ```

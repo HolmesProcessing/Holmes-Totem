@@ -3,9 +3,84 @@
 ###Description
 A simple service for gathering Shodan information about an ip address.
 
+###Output
+```json
+{
+ "host": {
+  "region_code": "<string>",
+  "ip": "<string>",
+  "area_code": <int>,
+  "country_name": "<string>", "hostnames": ["<string>"],
+  "postal_code": "<string>",
+  "dma_code": <int>,
+  "country_code": "<string>",
+  "data": [
+   {
+    "product": "<string>",
+    "os": null,
+    "timestamp": "<string>",
+    "isp": "<string>",
+    "asn": "<string>",
+    "banner": "<string>",
+    "hostnames": ["<string>"],
+    "devicetype": "<string>",
+    "location": {
+     "city": "<string>",
+     "region_code": "<string>",
+     "area_code": <int>,
+     "longitude": <double>,
+     "country_code3": "<string>",
+     "country_name": "<string>",
+     "postal_code": "<string>",
+     "dma_code": <int>,
+     "country_code": "<string>",
+     "latitude": <double>
+    },
+    "ip": "<string>",
+    "domains": ["<string>"],
+    "org": "<string>",
+    "port": <int>,
+    "opts": {"<string>"}
+   },
+   {
+    "os": null,
+    "timestamp": "<string>",
+    "isp": "<string>",
+    "asn": "<string>",
+    "banner": "<string>",
+    "hostnames": ["<string>"],
+    "location": {
+     "city": "<string>",
+     "region_code": "<string>",
+     "area_code": <int>,
+     "longitude": <double>,
+     "country_code3": "<string>",
+     "country_name": "<string>",
+     "postal_code": "<string>",
+     "dma_code": <int>,
+     "country_code": "<string>",
+     "latitude": <double>
+    },
+    "ip": "<string>",
+    "domains": ["<string>"],
+    "org": "<string>",
+    "port": <int>,
+    "opts": {"<string>"}
+   }
+  ],
+  "city": "<string>",
+  "longitude": <double>,
+  "country_code3": "<string>",
+  "latitude": <double>,
+  "os": null,
+  "ports": [<int>, <int>]
+ },
+}
+```
+
 ###Usage
 Build and start the docker container using the included Dockerfile.
 If the service has frequent timeouts you have to adjust totem.conf:
-- totem.download_settings.connection_timeout
-- totem.download_settings.request_timeout
-- totem.tasking_settings.default_service_timeout
++ totem.download_settings.connection_timeout
++ totem.download_settings.request_timeout
++ totem.tasking_settings.default_service_timeout

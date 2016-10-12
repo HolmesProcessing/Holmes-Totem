@@ -79,6 +79,9 @@ A simple service for gathering Shodan information about an ip address.
 ```
 
 ###Usage
+Copy service.conf.example to service.conf and fill in your own values.
+When assigning the SHODAN_API_KEY to the apikey in service.config 
+do not use quotation marks around the SHODAN_API_KEY.
 Build and start the docker container using the included Dockerfile.
 If the service has frequent timeouts you have to adjust totem.conf:
 + totem.download_settings.connection_timeout

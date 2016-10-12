@@ -65,6 +65,10 @@ totem {
       uri = ["http://127.0.0.1:9720/analyze/?obj="]
       resultRoutingKey = "passivetotal.result.static.totem"
     }
+    shodan {
+      uri = ["http://127.0.0.1:9730/analyze/?obj="]
+      resultRoutingKey = "shodan.result.static.totem"
+    }
     gogadget {
       uri = ["http://127.0.0.1:7700/analyze/?obj="]
       resultRoutingKey = "gogadget.result.static.totem"

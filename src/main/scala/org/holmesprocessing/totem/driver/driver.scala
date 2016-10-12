@@ -11,6 +11,7 @@ import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
 import org.holmesprocessing.totem.services.passivetotal.{PassiveTotalSuccess, PassiveTotalWork}
 import org.holmesprocessing.totem.services.peid.{PEiDSuccess, PEiDWork}
 import org.holmesprocessing.totem.services.peinfo.{PEInfoSuccess, PEInfoWork}
+import org.holmesprocessing.totem.services.shodan.{ShodanSuccess, ShodanWork}
 import org.holmesprocessing.totem.services.virustotal.{VirustotalSuccess, VirustotalWork}
 import org.holmesprocessing.totem.services.yara.{YaraSuccess, YaraWork}
 import org.holmesprocessing.totem.services.zipmeta.{ZipMetaSuccess, ZipMetaWork}
@@ -110,6 +111,7 @@ object driver extends App with Instrumented {
         case "PASSIVETOTAL" => Random.shuffle(services.getOrElse("passivetotal", List())).head
         case "PEID" => Random.shuffle(services.getOrElse("peid", List())).head
         case "PEINFO" => Random.shuffle(services.getOrElse("peinfo", List())).head
+        case "SHODAN" => Random.shuffle(services.getOrElse("shodan", List())).head
         case "VIRUSTOTAL" => Random.shuffle(services.getOrElse("virustotal", List())).head
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
@@ -138,6 +140,8 @@ object driver extends App with Instrumented {
           PEiDWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
           PEInfoWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
+        case ("SHODAN", li: List[String]) =>
+          ShodanWork(key, orig_filename, taskingConfig.default_service_timeout, "SHODAN", GeneratePartial("SHODAN"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
           VirustotalWork(key, uuid_filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>
@@ -162,6 +166,7 @@ object driver extends App with Instrumented {
         case x: PassiveTotalSuccess => conf.getString("totem.services.passivetotal.resultRoutingKey")
         case x: PEiDSuccess => conf.getString("totem.services.peid.resultRoutingKey")
         case x: PEInfoSuccess => conf.getString("totem.services.peinfo.resultRoutingKey")
+        case x: ShodanSuccess => conf.getString("totem.services.shodan.resultRoutingKey")
         case x: VirustotalSuccess => conf.getString("totem.services.virustotal.resultRoutingKey")
         case x: YaraSuccess => conf.getString("totem.services.yara.resultRoutingKey")
         case x: ZipMetaSuccess => conf.getString("totem.services.zipmeta.resultRoutingKey")

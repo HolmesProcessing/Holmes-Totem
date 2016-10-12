@@ -141,7 +141,7 @@ object driver extends App with Instrumented {
         case ("PEINFO", li: List[String]) =>
           PEInfoWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("SHODAN", li: List[String]) =>
-          ShodanWork(key, orig_filename, List(taskingConfig.default_service_timeout, 300).max, "SHODAN", GeneratePartial("SHODAN"), li)
+          ShodanWork(key, orig_filename, taskingConfig.default_service_timeout, "SHODAN", GeneratePartial("SHODAN"), li)
         case ("VIRUSTOTAL", li: List[String]) =>
           VirustotalWork(key, uuid_filename, 1800, "VIRUSTOTAL", GeneratePartial("VIRUSTOTAL"), li)
         case ("YARA", li: List[String]) =>

@@ -64,7 +64,7 @@ var (
 	opcodes_max         int64
 	metadata            Metadata = Metadata{
 		Name:        "Objdump",
-		Version:     "1.1.0",
+		Version:     "1.2.0",
 		Description: "./README.md",
 		Copyright:   "Copyright 2016 Holmes Group LLC",
 		License:     "./LICENSE",
@@ -277,16 +277,30 @@ var (
 
 func execute_objdump_error(w http.ResponseWriter, samplepath string, err error, stdout []byte) {
 	http.Error(w, "Executing objdump failed", 500)
+	// This ugly type switch fixes the panic that occured when it wasn't the
+	// expected *exec.ExitError
+	var (
+		iface       interface{}
+		detailedErr string = ""
+	)
+	iface = err
+	switch iface.(type) {
+	case *exec.ExitError:
+		detailedErr = string(err.(*exec.ExitError).Stderr)
+	case *os.PathError:
+		err := err.(*os.PathError)
+		detailedErr = err.Path + " - " + err.Op + " - " + err.Err.Error()
+	}
 	infoLogger.Printf("Error executing objdump (file: %s): %s %s %s",
 		samplepath,
 		err.Error(),
 		strings.Replace(strings.TrimSpace(string(stdout)), "\n", "; ", -1),
-		strings.Replace(strings.TrimSpace(string(err.(*exec.ExitError).Stderr)), "\n", "; ", -1),
+		strings.Replace(strings.TrimSpace(detailedErr), "\n", "; ", -1),
 	)
 }
 
 func handler_analyze(f_response http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	infoLogger.Println("Serving request:", request)
+	infoLogger.Println("Serving request:", request.RequestURI)
 	start_time := time.Now()
 
 	obj := request.URL.Query().Get("obj")
@@ -332,13 +346,27 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	objdump := exec.Command(objdump_binary_path, "-w", "-h", sample_path)
 	stdout, err := objdump.Output()
 	if err != nil {
-		execute_objdump_error(f_response, sample_path, err, stdout)
-		return
+		if err.Error() != "No Error" {
+			execute_objdump_error(f_response, sample_path, err, stdout)
+			return
+		} else {
+			// Again the ugly type switch, this time a bit more condensed as we only
+			// expect *exec.ExitError to have the "No Error" value
+			var i interface{}
+			i = err
+			switch i.(type) {
+			case *exec.ExitError:
+				// in this case it is no fatal error
+				infoLogger.Println(string(err.(*exec.ExitError).Stderr))
+			}
+		}
 	}
 
+	// see next usage of lines_done for an explanation
 	expected = expect_header_start
 	lines := make(chan string, 0x100)
-	go process_lines(stdout, lines)
+	lines_done := false
+	go process_lines(stdout, lines, &lines_done)
 	for line := range lines {
 		if expected == expect_header_start {
 			if result := re_header_table_start.FindStringSubmatch(line); len(result) > 0 {
@@ -361,13 +389,28 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	objdump = exec.Command(objdump_binary_path, "-w", "-d", sample_path)
 	stdout, err = objdump.Output()
 	if err != nil {
-		execute_objdump_error(f_response, sample_path, err, stdout)
-		return
+		if err.Error() != "No Error" {
+			execute_objdump_error(f_response, sample_path, err, stdout)
+			return
+		} else {
+			var i interface{}
+			i = err
+			switch i.(type) {
+			case *exec.ExitError:
+				// in this case it is no fatal error
+				infoLogger.Println(string(err.(*exec.ExitError).Stderr))
+			}
+		}
 	}
 
+	// lines_done:
+	//		this switch is necessary to let the lines processing goroutine
+	// 		know that it has to stop, furthermore we need to empty the channel to
+	//		avoid having a stuck lines processing goroutine (producer starvation)
 	expected = expect_format
 	lines = make(chan string, 0x100)
-	go process_lines(stdout, lines)
+	lines_done = false
+	go func() { process_lines(stdout, lines, &lines_done) }()
 	for line := range lines {
 		// Indicator if the line was processed.
 		processed = false
@@ -386,6 +429,11 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 					// We are finished with parsing, we reached our limit for opcodes.
 					cur_block.Truncated = true
 					cur_section.Truncated = true
+					// empty remaining lines, set lines_done switch to true, both together
+					// ensures termination of the process lines goroutine
+					lines_done = true
+					for range lines {
+					}
 					break
 				}
 				opcodes_total += 1
@@ -474,9 +522,15 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	// check if we have truncated the output
-	truncated := cur_section.Truncated
-	if line, more := <-lines; line != "" || more {
+	// if there is no current section avoid null pointer dereference
+	var truncated bool
+	if cur_section == nil {
 		truncated = true
+	} else {
+		truncated = cur_section.Truncated
+		if line, more := <-lines; line != "" || more {
+			truncated = true
+		}
 	}
 
 	// After all data is parsed, assemble json
@@ -505,13 +559,16 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 * on the stdout pipe instead of the whole output. TODO: use stdout instead of
 * complete output - might be more efficient (memory wise?)?.
  */
-func process_lines(s []byte, out chan string) {
+func process_lines(s []byte, out chan string, done *bool) {
 	var (
 		i    int
 		a    int = 0
 		size int = len(s)
 	)
 	for i = 0; i < size; i++ {
+		if *done {
+			break
+		}
 		if s[i] == '\n' {
 			if i > a {
 				out <- string(s[a:i])
@@ -519,57 +576,8 @@ func process_lines(s []byte, out chan string) {
 			a = i + 1
 		}
 	}
-	if i > a {
+	if i > a && !*done {
 		out <- string(s[a:i])
 	}
 	close(out)
 }
-
-// func nextline(s []byte, offset int, nextline_buffer []byte) (string, int, bool) {
-// 	//
-// 	var (
-// 		i       int
-// 		b       byte
-// 		size    int
-// 		lbuffer int
-// 	)
-
-// 	i = 0
-// 	size = len(s)
-// 	lbuffer = len(nextline_buffer)
-
-// 	for i < lbuffer && offset+i < size {
-// 		b = s[offset+i]
-
-// 		nextline_buffer[i] = b
-// 		i = i + 1
-
-// 		if b == '\n' {
-// 			// ignore empty lines
-// 			if i == 1 {
-// 				offset += i
-// 				i = 0
-// 				continue
-// 			}
-// 			break
-// 		}
-// 	}
-
-// 	// catch empty last line
-// 	if i == 0 {
-// 		return "", offset, false
-// 	}
-
-// 	interims := nextline_buffer[0:i]
-// 	if interims[i-1] == '\n' {
-// 		interims = interims[0 : i-1]
-// 	}
-
-// 	result := string(interims)
-
-// 	if offset+i < size {
-// 		return result, offset + i, true
-// 	} else {
-// 		return result, offset + i, false
-// 	}
-// }

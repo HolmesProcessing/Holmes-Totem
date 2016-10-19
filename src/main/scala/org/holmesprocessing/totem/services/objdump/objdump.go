@@ -64,7 +64,7 @@ var (
 	opcodes_max         int64
 	metadata            Metadata = Metadata{
 		Name:        "Objdump",
-		Version:     "1.1.0",
+		Version:     "1.2.0",
 		Description: "./README.md",
 		Copyright:   "Copyright 2016 Holmes Group LLC",
 		License:     "./LICENSE",

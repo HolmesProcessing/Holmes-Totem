@@ -5,19 +5,21 @@
 A simple service to extract the ROP Gadgets of a binary file.
 
 ### Output
+```json
 results = {
-    total_unique_gadgets: <#>,
-	total_gadgets_recorded: <#>,
-	truncated: <true/false>,
-	search_depth: <#>,
-	gadgets: [
-		offset: <hex>
-		instructions: [
-			(opcodes),
-			(opcodes),
-			...
-		]
+	"total_unique_gadgets": "<int>",
+	"total_gadgets_recorded": "<int>",
+	"truncated": "<boolean>",
+	"search_depth": "<int>",
+	"gadgets": {
+		"offset": "<hex>",
+		"instructions": [
+			"(opcodes)",
+			"(opcodes)",
+		],
+	},
 }
+```
 
 ## Usage
 

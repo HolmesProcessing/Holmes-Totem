@@ -80,13 +80,24 @@ services:
     volumes:
       - /tmp:/tmp:ro
 
+  richheader:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/richheader
+      args:
+        conf: ${CONFSTORAGE_PEINFO}service.conf
+    ports:
+      - "7740:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
   virustotal:
     build:
       context: ../src/main/scala/org/holmesprocessing/totem/services/virustotal
       args:
         conf: ${CONFSTORAGE_VIRUSTOTAL}service.conf
     ports:
-      - "7740:8080"
+      - "7750:8080"
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro
@@ -97,7 +108,7 @@ services:
       args:
         conf: ${CONFSTORAGE_YARA}service.conf
     ports:
-      - "7750:8080"
+      - "7760:8080"
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro
@@ -108,7 +119,7 @@ services:
       args:
         conf: ${CONFSTORAGE_ZIPMETA}service.conf
     ports:
-      - "7760:8080"
+      - "7770:8080"
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro

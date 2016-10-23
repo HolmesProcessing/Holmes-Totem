@@ -85,6 +85,10 @@ totem {
       uri = ["http://127.0.0.1:7730/analyze/?obj="]
       resultRoutingKey = "peinfo.result.static.totem"
     }
+    richheader {
+      uri = ["http://127.0.0.1:7730/analyze/?obj="]
+      resultRoutingKey = "richheader.result.static.totem"
+    }
     virustotal {
       uri = ["http://127.0.0.1:7740/analyze/?obj="]
       resultRoutingKey = "virustotal.result.static.totem"

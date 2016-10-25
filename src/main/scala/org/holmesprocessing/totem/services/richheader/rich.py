@@ -7,8 +7,11 @@ import traceback
 import os
 from os import path
 
+# imports for rick
+import richlibrary
+
 # imports for services
-from holmeslibrary.services import ServiceConfig
+from holmeslibrary.services import ServiceConfig 
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
@@ -22,8 +25,12 @@ Metadata = {
 }
 
 
-class RichHeaderRun(obj):
+def RichHeaderRun(objpath):
 	data = {}
+
+	parser = richlibrary.RichLibrary(objpath)
+	parser.parse
+
 	return data
 
 

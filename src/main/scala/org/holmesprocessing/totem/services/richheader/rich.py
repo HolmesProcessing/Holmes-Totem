@@ -26,12 +26,8 @@ Metadata = {
 
 
 def RichHeaderRun(objpath):
-	data = {}
-
-	parser = richlibrary.RichLibrary(objpath)
-	parser.parse
-
-	return data
+    parser = richlibrary.RichLibrary(objpath)
+    return parser.parse()
 
 
 class Service(tornado.web.RequestHandler):
@@ -43,6 +39,18 @@ class Service(tornado.web.RequestHandler):
             self.write(data)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
+        except richlibrary.MZSignatureError:
+            self.write({'error': richlibrary.err2str(-2)})
+        except richlibrary.PESignatureError:
+            self.write({'error': richlibrary.err2str(-3)})
+        except richlibrary.RichSignatureError:
+            self.write({'error': richlibrary.err2str(-4)})
+        except richlibrary.DanSSignatureError:
+            self.write({'error': richlibrary.err2str(-5)})
+        except richlibrary.PaddingError:
+            self.write({'error': richlibrary.err2str(-6)})
+        except richlibrary.RichLengthError:
+            self.write({'error': richlibrary.err2str(-7)})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 

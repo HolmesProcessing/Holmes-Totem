@@ -36,11 +36,11 @@ class RichLibrary:
 
         ## Do basic sanity checks on the PE
         if dat[0:][:2] != b'MZ':
-            return {'err': -2}
+            raise MZSignatureError()
 
         e_lfanew = u32(dat[0x3c:][:4])
         if dat[e_lfanew:][:2] != b'PE':
-            return {'err': -3}
+            raise PESignatureError()
 
         ## IMPORTANT: Do not assume the data to start at 0x80, this is not always
         ## the case (modified DOS stub). Instead, start searching backwards for
@@ -51,7 +51,7 @@ class RichLibrary:
                 break
 
         if rich == SIZE_DOS_HEADER:
-            return {'err': -4}
+            raise RichSignatureError()
 
         ## We found a valid 'Rich' signature in the header from here on
         csum = u32(dat[rich + 4:][:4])
@@ -60,19 +60,19 @@ class RichLibrary:
         ## invert the result to get original order
         upack = [ u32(dat[i:][:4]) ^ csum for i in range(rich - 4, SIZE_DOS_HEADER, -4) ][::-1]
         if u32(b'DanS') not in upack:
-            return {'err:': -5}
+            raise DanSSignatureError()
 
         upack = upack[upack.index(u32(b'DanS')):]
         dans = e_lfanew - len(upack) * 4 - (e_lfanew - rich)
 
         ## DanS is _always_ followed by three zero dwords
         if not all([upack[i] == 0 for i in range(1, 4)]):
-            return {'err': -6}
+            raise PaddingError()
 
         upack = upack[4:]
 
         if len(upack) & 1:
-            return {'err': -7}
+            raise RichLengthError()
 
         cmpids = []
 
@@ -97,7 +97,7 @@ class RichLibrary:
         ## Truncate calculated checksum to 32 bit
         chk &= 0xffffffff
 
-        return {'err': 0, 'cmpids': cmpids, 'csum_calc': chk, 'csum_file': csum,
+        return {'error': 0, 'cmpids': cmpids, 'csum_calc': chk, 'csum_file': csum,
                 'offset': dans}
 
     def err2str(self, code):
@@ -138,9 +138,8 @@ class RichLibrary:
             "0x{:08x})".format(rich['csum_calc'], rich['csum_file']))
         print("\x1b[39m" + "-" * (20 + 16 + 16))
 
-
     def __init__(self, path):
         self.data = {}
-        try:
-            self.parse(path)
-        except 
+
+        self.data = self.parse(path)
+        return data

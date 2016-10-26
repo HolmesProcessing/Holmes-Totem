@@ -85,16 +85,20 @@ totem {
       uri = ["http://127.0.0.1:7730/analyze/?obj="]
       resultRoutingKey = "peinfo.result.static.totem"
     }
-    virustotal {
+    richheader {
       uri = ["http://127.0.0.1:7740/analyze/?obj="]
+      resultRoutingKey = "richheader.result.static.totem"
+    }
+    virustotal {
+      uri = ["http://127.0.0.1:7750/analyze/?obj="]
       resultRoutingKey = "virustotal.result.static.totem"
     }
     yara {
-      uri = ["http://127.0.0.1:7750/analyze/?obj="]
+      uri = ["http://127.0.0.1:7760/analyze/?obj="]
       resultRoutingKey = "yara.result.static.totem"
     }
     zipmeta {
-      uri = ["http://127.0.0.1:7760/analyze/?obj="]
+      uri = ["http://127.0.0.1:7770/analyze/?obj="]
       resultRoutingKey = "zipmeta.result.static.totem"
     }
   }

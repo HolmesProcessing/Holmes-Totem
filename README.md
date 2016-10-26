@@ -17,6 +17,7 @@ Holmes-Totem is pre-packaged with with a number of static analysis and query Ser
 | Objdump | Binary Executables | Provides a parsed version of the objdump output |
 | PEiD | File | Provides PEiD information (packer, compiler, etc) for files |
 | PEInfo | PE32 | Custom version of CRITs' PEInfo. Includes Rich Header parsing |
+| RichHeader | PE32 | Rich Header extraction for PE32 files |
 | VirusTotal | Binary | Returns available [VirusTotal](https://www.virustotal.com/) information with a public or private key |
 | Yara | File | Performs [Yara signature](http://virustotal.github.io/yara/) matching with a default rule pack or custom rule |
 | ZipMeta | Zip | Provides meta information contained in zip files |

@@ -35,8 +35,11 @@ import (
  * Imports for request execution.
  */
 import (
+	"errors"
+	"io"
 	"os/exec"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 )
 
@@ -251,6 +254,13 @@ type Section struct {
 	initialized bool
 }
 
+type AnalysisResult struct {
+	Fileformat string              `json:"fileformat"`
+	NoOpcodes  int64               `json:"number_of_opcodes"`
+	Truncated  bool                `json:"truncated"`
+	Sections   map[string]*Section `json:"sections"`
+}
+
 // Initialize all constants for parsing.
 // - Expectancy constants (binary flags)
 // - Regular expressions
@@ -275,7 +285,27 @@ var (
 	re_ellipsis = regexp.MustCompile("^[ \\t]+\\.\\.\\.$")
 )
 
-func execute_objdump_error(w http.ResponseWriter, samplepath string, err error, stdout []byte) {
+func check_objdump_error(w http.ResponseWriter, sample_path string, err error) bool {
+	if err != nil {
+		if err.Error() != "No Error" {
+			execute_objdump_error(w, sample_path, err)
+		} else {
+			// Again the ugly type switch, this time a bit more condensed as we only
+			// expect *exec.ExitError to have the "No Error" value
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				// in this case it is no fatal error
+				infoLogger.Println(string(exitErr.Stderr))
+				return false
+			}
+			// otherwise however it is
+			execute_objdump_error(w, sample_path, err)
+		}
+		return true
+	}
+	return false
+}
+
+func execute_objdump_error(w http.ResponseWriter, samplepath string, err error) {
 	http.Error(w, "Executing objdump failed", 500)
 	// This ugly type switch fixes the panic that occured when it wasn't the
 	// expected *exec.ExitError
@@ -294,7 +324,6 @@ func execute_objdump_error(w http.ResponseWriter, samplepath string, err error, 
 	infoLogger.Printf("Error executing objdump (file: %s): %s %s %s",
 		samplepath,
 		err.Error(),
-		strings.Replace(strings.TrimSpace(string(stdout)), "\n", "; ", -1),
 		strings.Replace(strings.TrimSpace(detailedErr), "\n", "; ", -1),
 	)
 }
@@ -316,7 +345,93 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	// Prepare helper variables and regular expressions.
+	// analyze headers
+	map_sections, err := analyze_headers(sample_path)
+	if check_objdump_error(f_response, sample_path, err) {
+		return
+	}
+
+	// analyze disassembly
+	analysis_result, err, err2 := analyze_disassembly(sample_path, map_sections)
+	if check_objdump_error(f_response, sample_path, err) {
+		return
+	}
+	if err2 != nil {
+		http.Error(f_response, err2.Error(), 500)
+		return
+	}
+
+	// marshal to json and send to client
+	analysis_result_json, err := json.Marshal(analysis_result)
+	if err != nil {
+		infoLogger.Println("Error creating json:", err)
+		return
+	}
+	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
+	f_response.Write(analysis_result_json)
+
+	// for the record the time measure
+	elapsed_time := time.Since(start_time)
+	infoLogger.Printf("Done, read a total of %d opcodes in %s.\n", analysis_result.NoOpcodes, elapsed_time)
+
+	// attempt to clean as much memory as possible
+	// infoLogger.Println("Cleaning memory")
+	// start_time = time.Now()
+	debug.FreeOSMemory()
+	// elapsed_time = time.Since(start_time)
+	// infoLogger.Printf("Done cleaning memory in %s.\n", elapsed_time)
+}
+
+/**
+* Helper function to analyze stdout from objdump
+ */
+func analyze_headers(sample_path string) (map[string]*Section, error) {
+	var (
+		map_sections     = make(map[string]*Section)
+		lines            = make(chan string, 0x100)
+		lines_done       = false
+		expected     int = expect_header_start
+		stdout       io.ReadCloser
+		err          error
+	)
+	// Run objdump in header dump mode
+	// -w: wide output (not delimited to 80 chars)
+	// -h: print headers
+	objdump := exec.Command(objdump_binary_path, "-w", "-h", sample_path)
+	if stdout, err = objdump.StdoutPipe(); err == nil {
+		defer stdout.Close()
+		if err = objdump.Start(); err == nil {
+			// subroutine to handle line splitting
+			go process_lines(stdout, lines, &lines_done)
+			// handle incoming lines
+			for line := range lines {
+				if expected == expect_header_start {
+					if result := re_header_table_start.FindStringSubmatch(line); len(result) > 0 {
+						expected = expect_header_entry
+					}
+				} else {
+					if result := re_header_table_entry.FindStringSubmatch(line); len(result) > 0 {
+						flags := strings.Split(result[3], ", ")
+						map_sections[result[2]] = &Section{
+							Name:  result[2],
+							Flags: flags,
+						}
+					}
+				}
+			}
+			// wait for objdump to finish if it hasn't already
+			err = objdump.Wait()
+		}
+	}
+	return map_sections, err
+}
+
+/**
+* Helper function to analyze stdout from objdump
+* First error returned is the objdump error, second can be an internal error
+ */
+func analyze_disassembly(sample_path string, map_sections map[string]*Section) (*AnalysisResult, error, error) {
+	// Prepare helper variables.
 	// Allocate one big opcode array, for blocks only save slices - way more
 	// efficient, no copy actions.
 	// Another efficiency measure is to have expected values, reducing the number
@@ -328,230 +443,154 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	// Unexpected output is deemed an error and results in an exit.
 	// By using this expectance feature, we potentially reduce the amount of
 	// regular expressions executed to a minimum.
-	map_sections := make(map[string]*Section)
 	opcodes := make([]string, opcodes_max)
 	var (
-		opcodes_total int64 = 0
-		opcodes_index int64 = 0
-		fileformat    string
-		cur_section   *Section
-		cur_block     *Block
-		processed     bool
-		expected      int
+		opcodes_total   int64 = 0
+		opcodes_index   int64 = 0
+		fileformat      string
+		cur_section     *Section
+		cur_block       *Block
+		processed       bool
+		expected        int = expect_format
+		err             error
+		stdout          io.ReadCloser
+		lines           = make(chan string, 0x100)
+		lines_done      = false
+		analysis_result = &AnalysisResult{}
 	)
-
-	// Run objdump header dump mode
-	// -w: wide output (not delimited to 80 chars)
-	// -h: print headers
-	objdump := exec.Command(objdump_binary_path, "-w", "-h", sample_path)
-	stdout, err := objdump.Output()
-	if err != nil {
-		if err.Error() != "No Error" {
-			execute_objdump_error(f_response, sample_path, err, stdout)
-			return
-		} else {
-			// Again the ugly type switch, this time a bit more condensed as we only
-			// expect *exec.ExitError to have the "No Error" value
-			var i interface{}
-			i = err
-			switch i.(type) {
-			case *exec.ExitError:
-				// in this case it is no fatal error
-				infoLogger.Println(string(err.(*exec.ExitError).Stderr))
-			}
-		}
-	}
-
-	// see next usage of lines_done for an explanation
-	expected = expect_header_start
-	lines := make(chan string, 0x100)
-	lines_done := false
-	go process_lines(stdout, lines, &lines_done)
-	for line := range lines {
-		if expected == expect_header_start {
-			if result := re_header_table_start.FindStringSubmatch(line); len(result) > 0 {
-				expected = expect_header_entry
-			}
-		} else {
-			if result := re_header_table_entry.FindStringSubmatch(line); len(result) > 0 {
-				flags := strings.Split(result[3], ", ")
-				map_sections[result[2]] = &Section{
-					Name:  result[2],
-					Flags: flags,
-				}
-			}
-		}
-	}
 
 	// Run objdump dissassemble mode
 	// -w: wide output (not delimited to 80 chars)
 	// -d: disassemble
-	objdump = exec.Command(objdump_binary_path, "-w", "-d", sample_path)
-	stdout, err = objdump.Output()
-	if err != nil {
-		if err.Error() != "No Error" {
-			execute_objdump_error(f_response, sample_path, err, stdout)
-			return
-		} else {
-			var i interface{}
-			i = err
-			switch i.(type) {
-			case *exec.ExitError:
-				// in this case it is no fatal error
-				infoLogger.Println(string(err.(*exec.ExitError).Stderr))
-			}
-		}
-	}
-
-	// lines_done:
-	//		this switch is necessary to let the lines processing goroutine
-	// 		know that it has to stop, furthermore we need to empty the channel to
-	//		avoid having a stuck lines processing goroutine (producer starvation)
-	expected = expect_format
-	lines = make(chan string, 0x100)
-	lines_done = false
-	go func() { process_lines(stdout, lines, &lines_done) }()
-	for line := range lines {
-		// Indicator if the line was processed.
-		processed = false
-		// This is the most likely case, as there should be much more opcodes
-		// than blocks or sections. As such this should be checked for first.
-		if (expected & expect_opcode) != 0 {
-			if result := re_opcode.FindStringSubmatch(line); len(result) > 0 {
-				// TODO: continue to go on if limit is reached, but not record, only record
-				// missed sections
-				if opcodes_total < opcodes_max {
-					opcodes[opcodes_total] = result[2]
-					// Assigning a slice is as fast as it can possibly get, this
-					// just saves a start and an end pointer.
-					cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
-				} else {
-					// We are finished with parsing, we reached our limit for opcodes.
-					cur_block.Truncated = true
-					cur_section.Truncated = true
-					// empty remaining lines, set lines_done switch to true, both together
-					// ensures termination of the process lines goroutine
-					lines_done = true
-					for range lines {
+	objdump := exec.Command(objdump_binary_path, "-w", "-d", sample_path)
+	if stdout, err = objdump.StdoutPipe(); err == nil {
+		defer stdout.Close()
+		if err = objdump.Start(); err == nil {
+			// subroutine to handle line splitting
+			go process_lines(stdout, lines, &lines_done)
+			// handle incoming lines
+			for line := range lines {
+				// Indicator if the line was processed.
+				processed = false
+				// This is the most likely case, as there should be much more opcodes
+				// than blocks or sections. As such this should be checked for first.
+				if (expected & expect_opcode) != 0 {
+					if result := re_opcode.FindStringSubmatch(line); len(result) > 0 {
+						// TODO: continue to go on if limit is reached, but not record, only record
+						// missed sections
+						if opcodes_total < opcodes_max {
+							opcodes[opcodes_total] = result[2]
+							// Assigning a slice is as fast as it can possibly get, this
+							// just saves a start and an end pointer.
+							cur_block.Opcodes = opcodes[cur_block.Start_index : opcodes_total+1]
+						} else {
+							// We are finished with parsing, we reached our limit for opcodes.
+							cur_block.Truncated = true
+							cur_section.Truncated = true
+							// empty remaining lines, set lines_done switch to true, both together
+							// ensures termination of the process lines goroutine
+							lines_done = true
+							for range lines {
+							}
+							break
+						}
+						opcodes_total += 1
+						// Do not break upon reaching max opcode count anymore, we want those
+						// other section names and a note that we truncated:
+						// if opcodes_total >= opcodes_max {
+						// 	// we reached our max opcodes!
+						// 	line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
+						// 	break
+						// }
+						expected = expect_section | expect_block | expect_opcode
+						processed = true
 					}
-					break
 				}
-				opcodes_total += 1
-				// Do not break upon reaching max opcode count anymore, we want those
-				// other section names and a note that we truncated:
-				// if opcodes_total >= opcodes_max {
-				// 	// we reached our max opcodes!
-				// 	line, line_offset, line_more = nextline(stdout, line_offset, line_buffer)
-				// 	break
-				// }
-				expected = expect_section | expect_block | expect_opcode
-				processed = true
-			}
-		}
-
-		// Tackle ellipsis (consecutive nullbytes).
-		if !processed && (expected&expect_opcode) != 0 {
-			if result := re_ellipsis.FindStringSubmatch(line); len(result) > 0 {
-				processed = true
-			}
-		}
-
-		// The second most likely occurence is that we have a block (each
-		// section may have multiple blocks).
-		if !processed && (expected&expect_block) != 0 {
-			if result := re_block.FindStringSubmatch(line); len(result) > 0 {
-				// Create a new section block, depending on whether we can
-				// detect a name, we create a named block or not.
-				if len(result) >= 4 {
-					cur_block = &Block{Name: result[3], Offset: result[1]}
-				} else {
-					cur_block = &Block{Name: "unknown", Offset: result[1]}
+				// Tackle ellipsis (consecutive nullbytes).
+				if !processed && (expected&expect_opcode) != 0 {
+					if result := re_ellipsis.FindStringSubmatch(line); len(result) > 0 {
+						processed = true
+					}
 				}
-				cur_block.Offset = result[1]
-				opcodes_index = opcodes_total
-				cur_block.Start_index = opcodes_index
-				// Make sure to update the section.
-				cur_section.Blocks = append(cur_section.Blocks, cur_block)
-				// To be as open as possible, enable section, block and opcode
-				// as next expected. Theoretically it should be only opcode ...
-				expected = expect_opcode
-				processed = true
-			}
-		}
-
-		// Then we have the sections, which we should have a couple in each
-		// binary. Next to the file format this is the least likely to be hit.
-		// Whilst there is only one file format there may be quite a bunch of
-		// sections.
-		if !processed && (expected&expect_section) != 0 {
-			if result := re_section.FindStringSubmatch(line); len(result) > 0 {
-				if section, exists := map_sections[result[1]]; exists && section.initialized {
-					infoLogger.Printf("Error: Found duplicate section %s, ignoring.\n", result[1])
-				} else if exists {
-					cur_section = section
-					cur_section.initialized = true
-				} else {
-					// TODO: should this be a fatal error?
-					infoLogger.Println("Error: Found a section that was not described in the header: " + result[1])
+				// The second most likely occurence is that we have a block (each
+				// section may have multiple blocks).
+				if !processed && (expected&expect_block) != 0 {
+					if result := re_block.FindStringSubmatch(line); len(result) > 0 {
+						// Create a new section block, depending on whether we can
+						// detect a name, we create a named block or not.
+						if len(result) >= 4 {
+							cur_block = &Block{Name: result[3], Offset: result[1]}
+						} else {
+							cur_block = &Block{Name: "unknown", Offset: result[1]}
+						}
+						cur_block.Offset = result[1]
+						opcodes_index = opcodes_total
+						cur_block.Start_index = opcodes_index
+						// Make sure to update the section.
+						cur_section.Blocks = append(cur_section.Blocks, cur_block)
+						// To be as open as possible, enable section, block and opcode
+						// as next expected. Theoretically it should be only opcode ...
+						expected = expect_opcode
+						processed = true
+					}
 				}
-				expected = expect_block
-				processed = true
+				// Then we have the sections, which we should have a couple in each
+				// binary. Next to the file format this is the least likely to be hit.
+				// Whilst there is only one file format there may be quite a bunch of
+				// sections.
+				if !processed && (expected&expect_section) != 0 {
+					if result := re_section.FindStringSubmatch(line); len(result) > 0 {
+						if section, exists := map_sections[result[1]]; exists && section.initialized {
+							infoLogger.Printf("Error: Found duplicate section %s, ignoring.\n", result[1])
+						} else if exists {
+							cur_section = section
+							cur_section.initialized = true
+						} else {
+							// TODO: should this be a fatal error?
+							infoLogger.Println("Error: Found a section that was not described in the header: " + result[1])
+						}
+						expected = expect_block
+						processed = true
+					}
+				}
+				// This should only happen once and only at the start of the input.
+				// As such this comparison is last.
+				if !processed && (expected&expect_format) != 0 {
+					if result := re_fileformat.FindStringSubmatch(line); len(result) > 0 {
+						fileformat = result[1]
+						expected = expect_section
+						processed = true
+					} else {
+						infoLogger.Println("Fatal Error: Unable to determine file format.")
+						return nil, nil, errors.New("Unable to determine file format")
+					}
+				}
+				// Catch unprocessed error
+				if !processed {
+					infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='0x%s'.\n", line, strconv.FormatInt(int64(expected), 16))
+					return nil, nil, errors.New(fmt.Sprintf("Unexpected output '%s'", line))
+				}
 			}
-		}
-
-		// This should only happen once and only at the start of the input.
-		// As such this comparison is last.
-		if !processed && (expected&expect_format) != 0 {
-			if result := re_fileformat.FindStringSubmatch(line); len(result) > 0 {
-				fileformat = result[1]
-				expected = expect_section
-				processed = true
+			// check if we have truncated the output
+			// if there is no current section avoid null pointer dereference
+			var truncated bool
+			if cur_section == nil {
+				truncated = true
 			} else {
-				http.Error(f_response, "Unable to determine file format", 500)
-				infoLogger.Println("Fatal Error: Unable to determine file format.")
-				return
+				truncated = cur_section.Truncated
+				if line, more := <-lines; line != "" || more {
+					truncated = true
+				}
 			}
-		}
-
-		// Catch unprocessed error
-		if !processed {
-			http.Error(f_response, fmt.Sprintf("Unexpected output '%s'", line), 500)
-			infoLogger.Printf("Fatal Error: Unable to process unexpected output '%s'. Expected='0x%s'.\n", line, strconv.FormatInt(int64(expected), 16))
-			return
-		}
-	}
-
-	// check if we have truncated the output
-	// if there is no current section avoid null pointer dereference
-	var truncated bool
-	if cur_section == nil {
-		truncated = true
-	} else {
-		truncated = cur_section.Truncated
-		if line, more := <-lines; line != "" || more {
-			truncated = true
+			analysis_result.Fileformat = fileformat
+			analysis_result.NoOpcodes = opcodes_total
+			analysis_result.Truncated = truncated
+			analysis_result.Sections = map_sections
+			// wait for objdump to finish if it hasn't already
+			err = objdump.Wait()
 		}
 	}
-
-	// After all data is parsed, assemble json
-	type AnalysisResult struct {
-		Fileformat string              `json:"fileformat"`
-		NoOpcodes  int64               `json:"number_of_opcodes"`
-		Truncated  bool                `json:"truncated"`
-		Sections   map[string]*Section `json:"sections"`
-	}
-	analysis_result := &AnalysisResult{}
-	analysis_result.Fileformat = fileformat
-	analysis_result.NoOpcodes = opcodes_total
-	analysis_result.Truncated = truncated
-	analysis_result.Sections = map_sections
-	analysis_result_json, err := json.Marshal(analysis_result)
-
-	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
-	f_response.Write(analysis_result_json)
-
-	elapsed_time := time.Since(start_time)
-	infoLogger.Printf("Done, read a total of %d opcodes in %s.\n", opcodes_total, elapsed_time)
+	return analysis_result, err, nil
 }
 
 /**
@@ -559,25 +598,39 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 * on the stdout pipe instead of the whole output. TODO: use stdout instead of
 * complete output - might be more efficient (memory wise?)?.
  */
-func process_lines(s []byte, out chan string, done *bool) {
+func process_lines(stdout io.ReadCloser, out chan string, done *bool) {
+	// Param: done
+	//		this switch is necessary to let the lines processing goroutine
+	// 		know that it has to stop, furthermore we need to empty the channel to
+	//		avoid having a stuck lines processing goroutine (producer starvation)
 	var (
 		i    int
-		a    int = 0
-		size int = len(s)
+		a    int    = 0
+		s    []byte = make([]byte, 0x1000)
+		size int
+		err  error
 	)
-	for i = 0; i < size; i++ {
-		if *done {
+	for true {
+		size, err = stdout.Read(s)
+		if err != nil {
 			break
 		}
-		if s[i] == '\n' {
-			if i > a {
-				out <- string(s[a:i])
+		for i = 0; i < size && !*done; i++ {
+			if s[i] == '\n' {
+				if i > a {
+					out <- string(s[a:i])
+				}
+				a = i + 1
 			}
-			a = i + 1
 		}
 	}
 	if i > a && !*done {
 		out <- string(s[a:i])
 	}
 	close(out)
+	if err != nil {
+		if err != io.EOF {
+			infoLogger.Println("Error splitting lines:", err)
+		}
+	}
 }

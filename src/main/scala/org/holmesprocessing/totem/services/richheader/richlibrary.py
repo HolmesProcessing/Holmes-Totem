@@ -23,6 +23,16 @@ class RichLengthError(Exception):
 class FileReadError(Exception):
     pass
 
+def err2str(code):
+    return{
+        -2: "MZ signature not found",
+        -3: "PE signature not found",
+        -4: "Rich signature not found. This file probably has no Rich header.",
+        -5: "DanS signature not found. Rich header corrupt.",
+        -6: "Wrong header padding behind DanS signature. Rich header corrupt.",
+        -7: "Rich data length not a multiple of 8. Rich header corrupt.",
+        }[code]
+
 class RichLibrary:
 
     def __u32(self, x):
@@ -34,8 +44,8 @@ class RichLibrary:
     def __rol32(self, v, n):
         return ((v << (n & 0x1f)) & 0xffffffff) | (v >> (32 - (n & 0x1f)))
 
-    def parse(self, fname):
-        dat = open(fname, 'rb').read()
+    def parse(self):
+        dat = open(self.fname, 'rb').read()
 
         ## Do basic sanity checks on the PE
         if dat[0:][:2] != b'MZ':
@@ -103,16 +113,6 @@ class RichLibrary:
         return {'error': 0, 'cmpids': cmpids, 'csum_calc': chk, 'csum_file': csum,
                 'offset': dans}
 
-    def err2str(self, code):
-        return{
-            -2: "MZ signature not found",
-            -3: "PE signature not found",
-            -4: "Rich signature not found. This file probably has no Rich header.",
-            -5: "DanS signature not found. Rich header corrupt.",
-            -6: "Wrong header padding behind DanS signature. Rich header corrupt.",
-            -7: "Rich data length not a multiple of 8. Rich header corrupt.",
-        }[code]
-
     def __pprint_cmpids(self, cmpids):
         print("-" * (20 + 16 + 16))
         print("{:>20s}{:>16s}{:>16s}".format("Compiler Version", "Product ID",
@@ -139,6 +139,4 @@ class RichLibrary:
         self.data = {}
         self.SIZE_DOS_HEADER = 0x40
 
-        self.data = self.parse(path)
-
-        return data
+        self.fname = path

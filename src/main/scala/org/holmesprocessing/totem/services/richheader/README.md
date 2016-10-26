@@ -2,22 +2,22 @@
 
 ## Description
 
-The Rich Header service extracts the Rich Header from PE32 files. The resulting 
+The Rich Header service extracts the Rich Header from PE32 files. The resulting output is presented in JSON. 
 
 ## Output
 ```json
     "compids": [
         {
-            "mcv": "<string>",
-            "pid": "<string>",
-            "cnt": "<string>",
+            "mcv": "<str>",
+            "pid": "<str>",
+            "cnt": "<str>",
         }
     ],
     "compids_dup": <boolean>",
     "csum_calc": "<int>",
     "csum_file": "<int>",
     "csum_valid": <boolean>",
-    "err": <int>",
+    "error": <int>",
     "offset": <int>",
 }
 ```

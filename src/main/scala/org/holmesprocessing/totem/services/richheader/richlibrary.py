@@ -31,7 +31,6 @@ class RichLibrary:
     rol32 = lambda v, n: ((v << (n & 0x1f)) & 0xffffffff) | (v >> (32 - (n & 0x1f)))
 
     def parse(self, fname):
-
         dat = open(fname, 'rb').read()
 
         ## Do basic sanity checks on the PE
@@ -101,22 +100,16 @@ class RichLibrary:
                 'offset': dans}
 
     def err2str(self, code):
-        if code == -2:
-            return "MZ signature not found"
-        elif code == -3:
-            return "PE signature not found"
-        elif code == -4:
-            return "Rich signature not found. This file probably has no Rich header."
-        elif code == -5:
-            return "DanS signature not found. Rich header corrupt."
-        elif code == -6:
-            return "Wrong header padding behind DanS signature. Rich header corrupt."
-        elif code == -7:
-            return "Rich data length not a multiple of 8. Rich header corrupt."
-        else:
-            return "--- NO ERROR DESCRIPTION ---"
+        return{
+            -2: "MZ signature not found",
+            -3: "PE signature not found",
+            -4: "Rich signature not found. This file probably has no Rich header.",
+            -5: "DanS signature not found. Rich header corrupt.",
+            -6: "Wrong header padding behind DanS signature. Rich header corrupt.",
+            -7: "Rich data length not a multiple of 8. Rich header corrupt.",
+        }[code]
 
-    def pprint_cmpids(self, cmpids):
+    def __pprint_cmpids(self, cmpids):
         print("-" * (20 + 16 + 16))
         print("{:>20s}{:>16s}{:>16s}".format("Compiler Version", "Product ID",
             "Count"))
@@ -130,7 +123,7 @@ class RichLibrary:
         print("-" * (20 + 16 + 16))
 
     def pprint_header(self, data):
-        pprint_cmpids(data['cmpids'])
+        self.__pprint_cmpids(data['cmpids'])
         if rich['csum_calc'] == rich['csum_file']:
             print("\x1b[32mChecksums match! (0x{:08x})".format(rich['csum_calc']))
         else:
@@ -140,6 +133,6 @@ class RichLibrary:
 
     def __init__(self, path):
         self.data = {}
-
         self.data = self.parse(path)
+
         return data

@@ -24,11 +24,15 @@ class FileReadError(Exception):
     pass
 
 class RichLibrary:
-    SIZE_DOS_HEADER = 0x40
 
-    u32 = lambda x: struct.unpack("<I", x)[0]
-    p32 = lambda x: struct.pack("<I", x)
-    rol32 = lambda v, n: ((v << (n & 0x1f)) & 0xffffffff) | (v >> (32 - (n & 0x1f)))
+    def __u32(self, x):
+        return struct.unpack("<I", x)[0]
+
+    def __p32(self, x):
+        return struct.pack("<I", x)
+
+    def __rol32(self, v, n):
+        return ((v << (n & 0x1f)) & 0xffffffff) | (v >> (32 - (n & 0x1f)))
 
     def parse(self, fname):
         dat = open(fname, 'rb').read()
@@ -37,7 +41,7 @@ class RichLibrary:
         if dat[0:][:2] != b'MZ':
             raise MZSignatureError()
 
-        e_lfanew = u32(dat[0x3c:][:4])
+        e_lfanew = self.__u32(dat[0x3c:][:4])
         if dat[e_lfanew:][:2] != b'PE':
             raise PESignatureError()
 
@@ -45,23 +49,23 @@ class RichLibrary:
         ## the case (modified DOS stub). Instead, start searching backwards for
         ## 'Rich', stop at beginning of DOS header.
         rich = 0
-        for rich in range(e_lfanew, SIZE_DOS_HEADER, -1):
+        for rich in range(e_lfanew, self.SIZE_DOS_HEADER, -1):
             if dat[rich:][:4] == b'Rich':
                 break
 
-        if rich == SIZE_DOS_HEADER:
+        if rich == self.SIZE_DOS_HEADER:
             raise RichSignatureError()
 
         ## We found a valid 'Rich' signature in the header from here on
-        csum = u32(dat[rich + 4:][:4])
+        csum = self.__u32(dat[rich + 4:][:4])
 
         ## xor backwards with csum until either 'DanS' or end of the DOS header,
         ## invert the result to get original order
-        upack = [ u32(dat[i:][:4]) ^ csum for i in range(rich - 4, SIZE_DOS_HEADER, -4) ][::-1]
-        if u32(b'DanS') not in upack:
+        upack = [ self.__u32(dat[i:][:4]) ^ csum for i in range(rich - 4, self.SIZE_DOS_HEADER, -4) ][::-1]
+        if self.__u32(b'DanS') not in upack:
             raise DanSSignatureError()
 
-        upack = upack[upack.index(u32(b'DanS')):]
+        upack = upack[upack.index(self.__u32(b'DanS')):]
         dans = e_lfanew - len(upack) * 4 - (e_lfanew - rich)
 
         ## DanS is _always_ followed by three zero dwords
@@ -81,7 +85,7 @@ class RichLibrary:
             ## Mask out the e_lfanew field as it's not initialized yet
             if i in range(0x3c, 0x40):
                 continue
-            chk += rol32(dat[i], i)
+            chk += self.__rol32(dat[i], i)
 
         for i in range(0, len(upack), 2):
             cmpids.append({
@@ -91,7 +95,7 @@ class RichLibrary:
             })
             ## Exclude the "generic file" descriptor from the check sum
             #if cmpids[-1]['mcv'] & 0xffff != 0:
-            chk += rol32(upack[i + 0], upack[i + 1])
+            chk += self.__rol32(upack[i + 0], upack[i + 1])
 
         ## Truncate calculated checksum to 32 bit
         chk &= 0xffffffff
@@ -133,6 +137,8 @@ class RichLibrary:
 
     def __init__(self, path):
         self.data = {}
+        self.SIZE_DOS_HEADER = 0x40
+
         self.data = self.parse(path)
 
         return data

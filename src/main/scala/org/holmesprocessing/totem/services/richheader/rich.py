@@ -7,7 +7,7 @@ import traceback
 import os
 from os import path
 
-# imports for rick
+# imports for rich
 import richlibrary
 
 # imports for services

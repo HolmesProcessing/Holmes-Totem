@@ -67,7 +67,7 @@ var (
 	opcodes_max         int64
 	metadata            Metadata = Metadata{
 		Name:        "Objdump",
-		Version:     "1.2.1",
+		Version:     "1.2.2",
 		Description: "./README.md",
 		Copyright:   "Copyright 2016 Holmes Group LLC",
 		License:     "./LICENSE",
@@ -599,14 +599,17 @@ func analyze_disassembly(sample_path string, map_sections map[string]*Section) (
 * complete output - might be more efficient (memory wise?)?.
  */
 func process_lines(stdout io.ReadCloser, out chan string, done *bool) {
+	defer close(out)
 	// Param: done
 	//		this switch is necessary to let the lines processing goroutine
 	// 		know that it has to stop, furthermore we need to empty the channel to
 	//		avoid having a stuck lines processing goroutine (producer starvation)
 	var (
 		i    int
-		a    int    = 0
+		a    int
 		s    []byte = make([]byte, 0x1000)
+		lbuf []byte = make([]byte, 0)
+		nbuf []byte
 		size int
 		err  error
 	)
@@ -615,19 +618,33 @@ func process_lines(stdout io.ReadCloser, out chan string, done *bool) {
 		if err != nil {
 			break
 		}
+		a = 0
 		for i = 0; i < size && !*done; i++ {
 			if s[i] == '\n' {
-				if i > a {
-					out <- string(s[a:i])
+				if i > a || len(lbuf) > 0 { // skip empty lines (e.g. a=0, i=0), but then flush a non-empty lbuf
+					if len(lbuf) > 0 {
+						out <- string(lbuf) + string(s[a:i])
+						lbuf = make([]byte, 0)
+					} else {
+						out <- string(s[a:i])
+					}
 				}
 				a = i + 1
 			}
 		}
+		// append remaining unprocessed output to lbuf
+		if i > a && !*done {
+			nbuf = make([]byte, len(lbuf)+i-a)
+			copy(nbuf, lbuf)
+			copy(nbuf[len(lbuf):], s[a:i])
+			lbuf = nbuf
+		}
 	}
-	if i > a && !*done {
-		out <- string(s[a:i])
+	// process remaining output
+	if len(lbuf) > 0 && !*done {
+		out <- string(lbuf)
 	}
-	close(out)
+	// check error sequence (EOF is expected, anything else is unexpected)
 	if err != nil {
 		if err != io.EOF {
 			infoLogger.Println("Error splitting lines:", err)

@@ -23,6 +23,9 @@ import (
 
 	//Imports for request execution.
 	"os/exec"
+
+	// Import to reduce service memory footprint
+	"runtime/debug"
 )
 
 type Result struct {
@@ -56,12 +59,12 @@ var (
 	config    *Config
 	info      *log.Logger
 	ROPgadget string
-	metadata Metadata = Metadata {
-		Name        : "GoGadget",
-		Version     : "1.0",
-		Description : "./README.md",
-		Copyright   : "Copyright 2016 Holmes Group LLC",
-		License     : "./LICENSE",
+	metadata  Metadata = Metadata{
+		Name:        "GoGadget",
+		Version:     "1.0.1",
+		Description: "./README.md",
+		Copyright:   "Copyright 2016 Holmes Group LLC",
+		License:     "./LICENSE",
 	}
 )
 
@@ -119,7 +122,7 @@ func load_config(configPath string) (*Config, error) {
 			metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
-	
+
 	if metadata.License != "" {
 		if data, err := ioutil.ReadFile(string(metadata.License)); err == nil {
 			metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
@@ -143,6 +146,11 @@ func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter
 }
 
 func handler_analyze(f_response http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// ms-xy: calling FreeOSMemory manually drastically reduces the memory
+	// footprint at the cost of a little bit of cpu efficiency (due to gc runs
+	// after every call to handler_analyze)
+	defer debug.FreeOSMemory()
+
 	info.Println("Serving request:", request)
 	start_time := time.Now()
 
@@ -166,6 +174,16 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		info.Println(err)
 		return
 	}
+
+	// ms-xy: manually getting the stdin and closing it might not be relevant to
+	// this memleak, but it helped with objdump's, doing it as a preemptive measure
+	stdin, err := process.StdinPipe()
+	if err != nil {
+		http.Error(f_response, "Creating stdin pipe failed", 500)
+		info.Println(err)
+		return
+	}
+	stdin.Close()
 
 	if err := process.Start(); err != nil {
 		http.Error(f_response, "Executing ropgadget failed", 500)

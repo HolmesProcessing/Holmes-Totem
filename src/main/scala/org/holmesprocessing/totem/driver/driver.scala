@@ -55,7 +55,8 @@ object driver extends App with Instrumented {
     conf.getInt("totem.download_settings.connection_timeout"),
     conf.getString("totem.download_settings.download_directory"),
     conf.getInt("totem.download_settings.thread_multiplier"),
-    conf.getInt("totem.download_settings.request_timeout")
+    conf.getInt("totem.download_settings.request_timeout"),
+    conf.getBoolean("totem.download_settings.validate_ssl_cert")
   )
 
   println("Configuring details for Rabbit queues")

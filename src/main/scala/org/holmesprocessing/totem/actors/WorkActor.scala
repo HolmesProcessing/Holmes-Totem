@@ -94,6 +94,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
     .setExecutorService(execServ)
     .setAllowPoolingConnections( downloadconfig.connection_pooling )
     .setConnectTimeout( downloadconfig.connect_timeout )
+    .setAcceptAnyCertificate( downloadconfig.validate_ssl_cert )
     //.setMaxConnections(1)
     //.setMaxConnectionsPerHost(1)
     .setIOThreadMultiplier( downloadconfig.thread_multiplier ).build()

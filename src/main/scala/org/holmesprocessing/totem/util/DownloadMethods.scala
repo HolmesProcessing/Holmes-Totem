@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.{Logger, LazyLogging}
 import org.holmesprocessing.totem.types.{WorkState, WorkResult, TaskedWork}
 import org.slf4j.LoggerFactory
 
-case class DownloadSettings(connection_pooling: Boolean, connect_timeout: Int, download_directory: String, thread_multiplier: Int, request_timeout: Int)
+case class DownloadSettings(connection_pooling: Boolean, connect_timeout: Int, download_directory: String, thread_multiplier: Int, request_timeout: Int, validate_ssl_cert: Boolean)
 
 object DownloadMethods extends Instrumented with LazyLogging {
   val log = Logger(LoggerFactory.getLogger("name"))

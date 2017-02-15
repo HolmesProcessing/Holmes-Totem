@@ -31,3 +31,10 @@ libraryDependencies += "com.typesafe" % "config" % "1.2.1"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.7"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
+
+// https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.1.0"
+// https://mvnrepository.com/artifact/com.google.guava/guava
+// libraryDependencies += "com.google.guava" % "guava" % "21.0"
+
+unmanagedSourceDirectories in Compile += baseDirectory.value / "lib" / "Holmes-Planner-Monitor" / "java"

@@ -28,6 +28,8 @@ Holmes-TOTEM is built with the [Akka Toolkit](http://akka.io/) and performs best
 ### Compiling and Executing
 Holmes-Totem requires [Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) and we used the [SBT](http://www.scala-sbt.org/) build tool for dependency management and assembling.
 
+Additionally Holmes-Totem currently requires that you clone https://github.com/ms-xy/Holmes-Planner-Monitor to `lib/Holmes-Planner-Monitor` in your project repositry.
+
 ### Queuing Server
 [RabbitMQ](https://www.rabbitmq.com/) is the queuing server of choice for Holmes Processing. Other AMQP complaint services should work but are untested by Holmes Processing. For sending tasking to the queuing server, we recommend using [Holmes-Gateway](https://github.com/HolmesProcessing/Holmes-Gateway) for optimizing the tasking and handling user authentication. 
 

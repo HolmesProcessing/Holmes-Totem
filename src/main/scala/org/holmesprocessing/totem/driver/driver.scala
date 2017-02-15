@@ -1,10 +1,17 @@
 package org.holmesprocessing.totem.driver
 
-import java.util.concurrent.{Executors, ExecutorService}
+import java.util.concurrent.{ExecutorService, Executors}
+
+import collection.JavaConversions._
+import com.typesafe.config.ConfigObject
+
+import scala.util.matching.Regex.Match
+import scala.util.matching.Regex
+
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.holmesprocessing.totem.actors._
-import org.holmesprocessing.totem.monitoring.{MonitorActor}
+import org.holmesprocessing.totem.monitoring.MonitorActor
 import org.holmesprocessing.totem.services.asnmeta.{ASNMetaSuccess, ASNMetaWork}
 import org.holmesprocessing.totem.services.dnsmeta.{DNSMetaSuccess, DNSMetaWork}
 import org.holmesprocessing.totem.services.gogadget.{GoGadgetSuccess, GoGadgetWork}
@@ -17,12 +24,9 @@ import org.holmesprocessing.totem.services.shodan.{ShodanSuccess, ShodanWork}
 import org.holmesprocessing.totem.services.virustotal.{VirustotalSuccess, VirustotalWork}
 import org.holmesprocessing.totem.services.yara.{YaraSuccess, YaraWork}
 import org.holmesprocessing.totem.services.zipmeta.{ZipMetaSuccess, ZipMetaWork}
-
 import org.holmesprocessing.totem.types._
 import org.holmesprocessing.totem.util.DownloadSettings
-
 import org.holmesprocessing.totem.util.Instrumented
-
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
@@ -193,6 +197,22 @@ object driver extends App with Instrumented {
   MonitorActor.CreateInstance(system)
   MonitorActor.Connect(conf.getString("totem.statusModuleAddress"), "Holmes-Totem", "")
   MonitorActor.PublishLogs(Array("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks"))
+
+  val services = conf.getConfig("totem.services")
+  val ipv4 = """http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d+).*""".r
+  val ipv6 = """http://\[([a-zA-Z0-9:]+)\]:(\d+).*""".r
+  services.root.map { case (name: String, configObject: ConfigObject) =>
+    val config = configObject.toConfig
+    val uris = config.getStringList("uri")
+    val routing = config.getString("resultRoutingKey")
+    uris.map {case (uri: String) =>
+      val m = ipv4.findFirstMatchIn(uri)
+      val ip = m.get.subgroups(0)
+      val port = m.get.subgroups(1)
+      MonitorActor.PublishService(port.toInt, name, "")
+
+    }
+  }
 
   println("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks")
 

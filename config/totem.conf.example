@@ -1,6 +1,8 @@
 totem {
   version = "0.5.0"
 
+  statusModuleAddress = "127.0.0.1:9016"
+
   download_settings {
     connection_pooling = true
     connection_timeout = 1000

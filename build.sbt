@@ -36,5 +36,7 @@ libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
 libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.1.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 // libraryDependencies += "com.google.guava" % "guava" % "21.0"
+// https://mvnrepository.com/artifact/net.java.dev.jna/jna
+libraryDependencies += "net.java.dev.jna" % "jna" % "4.3.0"
 
 unmanagedSourceDirectories in Compile += baseDirectory.value / "lib" / "Holmes-Planner-Monitor" / "java"

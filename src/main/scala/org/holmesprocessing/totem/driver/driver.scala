@@ -210,7 +210,6 @@ object driver extends App with Instrumented {
       val ip = m.get.subgroups(0)
       val port = m.get.subgroups(1)
       MonitorActor.PublishService(port.toInt, name, "")
-
     }
   }
 

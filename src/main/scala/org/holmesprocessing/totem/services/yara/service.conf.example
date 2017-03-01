@@ -1,7 +1,0 @@
-[settings]
-Port        = 8080
-
-[yara_rules]
-get_remote = False
-download_url = <https://127.0.0.1/services/yara/rules>
-local_path = rules.yar

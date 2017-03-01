@@ -1,6 +1,0 @@
-[settings]
-Port        = 8080
-
-[dnsmeta]
-dns_server  = 8.8.8.8
-rdtypes     = A,AAAA,NS,MX,SOA,CNAME,TXT,PTR

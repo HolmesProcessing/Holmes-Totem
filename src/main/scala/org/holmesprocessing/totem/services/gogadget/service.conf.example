@@ -1,0 +1,5 @@
+{
+	"HTTPBinding": ":8080",
+	"MaxNumberOfGadgets": 10000,
+	"SearchDepth": 10
+}

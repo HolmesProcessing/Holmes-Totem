@@ -1,0 +1,136 @@
+version: '2'
+services:
+  asnmeta:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/asnmeta
+      args:
+        conf: ${CONFSTORAGE_ASNMETA}service.conf
+    ports:
+      - "9700:8080"
+    restart: unless-stopped
+
+  dnsmeta:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/dnsmeta
+      args:
+        conf: ${CONFSTORAGE_DNSMETA}service.conf
+    ports:
+      - "9710:8080"
+    restart: unless-stopped
+
+  passivetotal:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/passivetotal
+      args:
+        conf: ${CONFSTORAGE_PASSIVETOTAL}service.conf
+    ports:
+      - "9720:8080"
+    restart: unless-stopped
+
+  shodan:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/shodan
+      args:
+        conf: ${CONFSTORAGE_SHODAN}service.conf
+    ports:
+      - "9730:8080"
+    restart: unless-stopped
+
+  gogadget:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/gogadget
+      args:
+        conf: ${CONFSTORAGE_GOGADGET}service.conf
+    ports:
+      - "7700:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
+  objdump:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/objdump
+      args:
+        conf: ${CONFSTORAGE_OBJDUMP}service.conf
+    ports:
+      - "7710:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
+  peid:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/peid
+      args:
+        conf: ${CONFSTORAGE_PEID}service.conf
+    ports:
+      - "7720:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
+  peinfo:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/peinfo
+      args:
+        conf: ${CONFSTORAGE_PEINFO}service.conf
+    ports:
+      - "7730:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
+  richheader:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/richheader
+      args:
+        conf: ${CONFSTORAGE_RICHHEADER}service.conf
+    ports:
+      - "7740:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro
+
+  virustotal:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/virustotal
+      args:
+        conf: ${CONFSTORAGE_VIRUSTOTAL}service.conf
+    ports:
+      - "7750:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro
+
+  yara:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/yara
+      args:
+        conf: ${CONFSTORAGE_YARA}service.conf
+    ports:
+      - "7760:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro
+
+  zipmeta:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/zipmeta
+      args:
+        conf: ${CONFSTORAGE_ZIPMETA}service.conf
+    ports:
+      - "7770:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro
+
+  pdfparse:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/pdfparse
+      args:
+        conf: ${CONFSTORAGE_PDFPARSE}service.conf
+    ports:
+      - "7780:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro

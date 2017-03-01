@@ -156,7 +156,7 @@ object driver extends App with Instrumented {
         case ("ZIPMETA", li: List[String]) =>
           ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case ("PDFPARSE", li: List[String]) =>
-          ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "PDFPARSE", GeneratePartial("PDFPARSE"), li)
+          pdfparseWork(key, uuid_filename, taskingConfig.default_service_timeout, "PDFPARSE", GeneratePartial("PDFPARSE"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.

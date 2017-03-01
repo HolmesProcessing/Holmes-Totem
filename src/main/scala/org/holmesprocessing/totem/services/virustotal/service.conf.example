@@ -1,0 +1,6 @@
+{
+	"HTTPBinding": ":8080",
+	"ApiKey": "PutYourKeyHere",
+	"UploadUnknownSamples": false,
+	"RequestTimeout": 60
+}

@@ -1,0 +1,109 @@
+totem {
+  version = "0.5.0"
+
+  download_settings {
+    connection_pooling = true
+    connection_timeout = 1000
+    download_directory = "/tmp/"
+    thread_multiplier = 4
+    request_timeout = 1000
+  }
+
+  tasking_settings {
+    default_service_timeout = 180
+    prefetch = 3
+    retry_attempts = 3
+  }
+
+  rabbit_settings {
+    requeueKey = "requeue.static.totem"
+    host {
+      server = "127.0.0.1"
+      port = 5672
+      username = "guest"
+      password = "guest"
+      vhost = "/"
+    }
+    exchange {
+      name = "totem"
+      type = "topic"
+      durable = true
+    }
+    workqueue {
+      name = "totem_input"
+      routing_key = "work.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+    resultsqueue {
+      name = "totem_output"
+      routing_key = "*.result.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+    misbehavequeue {
+      name = "totem_misbehave"
+      routing_key = "misbehave.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+  }
+
+  services {
+    asnmeta {
+      uri = ["http://127.0.0.1:9700/analyze/?obj="]
+      resultRoutingKey = "asnmeta.result.static.totem"
+    }
+    dnsmeta {
+      uri = ["http://127.0.0.1:9710/analyze/?obj="]
+      resultRoutingKey = "dnsmeta.result.static.totem"
+    }
+    passivetotal {
+      uri = ["http://127.0.0.1:9720/analyze/?obj="]
+      resultRoutingKey = "passivetotal.result.static.totem"
+    }
+    shodan {
+      uri = ["http://127.0.0.1:9730/analyze/?obj="]
+      resultRoutingKey = "shodan.result.static.totem"
+    }
+    gogadget {
+      uri = ["http://127.0.0.1:7700/analyze/?obj="]
+      resultRoutingKey = "gogadget.result.static.totem"
+    }
+    objdump {
+      uri = ["http://127.0.0.1:7710/analyze/?obj="]
+      resultRoutingKey = "objdump.result.static.totem"
+    }
+    peid {
+      uri = ["http://127.0.0.1:7720/analyze/?obj="]
+      resultRoutingKey = "peid.result.static.totem"
+    }
+    peinfo {
+      uri = ["http://127.0.0.1:7730/analyze/?obj="]
+      resultRoutingKey = "peinfo.result.static.totem"
+    }
+    richheader {
+      uri = ["http://127.0.0.1:7740/analyze/?obj="]
+      resultRoutingKey = "richheader.result.static.totem"
+    }
+    virustotal {
+      uri = ["http://127.0.0.1:7750/analyze/?obj="]
+      resultRoutingKey = "virustotal.result.static.totem"
+    }
+    yara {
+      uri = ["http://127.0.0.1:7760/analyze/?obj="]
+      resultRoutingKey = "yara.result.static.totem"
+    }
+    zipmeta {
+      uri = ["http://127.0.0.1:7770/analyze/?obj="]
+      resultRoutingKey = "zipmeta.result.static.totem"
+    }
+    pdfparse {
+      uri = ["http://127.0.0.1:7780/analyze/?obj="]
+      resultRoutingKey = "pdfparse.result.static.totem"
+    }
+  }
+}

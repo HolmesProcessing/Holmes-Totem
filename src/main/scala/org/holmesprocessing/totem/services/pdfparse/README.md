@@ -7,11 +7,11 @@ A simple service to extract the ROP Gadgets of a binary file.
 ### Output
 ```json
 results = {
-	"Comments": "<string>",
-	"XREF": "<string>",
-	"Trailer": "<sting>",
-	"StartXref": "<string>",
-	"IndirectObject": "<string>"
+	"Comments": <int> ,
+	"XREF": <int>,
+	"Trailer": <int>,
+	"StartXref": <int>,
+	"IndirectObject": <int>
 }
 ```
 

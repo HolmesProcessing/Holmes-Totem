@@ -7,6 +7,7 @@ totem {
     download_directory = "/tmp/"
     thread_multiplier = 4
     request_timeout = 1000
+    validate_ssl_cert = true
   }
 
   tasking_settings {

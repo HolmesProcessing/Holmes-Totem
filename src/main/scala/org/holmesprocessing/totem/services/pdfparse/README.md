@@ -2,12 +2,12 @@
 
 ## Description
 
-A simple service to extract the ROP Gadgets of a binary file.
+A simple service that parses the pdf file. This service explores the structure of the pdf file and dumps the object content into JSON format.
 
 ### Output
 ```json
 results = {
-	"Comments": <int> ,
+	"Comments": <int>,
 	"XREF": <int>,
 	"Trailer": <int>,
 	"StartXref": <int>,

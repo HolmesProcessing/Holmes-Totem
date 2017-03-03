@@ -1,29 +1,26 @@
 package main
 
 import (
-	//"time"
-	"io/ioutil"
-	"path/filepath"
-	"fmt"
 	"bufio"
 	"encoding/json"
-	//"runtime/debug"
+	"flag"
+	"fmt"
+	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
-	"flag"
+	"path/filepath"
 	"strconv"
 	"strings"
-	"github.com/julienschmidt/httprouter"
-	"net/http"	
-	"log"
-	
 )
 
 var (
-	config    *Config
-	info      *log.Logger
+	config   *Config
+	info     *log.Logger
 	pdfparse string
-	metadata  Metadata = Metadata{
+	metadata Metadata = Metadata{
 		Name:        "pdfparse",
 		Version:     "0.1",
 		Description: "./README.md",
@@ -33,14 +30,15 @@ var (
 )
 
 type Result struct {
-	Comments int `json:"Comments"`
-	XREF int	`json:"XREF"`
-	Trailer int	`json:"Trailer"`
-	StartXref int	`json:"StartXref"`
-	IndirectObject int `json:"IndirectObject"`
+	Comments       int `json:"Comments"`
+	XREF           int `json:"XREF"`
+	Trailer        int `json:"Trailer"`
+	StartXref      int `json:"StartXref"`
+	IndirectObject int `json:"IndirectObjects"`
 }
 type Config struct {
-	HTTPBinding string
+	HTTPBinding        string
+	MaxNumberOfObjects int
 }
 
 type Metadata struct {
@@ -54,14 +52,14 @@ type Metadata struct {
 func main() {
 
 	var (
-		err error
+		err        error
 		configPath string
 	)
 	info = log.New(os.Stdout, "", log.Ltime|log.Lshortfile)
-	
+
 	flag.StringVar(&configPath, "config", "", "Path to the configuration file")
 	flag.Parse()
-	
+
 	config, err = load_config(configPath)
 	if err != nil {
 		log.Fatalln("Couldn't decode config file without errors!", err.Error())
@@ -129,14 +127,14 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		//info.Println(err)
 		return
 	}
-	process := exec.Command("pdfparse","--stats",sample_path)
-	
+	process := exec.Command("pdfparse", "--stats", sample_path)
+
 	stdout, err := process.StdoutPipe()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	
+
 	stdin, err := process.StdinPipe()
 	if err != nil {
 		fmt.Println(err)
@@ -148,22 +146,23 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		fmt.Println(err)
 		return
 	}
-	
+
 	line := bufio.NewScanner(stdout)
-	counter := 0
+
+	// taking first five lines
 	var final [5]int
-	for line.Scan() {
+	for i := 0; i < 5; i++ {
+		line.Scan()
 		lineSplit := strings.Split(line.Text(), ": ")
-		final[counter], err = strconv.Atoi(lineSplit[0])
-		counter++
+		final[i], err = strconv.Atoi(lineSplit[1])
 	}
 
-	result := &Result {
-		Comments: final[0],
-		XREF : final[1],
-		Trailer : final[2],
-		StartXref : final[3],
-		IndirectObject : final[4],
+	result := &Result{
+		Comments:       final[0],
+		XREF:           final[1],
+		Trailer:        final[2],
+		StartXref:      final[3],
+		IndirectObject: final[4],
 	}
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")

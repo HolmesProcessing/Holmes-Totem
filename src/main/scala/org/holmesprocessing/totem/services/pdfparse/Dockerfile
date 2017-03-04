@@ -28,7 +28,7 @@ RUN apk del --purge \
 		git \
 	&& rm -rf /var/cache/apk/* yara-3.5.0
 
-RUN pip install pdfparse
+RUN pip install pdfparse --upgrade
 
 # add the files to the container
 COPY LICENSE /service

@@ -30,12 +30,20 @@ var (
 )
 
 type Result struct {
-	Comments       int `json:"Comments"`
-	XREF           int `json:"XREF"`
-	Trailer        int `json:"Trailer"`
-	StartXref      int `json:"StartXref"`
-	IndirectObject int `json:"IndirectObjects"`
+	Truncated      bool      `json:"Truncated"`
+	Comments       int       `json:"Comments"`
+	XREF           int       `json:"XREF"`
+	Trailer        int       `json:"Trailer"`
+	StartXref      int       `json:"StartXref"`
+	IndirectObject int       `json:"IndirectObjects"`
+	Objects        []*Object `json:"Objects"`
 }
+
+type Object struct {
+	Category string `json:"Category"`
+	Values   []int  `json:"Values"`
+}
+
 type Config struct {
 	HTTPBinding        string
 	MaxNumberOfObjects int
@@ -158,11 +166,52 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	result := &Result{
+		Truncated:      false,
 		Comments:       final[0],
 		XREF:           final[1],
 		Trailer:        final[2],
 		StartXref:      final[3],
 		IndirectObject: final[4],
+		Objects:        make([]*Object, config.MaxNumberOfObjects),
+	}
+
+	counter := 0
+
+	for line.Scan() {
+		var values = []int{}
+		lineSplit := strings.Split(line.Text(), ": ")
+		name := lineSplit[0]
+		value := strings.Split(lineSplit[1], ", ")
+
+		// convert this array of strings to array of integers
+		for _, i := range value {
+			j, err := strconv.Atoi(i)
+			if err != nil {
+				panic(err)
+			}
+			values = append(values, j)
+		}
+
+		result.Objects[counter] = &Object{
+			Category: name[1 : len(name)-2],
+			Values:   values,
+		}
+		counter++
+
+		if counter == config.MaxNumberOfObjects {
+			result.Truncated = true
+			break
+		}
+	}
+
+	if result.Truncated {
+		// if we reached the max amount of objects and breaked we need to throw the rest away
+		for line.Text() != "" {
+			line.Scan()
+		}
+	} else {
+		// if not, we need to throw away the unused array slices
+		result.Objects = result.Objects[:counter]
 	}
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
@@ -170,7 +219,6 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	if err := json2http.Encode(result); err != nil {
 		http.Error(f_response, "Generating JSON failed", 500)
-		//info.Println("JSON encoding failed", err.Error())
 		return
 	}
 }

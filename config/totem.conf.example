@@ -102,5 +102,9 @@ totem {
       uri = ["http://127.0.0.1:7770/analyze/?obj="]
       resultRoutingKey = "zipmeta.result.static.totem"
     }
+    pdfparse {
+      uri = ["http://127.0.0.1:7780/analyze/?obj="]
+      resultRoutingKey = "pdfparse.result.static.totem"
+    }
   }
 }

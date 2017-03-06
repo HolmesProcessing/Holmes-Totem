@@ -19,4 +19,5 @@ export CONFSTORAGE_SHODAN=${CONFSTORAGE}shodan/
 export CONFSTORAGE_VIRUSTOTAL=${CONFSTORAGE}virustotal/
 export CONFSTORAGE_YARA=${CONFSTORAGE}yara/
 export CONFSTORAGE_ZIPMETA=${CONFSTORAGE}zipmeta/
-docker-compose -f ./docker-compose.yml.example up -d --build
+export CONFSTORAGE_PDFPARSE=${CONFSTORAGE}pdfparse/
+docker-compose -f ./docker-compose.yml up -d --build

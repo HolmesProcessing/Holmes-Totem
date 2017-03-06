@@ -256,3 +256,4 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
       log.error("WorkActor: received a message I cannot match against: {}", sender(), msg)
   }
 }
+

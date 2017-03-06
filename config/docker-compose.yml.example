@@ -123,3 +123,14 @@ services:
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro
+
+  pdfparse:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/pdfparse
+      args:
+        conf: ${CONFSTORAGE_PDFPARSE}service.conf
+    ports:
+      - "7780:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro

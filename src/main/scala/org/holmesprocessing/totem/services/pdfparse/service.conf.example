@@ -1,0 +1,4 @@
+{
+	"HTTPBinding": ":8080",
+	"MaxNumberofObjects": 1000
+}

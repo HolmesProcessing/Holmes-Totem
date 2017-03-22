@@ -2,7 +2,7 @@
 
 ## Description
 
-A simple service for gathering ANS information about an ip address
+A simple service for gathering ANS information about an IP address
 
 ## Usage
 

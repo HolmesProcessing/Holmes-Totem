@@ -20,7 +20,7 @@ RUN apk add --no-cache \
 ###
 
 # add dependencies for asnmeta
-RUN pip install dnspython3
+RUN pip3 install dnspython
 
 # add the files to the container
 COPY LICENSE /service

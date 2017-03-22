@@ -1,0 +1,93 @@
+totem {
+  version = "0.5.0"
+
+  download_settings {
+    connection_pooling = true
+    connection_timeout = 5000
+    download_directory = "/tmp/"
+    thread_multiplier = 4
+    request_timeout = 5000
+  }
+
+  tasking_settings {
+    default_service_timeout = 60
+    prefetch = 3
+    retry_attempts = 3
+  }
+
+  rabbit_settings {
+    requeueKey = "requeue.static.totem"
+    host {
+      server = "127.0.0.1"
+      port = 5672
+      username = "guest"
+      password = "guest"
+      vhost = "/"
+    }
+    exchange {
+      name = "totem"
+      type = "topic"
+      durable = true
+    }
+    workqueue {
+      name = "totem_input"
+      routing_key = "work.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+    resultsqueue {
+      name = "totem_output"
+      routing_key = "*.result.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+    misbehavequeue {
+      name = "totem_misbehave"
+      routing_key = "misbehave.static.totem"
+      durable = true
+      exclusive = false
+      autodelete = false
+    }
+  }
+
+  services {
+    asnmeta {
+      uri = ["http://127.0.0.1:9700/asnmeta/"]
+      resultRoutingKey = "asnmeta.result.static.totem"
+    }
+    dnsmeta {
+      uri = ["http://127.0.0.1:9710/dnsmeta/"]
+      resultRoutingKey = "dnsmeta.result.static.totem"
+    }
+    gogadget {
+      uri = ["http://127.0.0.1:7700/gogadget/"]
+      resultRoutingKey = "gogadget.result.static.totem"
+    }
+    objdump {
+      uri = ["http://127.0.0.1:7710/objdump/"]
+      resultRoutingKey = "objdump.result.static.totem"
+    }
+    peid {
+      uri = ["http://127.0.0.1:7720/peid/"]
+      resultRoutingKey = "peid.result.static.totem"
+    }
+    peinfo {
+      uri = ["http://127.0.0.1:7730/peinfo/"]
+      resultRoutingKey = "peinfo.result.static.totem"
+    }
+    virustotal {
+      uri = ["http://127.0.0.1:7740/virustotal/"]
+      resultRoutingKey = "virustotal.result.static.totem"
+    }
+    yara {
+      uri = ["http://127.0.0.1:7750/yara/"]
+      resultRoutingKey = "yara.result.static.totem"
+    }
+    zipmeta {
+      uri = ["http://127.0.0.1:7760/zipmeta/"]
+      resultRoutingKey = "zipmeta.result.static.totem"
+    }
+  }
+}

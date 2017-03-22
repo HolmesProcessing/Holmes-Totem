@@ -1,6 +1,5 @@
 *.class
 *.log
-*.pyc
 
 # sbt specific
 .cache
@@ -20,7 +19,16 @@ project/plugins/project/
 .idea/
 *.iml
 
-# Service test files
+# ENSIME specific
+.ensime_cache/
+.ensime
+
+###
+# Holmes Processing Specific
+###
+
+# Service files
+*.pyc
 .yar
 
 # blacklist config files

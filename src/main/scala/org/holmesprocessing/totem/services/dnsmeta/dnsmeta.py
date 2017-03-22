@@ -22,7 +22,7 @@ Metadata = {
     "Name"        : "DNSMeta",
     "Version"     : "1.0",
     "Description" : "./README.md",
-    "Copyright"   : "Copyright 2016 Holmes Group LLC",
+    "Copyright"   : "Copyright 2017 Holmes Group LLC",
     "License"     : "./LICENSE"
 }
 
@@ -98,7 +98,7 @@ class DNSApp(tornado.web.Application):
 def main():
     server = tornado.httpserver.HTTPServer(DNSApp())
     server.listen(Config.settings.port)
-    tornado.ioloop.IOLoop.instance().start()
+    tornado.ioloop.IOLoop.current().start()
 
 if __name__ == '__main__':
     main()

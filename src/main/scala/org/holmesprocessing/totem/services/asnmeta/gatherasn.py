@@ -22,7 +22,7 @@ class GatherASN:
 
 
     def _parse_results(self, data):
-        return [out.strip() for out in data.rrset[0].strings[0].split('|')]
+        return [out.strip() for out in data.rrset[0].strings[0].decode().split('|')]
 
 
     def _perform_query(self, domain, rdtype):

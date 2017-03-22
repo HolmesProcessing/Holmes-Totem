@@ -20,9 +20,9 @@ Metadata = {
     "Name"        : "ASNMeta",
     "Version"     : "1.0",
     "Description" : "./README.md",
-    "Copyright"   : "Copyright 2016 Holmes Group LLC",
     "License"     : "./LICENSE"
 }
+
 
 def ASNMetaRun(ipaddress):
     asninfo = gatherasn.GatherASN(ipaddress,
@@ -88,7 +88,6 @@ class ASNApp(tornado.web.Application):
         handlers = [
             (r'/', Info),
             (r'/analyze/', ASNMetaProcess),
-            #(r'/asnmeta/((?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$)', ASNMetaProcess)
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -101,8 +100,7 @@ class ASNApp(tornado.web.Application):
 def main():
     server = tornado.httpserver.HTTPServer(ASNApp())
     server.listen(Config.settings.port)
-    tornado.ioloop.IOLoop.instance().start()
-
+    tornado.ioloop.IOLoop.current().start()
 
 if __name__ == '__main__':
     main()

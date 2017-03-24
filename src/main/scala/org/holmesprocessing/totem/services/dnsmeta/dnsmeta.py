@@ -22,9 +22,9 @@ Metadata = {
     "Name"        : "DNSMeta",
     "Version"     : "1.0",
     "Description" : "./README.md",
-    "Copyright"   : "Copyright 2017 Holmes Group LLC",
     "License"     : "./LICENSE"
 }
+
 
 def DNSMetaRun(domain):
     data = {}

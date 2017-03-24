@@ -40,8 +40,7 @@ class GatherDNS:
         """ 
         Converts rdtype to human readable form
         Design pattern was there, so I ran with it. I pulled the additional resource records, which includes experimental and obsolete entries from wikipedia.
-        http://en.wikipedia.org/wiki/List_of_DNS_record_types 
-        -jg
+        http://en.wikipedia.org/wiki/List_of_DNS_record_types
         """
         return {
             1: 'A',             # a host address

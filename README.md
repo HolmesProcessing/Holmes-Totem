@@ -42,59 +42,61 @@ The supplied services rely on [Docker](https://docs.docker.com/) and [Docker-Com
 ### Automated
 [Holmes-Toolbox](https://github.com/HolmesProcessing/Holmes-Toolbox) provides install scripts for quick installation. 
 
-### Manual
+### Manual (recommended)
 1) Clone the Git Repository and Change Directory
 ```shell
-git clone https://github.com/HolmesProcessing/Holmes-Totem.git
-cd Holmes-Totem
+$ git clone https://github.com/HolmesProcessing/Holmes-Totem.git
+$ cd Holmes-Totem
 ```
 
 2) Compile Holmes-TOTEM
 Holmes-TOTEM uses SBT to download all dependencies and compile the source into a working JAR file.
 ```shell
-sbt assembly
+$ sbt assembly
 ```
-The assembled jar file will be located in `./target/scala-2.11/totem-assembly-1.0.jar`
+The assembled jar file will be located in `./target/scala-2.11/totem-assembly-0.5.0.jar`
 
 ## Configuration
 1) Perform Totem Configuration
+
 Holmes-TOTEM is packaged with sane configuration defaults for Holmes-TOTEM and Docker-Compose. These configuration settings will configure the system to use all available Holmes-TOTEM services. These default configuration can be used by removing the `.example` tag at the end of the file name.
 ```shell
-cp ./config/totem.conf.example ./config/totem.conf
-cp ./config/docker-compose.yml.example ./config/docker-compose.yml.example
+$ cp ./config/totem.conf.example ./config/totem.conf
+$ cp ./config/docker-compose.yml.example ./config/docker-compose.yml
 ```
 After the files are created, please perform any adjustments to the configuration to match your environment and needs. You will most likely need to adjust the values for `rabbit_settings`.
 
 2) Perform Service Configuration
-Holmes-TOTEM provides a number of standard services that are packaged as Docker containers. These containers will manage all dependencies but configuration is still required. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf`. However, some services will require an API key or additional information to execute. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
+
+Holmes-TOTEM provides a number of standard services that are packaged as Docker containers. These containers will manage all dependencies but configuration is still required. In most cases this should be as simple as renaming the `service.conf.example` file to `service.conf` for each of the available services. However, some services will require an API key or additional information to execute. For more information and details on the options available, please visit the directory and read the `README.md` for each service `./src/main/scala/org/holmesprocessing/totem/services/`
 
 ## Using Configuration Files From Holmes-Storage
 Holmes-TOTEM allows you to upload the configuration files for the individual services to Holmes-Storage. You can upload individual files manually:
 ```shell
-curl -F config=@${confPath} http://${storageIP}:${storagePort}/config/${serviceName}/service.conf
+$ curl -F config=@${confPath} http://${storageIP}:${storagePort}/config/${serviceName}/service.conf
 ```
 or you can use the script to automatically upload all your service.conf-files:
 ```shell
-cd config
-./upload_configs.sh ${storageIP}:${storagePath}
+$ cd config
+$ ./upload_configs.sh ${storageIP}:${storagePath}
 ```
 This script will go through each service and look for the file "service.conf" and upload it. If there is no such file, it will upload the file "service.conf.example", if it exists. Before uploading, the script asks for each file individually, since existing configurations on storage are overwritten.
 
 In order to use these uploaded configuration files, use the script
 ```shell
-cd config
-./compose_download_conf.sh ${storageIP}:${storagePath}
+$ cd config
+$ ./compose_download_conf.sh ${storageIP}:${storagePath}
 ```
 
 ## Running Holmes-TOTEM
 1) Start the Services
 ```shell
-docker-compose -f ./config/docker-compose.yml up -d
+$ docker-compose -f ./config/docker-compose.yml up -d
 ```
 
 2) Execute Holmes-TOTEM
 ```shell
-java -jar ./target/scala-2.11/totem-assembly-1.0.jar
+$ java -jar ./target/scala-2.11/totem-assembly-0.5.0.jar
 ```
 
 ## Tasking Holmes-TOTEM
@@ -116,7 +118,7 @@ URI = "<Storage URL>" + SAMPLE
                 "secondaryURI": URI,  #back up URI to download the file
                 "filename": SAMPLE,   #filename of the sample, or identifier (i.e. domain name) if !download 
                 "tasks": {            #list or tasks to execute with optional arguments
-                        "PEID": []
+                        "PEID": [],
                         "YARA": [],
                         "PEINFO": [],
                 },

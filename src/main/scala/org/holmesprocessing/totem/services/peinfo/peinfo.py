@@ -495,6 +495,8 @@ class PEInfoProcess(tornado.web.RequestHandler):
             self.write(data)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
+        except TypeError as e:
+            raise tornado.web.HTTPError(500)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 

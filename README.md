@@ -21,6 +21,8 @@ Holmes-Totem is pre-packaged with with a number of static analysis and query Ser
 | VirusTotal | Binary | Returns available [VirusTotal](https://www.virustotal.com/) information with a public or private key |
 | Yara | File | Performs [Yara signature](http://virustotal.github.io/yara/) matching with a default rule pack or custom rule |
 | ZipMeta | Zip | Provides meta information contained in zip files |
+| PDFparse | PDF | This service explores the structure of the pdf file and dumps the object content into JSON format |
+| Shodan | IPv4/IPv6 | A service for gathering Shodan information about an IP address |
 
 ## Dependencies
 Holmes-TOTEM is built with the [Akka Toolkit](http://akka.io/) and performs best with [Oracle's Java 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html). When executing tasks, Holmes-TOTEM requires an HTTP complaint server for delivering files, a database for storing results, and a queuing server for organizing tasking.
@@ -40,7 +42,7 @@ The supplied services rely on [Docker](https://docs.docker.com/) and [Docker-Com
 ## Installation
 
 ### Automated
-[Holmes-Toolbox](https://github.com/HolmesProcessing/Holmes-Toolbox) provides install scripts for quick installation. 
+Work In Progress 
 
 ### Manual (recommended)
 1) Clone the Git Repository and Change Directory

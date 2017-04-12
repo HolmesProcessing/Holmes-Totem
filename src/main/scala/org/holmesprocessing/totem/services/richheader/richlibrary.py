@@ -44,7 +44,7 @@ class RichLibrary:
     def __rol32(self, v, n):
         return ((v << (n & 0x1f)) & 0xffffffff) | (v >> (32 - (n & 0x1f)))
 
-    def csum(self, raw_dat, compids, off):
+    def generate_csum(self, raw_dat, compids, off):
         csum = off
 
         for i in range(off):
@@ -111,7 +111,7 @@ class RichLibrary:
             })
 
         ## Bonus feature: Calculate and check the check sum csum
-        chk = self.csum(dat, cmpids, dans)
+        chk = self.generate_csum(dat, cmpids, dans)
 
         return {'error': 0, 'cmpids': cmpids, 'csum_calc': chk, 'csum_file': csum,
                 'offset': dans}

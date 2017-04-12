@@ -199,17 +199,17 @@ object driver extends App with Instrumented {
   MonitorActor.PublishLogs(Array("Totem version " + conf.getString("totem.version") + " is running and ready to receive tasks"))
 
   val services = conf.getConfig("totem.services")
-  val ipv4 = """http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d+).*""".r
-  val ipv6 = """http://\[([a-zA-Z0-9:]+)\]:(\d+).*""".r
+//  val ipv4 = """http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d+).*""".r
+//  val ipv6 = """http://\[([a-zA-Z0-9:]+)\]:(\d+).*""".r
   services.root.map { case (name: String, configObject: ConfigObject) =>
     val config = configObject.toConfig
     val uris = config.getStringList("uri")
     val routing = config.getString("resultRoutingKey")
     uris.map {case (uri: String) =>
-      val m = ipv4.findFirstMatchIn(uri)
-      val ip = m.get.subgroups(0)
-      val port = m.get.subgroups(1)
-      MonitorActor.PublishService(port.toInt, name, "")
+//      val m = ipv4.findFirstMatchIn(uri)
+//      val ip = m.get.subgroups(0)
+//      val port = m.get.subgroups(1)
+      MonitorActor.PublishService(uri, name, "")
     }
   }
 

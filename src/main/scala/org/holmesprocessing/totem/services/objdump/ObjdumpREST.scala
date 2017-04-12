@@ -5,12 +5,13 @@ import dispatch.{url, _}
 import org.json4s.JsonAST.{JString, JValue}
 import org.holmesprocessing.totem.types.{TaskedWork, WorkFailure, WorkResult, WorkSuccess}
 import collection.mutable
+import org.holmesprocessing.totem.monitoring.MonitorActor
 
 
 case class ObjdumpWork(key: Long, filename: String, TimeoutMillis: Int, WorkType: String, Worker: String, Arguments: List[String]) extends TaskedWork {
   def doWork()(implicit myHttp: dispatch.Http): Future[WorkResult] = {
-
     val uri = ObjdumpREST.constructURL(Worker, filename, Arguments)
+    MonitorActor.PublishServiceTask(Worker, uri) // uri is actually the task description here (or rather contains)
     val requestResult = myHttp(url(uri) OK as.String)
       .either
       .map({

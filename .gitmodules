@@ -1,0 +1,6 @@
+[submodule "lib/procfs-j"]
+	path = lib/procfs-j
+	url = https://github.com/ayosec/procfs-j.git
+[submodule "lib/Holmes-Planner-Monitor"]
+	path = lib/Holmes-Planner-Monitor
+	url = https://github.com/ms-xy/Holmes-Planner-Monitor

@@ -4,6 +4,9 @@ FROM golang:alpine
 RUN mkdir -p /service
 WORKDIR /service
 
+# add repository for capstone
+RUN echo "@testing http://dl-3.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories
+
 # get go dependencies
 RUN apk add --no-cache \
 		git \
@@ -20,7 +23,7 @@ RUN apk add --no-cache \
 		build-base \
 		binutils \
 		binutils-dev \
-		capstone \
+		capstone@testing \
 		git \
 	&& git clone https://bitbucket.org/vusec/nucleus.git \
 	&& rm -rf /var/cache/apk/*

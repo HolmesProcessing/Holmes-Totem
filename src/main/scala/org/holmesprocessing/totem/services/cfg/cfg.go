@@ -239,12 +239,8 @@ func main() {
 		log.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
 
-	// find nucleus binary path
-	if binary, err := exec.LookPath("nucleus"); err != nil {
-		log.Fatalln("Unable to locate nucleus binary, is nucleus installed?", err)
-	} else {
-		nucleus = binary
-	}
+	// set nucleus binary path
+	nucleus = "./nucleus/nucleus"
 
 	// setup http handlers
 	router := httprouter.New()

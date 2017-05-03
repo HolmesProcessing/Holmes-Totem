@@ -241,6 +241,9 @@ func main() {
 
 	// set nucleus binary path
 	nucleus = "./nucleus/nucleus"
+	if _, err := os.Stat(nucleus); os.IsNotExist(err) {
+		log.Fatalln("Unable to locate nucleus binary, is nucleus installed?", err)
+	}
 
 	// setup http handlers
 	router := httprouter.New()

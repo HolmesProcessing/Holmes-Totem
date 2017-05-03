@@ -4,9 +4,6 @@ FROM golang:alpine
 RUN mkdir -p /service
 WORKDIR /service
 
-# add repository for capstone
-RUN echo "@testing http://dl-3.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories
-
 # get go dependencies
 RUN apk add --no-cache \
 		git \
@@ -23,11 +20,7 @@ RUN apk add --no-cache \
 		build-base \
 		binutils \
 		binutils-dev \
-<<<<<<< HEAD
 		g++ \
-=======
-		capstone@testing \
->>>>>>> d9903c63fb047a6086b8f31c3b34bbd3b4eb8fcc
 		git \
 		make \
 	&& git clone https://github.com/aquynh/capstone \
@@ -47,7 +40,7 @@ COPY cfg.go /service
 
 # build capstone
 RUN cd /service/capstone \
-    && ./make.sh \
+    	&& ./make.sh \
 	&& su; ./make.sh install
 
 # workaround for bfd.h error (see https://github.com/yoshinorim/quickstack/issues/5)
@@ -56,7 +49,7 @@ RUN sed -i '1i#define PACKAGE_VERSION 1' /usr/include/bfd.h \
 	
 # build nucleus
 RUN cd /service/nucleus \
-    && make
+    	&& make
 
 # build cfg
 RUN go build cfg.go

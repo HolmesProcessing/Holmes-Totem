@@ -121,7 +121,7 @@ object driver extends App with Instrumented {
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
         case "PDFPARSE" => Random.shuffle(services.getOrElse("pdfparse", List())).head
-		case "CFG" => Random.shuffle(services.getOrElse("cfg", List())).head
+	case "CFG" => Random.shuffle(services.getOrElse("cfg", List())).head
         case _ => ""
       }
     }
@@ -185,8 +185,7 @@ object driver extends App with Instrumented {
         case x: YaraSuccess => conf.getString("totem.services.yara.resultRoutingKey")
         case x: ZipMetaSuccess => conf.getString("totem.services.zipmeta.resultRoutingKey")
         case x: pdfparseSuccess => conf.getString("totem.services.pdfparse.resultRoutingKey")
-		case x: cfgSuccess => conf.getString("totem.services.cfg.resultRoutingKey")
-
+	case x: cfgSuccess => conf.getString("totem.services.cfg.resultRoutingKey")
         case _ => ""
       }
     }

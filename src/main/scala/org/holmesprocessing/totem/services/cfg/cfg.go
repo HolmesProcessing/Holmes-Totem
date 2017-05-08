@@ -129,7 +129,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(nucleus, "-a x86", "-d linear", "-f", "-p", "-e", sample_path, "-g", sample_path + ".dot")
+	process := exec.Command(nucleus, "-d", "linear", "-f", "-p", "-e", sample_path, "-g", "/data" + sample_path + ".dot")
 
 	// We are not interested in the output of the command, but the written output in the dot files
 	// stdout, err := process.StdoutPipe()
@@ -141,15 +141,15 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	check(process.Start())
 
-	file, err := os.Open(sample_path + ".dot")
+	file, err := os.Open("/data" + sample_path + ".dot")
 	check(err)
 	defer file.Close()
 
 	line := bufio.NewScanner(file)
 
 	result := &Result{
-		Truncated:   false,
-		Arcs:        make([]*Arc, config.MaxNumberOfArcs),
+		Truncated: false,
+		Arcs:      make([]*Arc, config.MaxNumberOfArcs),
 	}
 
 	/* Example file
@@ -161,7 +161,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	bb_40101e -> bb_40102b [ label="jmp/+3" ];
 	[...]
 	}
-	 */
+	*/
 
 	// Sanity check for the first line
 	line.Scan()
@@ -215,7 +215,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	deleteFile(sample_path + ".dot")
+	deleteFile("/data" + sample_path + ".dot")
 
 	elapsed_time := time.Since(start_time)
 	info.Printf("Elapsed time: %s\n", elapsed_time)

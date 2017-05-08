@@ -1,14 +1,14 @@
 FROM golang:alpine
 
-# create folders
+# create folder
 RUN mkdir -p /service
 WORKDIR /service
 
 # get go dependencies
 RUN apk add --no-cache \
 		git \
-	&& go get github.com/julienschmidt/httprouter \
-	&& rm -rf /var/cache/apk/*
+    && go get github.com/julienschmidt/httprouter \
+    && rm -rf /var/cache/apk/*
 
 ###
 # cfg specific options
@@ -16,16 +16,16 @@ RUN apk add --no-cache \
 
 # get go cfg dependencies
 RUN apk add --no-cache \
-		bash \
-		build-base \
-		binutils \
-		binutils-dev \
-		g++ \
-		git \
-		make \
-	&& git clone https://github.com/aquynh/capstone \
-	&& git clone https://bitbucket.org/vusec/nucleus.git \
-	&& rm -rf /var/cache/apk/*
+        bash \
+        build-base \
+        binutils \
+        binutils-dev \
+        g++ \
+        git \
+        make \
+    && git clone https://github.com/aquynh/capstone \
+    && git clone https://bitbucket.org/vusec/nucleus.git \
+    && rm -rf /var/cache/apk/*
 
 # clean up && create folder for .dot files
 RUN apk del --purge \
@@ -43,11 +43,11 @@ COPY cfg.go /service
 # build capstone
 RUN cd /service/capstone \
     && ./make.sh \
-	&& su; ./make.sh install
+    && su; ./make.sh install
 
 # workaround for bfd.h error (see https://github.com/yoshinorim/quickstack/issues/5)
 RUN sed -i '1i#define PACKAGE_VERSION 1' /usr/include/bfd.h \
-	&& sed -i '1i#define PACKAGE 1' /usr/include/bfd.h
+    && sed -i '1i#define PACKAGE 1' /usr/include/bfd.h
 	
 # build nucleus
 RUN cd /service/nucleus \

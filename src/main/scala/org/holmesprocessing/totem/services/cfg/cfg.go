@@ -132,11 +132,11 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	dot_path := "/data" + sample_path + ".dot"
 	process := exec.Command(nucleus, "-d", "linear", "-f", "-p", "-e", sample_path, "-g", dot_path)
-
-    // We are not interested in the output of the command, just the errors and the written output in the dot files
-    if _, err := process.CombinedOutput(); err != nil {
-        info.Printf("Error running nucleus sample: %s", err.Error())
-        return
+	
+	// We are not interested in the output of the command, just the errors and the written output in the dot files
+	if _, err := process.CombinedOutput(); err != nil {
+		info.Printf("Error running nucleus sample: %s", err.Error())
+		return
     }
 
 	file, err := os.Open(dot_path)

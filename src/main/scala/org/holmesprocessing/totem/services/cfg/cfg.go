@@ -121,7 +121,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		http.Error(f_response, "Missing argument 'obj'", 400)
 		return
 	}
-	sample_path := "/tmp/" + obj
+	
+	sample_path := "/tmp/" + obj	
 	if _, err := os.Stat(sample_path); os.IsNotExist(err) {
 		http.NotFound(f_response, request)
 		info.Printf("Error accessing sample (file: %s):", sample_path)
@@ -129,22 +130,18 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(nucleus, "-d", "linear", "-f", "-p", "-e", sample_path, "-g", "/data" + sample_path + ".dot")
+	dot_path := "/data" + sample_path + ".dot"
+	process := exec.Command(nucleus, "-d", "linear", "-f", "-p", "-e", sample_path, "-g", dot_path)
 
-	// We are not interested in the output of the command, but the written output in the dot files
-	// stdout, err := process.StdoutPipe()
-	// check(err)
+    // We are not interested in the output of the command, just the errors and the written output in the dot files
+    if _, err := process.CombinedOutput(); err != nil {
+        info.Printf("Error running nucleus sample: %s", err.Error())
+        return
+    }
 
-	stdin, err := process.StdinPipe()
-	check(err)
-	stdin.Close()
-
-	check(process.Start())
-
-	file, err := os.Open("/data" + sample_path + ".dot")
+	file, err := os.Open(dot_path)
 	check(err)
 	defer file.Close()
-
 	line := bufio.NewScanner(file)
 
 	result := &Result{
@@ -215,7 +212,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	deleteFile("/data" + sample_path + ".dot")
+	deleteFile(dot_path)
 
 	elapsed_time := time.Since(start_time)
 	info.Printf("Elapsed time: %s\n", elapsed_time)

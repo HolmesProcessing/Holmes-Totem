@@ -134,3 +134,14 @@ services:
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro
+
+  cfg:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/cfg
+      args:
+        conf: ${CONFSTORAGE_CFG}service.conf
+    ports:
+      - "7790:8080"
+    restart: unless-stopped
+    volumes:
+     - /tmp:/tmp:ro

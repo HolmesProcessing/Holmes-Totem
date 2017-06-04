@@ -100,7 +100,10 @@ class ASNApp(tornado.web.Application):
 def main():
     server = tornado.httpserver.HTTPServer(ASNApp())
     server.listen(Config.settings.port)
-    tornado.ioloop.IOLoop.current().start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        tornado.ioloop.IOLoop.instance().stop()
 
 if __name__ == '__main__':
     main()

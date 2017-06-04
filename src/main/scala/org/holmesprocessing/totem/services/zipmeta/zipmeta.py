@@ -142,7 +142,10 @@ class ZipMetaApp(tornado.web.Application):
 def main():
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
     server.listen(Config.settings.port)
-    tornado.ioloop.IOLoop.instance().start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        tornado.ioloop.IOLoop.instance().stop()
 
 
 if __name__ == '__main__':

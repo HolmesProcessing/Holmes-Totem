@@ -7,14 +7,20 @@ import traceback
 import os
 from os import path
 
+#import for parsing configuration file
+import json
+
 # imports for ASNMeta
 import gatherasn
 from time import localtime, strftime
 
-# imports for services
-from holmeslibrary.services import ServiceConfig
+# reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
 
-# Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
 Metadata = {
     "Name"        : "ASNMeta",
@@ -26,11 +32,11 @@ Metadata = {
 
 def ASNMetaRun(ipaddress):
     asninfo = gatherasn.GatherASN(ipaddress,
-                                    Config.asnmeta.dns_server, 
-                                    Config.asnmeta.asn_ipv4_query, 
-                                    Config.asnmeta.asn_ipv6_query,
-                                    Config.asnmeta.asn_peer_query,
-                                    Config.asnmeta.asn_name_query)
+                                    Config["asnmeta"]["dns_server"], 
+                                    Config["asnmeta"]["asn_ipv4_query"], 
+                                    Config["asnmeta"]["asn_ipv6_query"],
+                                    Config["asnmeta"]["asn_peer_query"],
+                                    Config["asnmeta"]["asn_name_query"])
     
     asninfo.query_asn_origin()
 
@@ -99,7 +105,7 @@ class ASNApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(ASNApp())
-    server.listen(Config.settings.port)
+    server.listen(Config["settings"]["port"])
     try:
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:

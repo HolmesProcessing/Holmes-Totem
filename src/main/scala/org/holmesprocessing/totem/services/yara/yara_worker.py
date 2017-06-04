@@ -12,9 +12,16 @@ from io import BytesIO
 import base64
 import yara
 
-# imports for services
-from holmeslibrary.services import ServiceConfig
+#imports for reading configuration file
+import json
 
+# Reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
+    
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
 
@@ -29,7 +36,7 @@ Metadata = {
 class YaraHandler(tornado.web.RequestHandler):
     @property
     def YaraEngine(self):
-        return yara.load(Config.yara_rules.local_path)
+        return yara.load(Config["yara_rules"]["local_path"])
 
 class YaraProcess(YaraHandler):
     def process(self, filename, rules=None):
@@ -118,7 +125,7 @@ class YaraApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(YaraApp())
-    server.listen(Config.settings.port)
+    server.listen(Config["settings"]["port"])
     try:
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:

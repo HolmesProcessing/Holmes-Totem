@@ -12,9 +12,16 @@ from io import BytesIO
 import base64
 import yara
 
-# imports for services
-from holmeslibrary.services import ServiceConfig
+#imports for reading configuration file
+import json
 
+# Reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
+    
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
 

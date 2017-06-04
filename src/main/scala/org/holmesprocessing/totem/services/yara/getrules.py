@@ -21,11 +21,11 @@ def main():
     get_remote    = False
 
     # Parse configuration options
-    if cfg.has_section('Rules'):
-        rule_location = cfg['Rules'].get('local_path', fallback='rules.yar')
-        get_remote    = cfg['Rules'].getboolean('get_remote', fallback=False)
+    if cfg.has_section('yara_rules'):
+        rule_location = cfg['yara_rules'].get('local_path', fallback='rules.yar')
+        get_remote    = cfg['yara_rules'].getboolean('get_remote', fallback=False)
         if get_remote:
-            DownloadFile(cfg['Rules'].get('download_url'), rule_location)
+            DownloadFile(cfg['yara_rules'].get('download_url'), rule_location)
     else:
         print("Configuration Error: Cannot find Rules section. Using default values.")
 

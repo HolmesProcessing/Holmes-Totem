@@ -10,8 +10,15 @@ from os import path
 # imports for rich
 import richlibrary
 
-# imports for services
-from holmeslibrary.services import ServiceConfig 
+#imports for reading configuration file
+import json
+
+# Reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
@@ -20,7 +27,7 @@ Metadata = {
     "Name"        : "Rich Header",
     "Version"     : "1.0",
     "Description" : "./README.md",
-    "Copyright"   : "Copyright 2016 Holmes Group LLC",
+    "Copyright"   : "Copyright 2017 Holmes Group LLC",
     "License"     : "./LICENSE"
 }
 
@@ -96,7 +103,7 @@ class Application(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(Application())
-    server.listen(Config.settings.port)
+    server.listen(Config["port"])
     tornado.ioloop.IOLoop.instance().start()
 
 

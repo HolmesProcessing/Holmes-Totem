@@ -1,3 +1,4 @@
-[settings]
-Port   = 8080
-apikey = SHODAN_API_KEY
+{
+	"port": 8080,
+	"apikey": SHODAN_API_KEY
+}

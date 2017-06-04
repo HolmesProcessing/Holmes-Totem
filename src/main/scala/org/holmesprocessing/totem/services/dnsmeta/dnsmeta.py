@@ -11,12 +11,18 @@ from os import path
 import gatherdns
 from time import localtime, strftime
 
-# imports for services
-from holmeslibrary.services import ServiceConfig
+#imports for reading configuration file
+import json
 
-# Get service meta information and configuration
+# reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
+
 Config = ServiceConfig("./service.conf")
-Config.dnsmeta.rdtypes = [item.strip() for item in Config.dnsmeta.rdtypes.split(',')]
+Config["dnsmeta"]["rdtypes"] = [item.strip() for item in Config["dnsmeta"]["rdtypes"].split(',')]
 
 Metadata = {
     "Name"        : "DNSMeta",
@@ -29,12 +35,12 @@ Metadata = {
 def DNSMetaRun(domain):
     data = {}
 
-    dnsinfo = gatherdns.GatherDNS(domain, Config.dnsmeta.dns_server)
+    dnsinfo = gatherdns.GatherDNS(domain, Config["dnsmeta"]["dns_server"])
     data['auth'] = dnsinfo.find_authoritative_nameserver(domain)
 
     # query for specified types and add to dictionary
-    dnsinfo.query_domain(Config.dnsmeta.rdtypes)
-    for rdtype in Config.dnsmeta.rdtypes:
+    dnsinfo.query_domain(Config["dnsmeta"]["rdtypes"])
+    for rdtype in Config["dnsmeta"]["rdtypes"]:
         function = getattr(dnsinfo, 'get_{}_record'.format(rdtype))
         result = function()
         if result is not None:
@@ -97,7 +103,7 @@ class DNSApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(DNSApp())
-    server.listen(Config.settings.port)
+    server.listen(Config["settings"]["port"])
     tornado.ioloop.IOLoop.current().start()
 
 if __name__ == '__main__':

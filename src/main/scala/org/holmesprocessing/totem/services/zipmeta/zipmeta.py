@@ -12,8 +12,17 @@ import ZipParser
 ZipParser = ZipParser.ZipParser
 
 # imports for services
-from holmeslibrary.services import ServiceRequestError, ServiceResultSet, ServiceConfig
+from holmeslibrary.services import ServiceRequestError, ServiceResultSet
 from holmeslibrary.files    import LargeFileReader
+
+import json
+
+# Reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    # TODO : handle file not found exception
+    config = json.loads(open(configPath).read())
+    return config
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
@@ -141,7 +150,7 @@ class ZipMetaApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(Config.settings.port)
+    server.listen(Config["port"])
     tornado.ioloop.IOLoop.instance().start()
 
 

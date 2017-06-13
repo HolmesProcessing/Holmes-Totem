@@ -1,33 +1,50 @@
-FROM python:2-alpine
+FROM golang:alpine
 
-# add tornado
-RUN pip install tornado
-
-# create folder
+# Create folder
 RUN mkdir -p /service
 WORKDIR /service
 
-# add holmeslibrary
+# Get Golang and PEV dependencies
 RUN apk add --no-cache \
-		wget \
-	&& wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
-	&& tar xf v0.1.tar.gz \
-	&& mv Holmes-Totem-Service* holmeslibrary \
-	&& rm -rf /var/cache/apk/* v0.1.tar.gz
+        git \
+        && go get github.com/julienschmidt/httprouter \
+        && git clone https://github.com/merces/libpe.git \
+        && rm -rf /var/cache/apk/*
 
-###
-# peid specific options
-###
+RUN apk add --no-cache \
+        bash \
+        build-base \
+	    make \
+	    g++ \
+        && rm -rf /var/cache/apk/*
 
-RUN pip install pefile bitstring
+# Clean Up
+RUN apk del --purge \
+        build-base \
+        git \
+        && rm -rf /var/cache/apk/* yara-3.5.0
 
-# add the files to the container
+# Set environment variables.
+ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+
+# Installing Libpe
+RUN cd /service/libpe \
+	&& make \
+	&& make install
+
+# Making quick changes.
+RUN sed -i 's/.*pe_optional.*/IMAGE_OPTIONAL_HEADER_64 *pe_optional(pe_ctx_t *ctx);/g' /service/libpe/pe.h
+
+# add Service files to the container.
+
 COPY LICENSE /service
 COPY README.md /service
-COPY peinfo.py /service
+COPY pev.go /service
+RUN go build pev.go
 
 # add the configuration file (possibly from a storage uri)
 ARG conf=service.conf
 ADD $conf /service/service.conf
 
-CMD ["python", "peinfo.py"]
+
+CMD ["./pev", "--config=service.conf"]

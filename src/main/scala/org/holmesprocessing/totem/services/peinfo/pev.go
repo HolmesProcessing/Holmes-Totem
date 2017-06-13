@@ -27,95 +27,93 @@ import (
 )
 
 type Result struct {
-	Optional OptionalHeaders`json:"Optional"`
-	Dos DosHeaders `json:"DosHeaders"`
-	Coff CoffHeaders `json:"CoffHeaders"`
-	Directories Directory `json:"directories"`
-	Directories_count int `json:"directories_count"`
-	Sections Section `json:"sections"`
-	Sections_count int `json:"sectionscount"`
+	Optional          OptionalHeaders `json:"Optional"`
+	Dos               DosHeaders      `json:"DosHeaders"`
+	Coff              CoffHeaders     `json:"CoffHeaders"`
+	Directories       Directory       `json:"directories"`
+	Directories_count int             `json:"directories_count"`
+	Sections          Section         `json:"sections"`
+	Sections_count    int             `json:"sectionscount"`
 }
 
 type OptionalHeaders struct {
-	Magic              int    `json:"Magic"`
-	MajorLinkerVersion       int    `json:"MajorLinkerVersion"`
-	MinorLinkerVersion       int    `json:"MinorLinkerVersion"`
-	SizeOfCode        int `json:"SizeOfCode"`
-	SizeOfInitializedData        int `json:"SizeOfUninitializedData"`
-	SizeOfUninitializedData         int `json:"SizeOfUninitializedData"`
-	AddressOfEntryPoint               int `json:"AddressOfEntryPoint"`
-	BaseOfCode     int `json:"BaseOfCode"`
-	ImageBase     int `json:"ImageBase"`
-	SectionAlignment                int `json:"SectionAlignment"`
-	FileAlignment      int `json:"FileAlignment"`
-	MajorOperatingSystemVersion          int `json:"MajorOperatingSystemVersion"`
+	Magic                       int `json:"Magic"`
+	MajorLinkerVersion          int `json:"MajorLinkerVersion"`
+	MinorLinkerVersion          int `json:"MinorLinkerVersion"`
+	SizeOfCode                  int `json:"SizeOfCode"`
+	SizeOfInitializedData       int `json:"SizeOfUninitializedData"`
+	SizeOfUninitializedData     int `json:"SizeOfUninitializedData"`
+	AddressOfEntryPoint         int `json:"AddressOfEntryPoint"`
+	BaseOfCode                  int `json:"BaseOfCode"`
+	ImageBase                   int `json:"ImageBase"`
+	SectionAlignment            int `json:"SectionAlignment"`
+	FileAlignment               int `json:"FileAlignment"`
+	MajorOperatingSystemVersion int `json:"MajorOperatingSystemVersion"`
 	MinorOperatingSystemVersion int `json:"MinorOperatingSystemVersion"`
-	MajorImageVersion int `json:"MajorImageVersion"`
-	MinorImageVersion      int `json:"MinorImageVersion"`
-	MajorSubsystemVersion      int `json:"MajorSubsystemVersion"`
-	MinorSubsystemVersion  int `json:"MinorSubsystemVersion"`
-	Reserved1  int `json:Reserved1"`
-	SizeOfImage              int `json:"SizeOfImage"`
-	SizeOfHeaders            int `json:"SizeOfHeaders"`
-	CheckSum                 int `json:"CheckSum"`
-	Subsystem        int `json:"Subsystem"`
-	DllCharacteristics       int `json:"DllCharacteristics"`
-	SizeOfStackReserve     int `json:"SizeOfStackReserve"`
-	SizeOfStackCommit      int `json:"SizeOfStackCommit"`
-	SizeOfHeapReserve int `json:"SizeOfHeapReserve"`
-	SizeOfHeapCommit  int `json:"SizeOfHeapCommit"`
-	LoaderFlags int `json:"LoaderFlags"`
-	NumberOfRvaAndSizes int `json:"NumberOfRvaAndSizes"`
+	MajorImageVersion           int `json:"MajorImageVersion"`
+	MinorImageVersion           int `json:"MinorImageVersion"`
+	MajorSubsystemVersion       int `json:"MajorSubsystemVersion"`
+	MinorSubsystemVersion       int `json:"MinorSubsystemVersion"`
+	Reserved1                   int `json:Reserved1"`
+	SizeOfImage                 int `json:"SizeOfImage"`
+	SizeOfHeaders               int `json:"SizeOfHeaders"`
+	CheckSum                    int `json:"CheckSum"`
+	Subsystem                   int `json:"Subsystem"`
+	DllCharacteristics          int `json:"DllCharacteristics"`
+	SizeOfStackReserve          int `json:"SizeOfStackReserve"`
+	SizeOfStackCommit           int `json:"SizeOfStackCommit"`
+	SizeOfHeapReserve           int `json:"SizeOfHeapReserve"`
+	SizeOfHeapCommit            int `json:"SizeOfHeapCommit"`
+	LoaderFlags                 int `json:"LoaderFlags"`
+	NumberOfRvaAndSizes         int `json:"NumberOfRvaAndSizes"`
 }
 
-
 type DosHeaders struct {
-	Magic int `json:"e_magic"` // Magic Number 
-	Cblp int `json:"e_cblp"`   // 
-	Cp int `json:"e_cblp"`
-	Crlc int `json:"e_crlc"`
-	Cparhdr int `json:"e_cparhdr"`
+	Magic    int `json:"e_magic"` // Magic Number
+	Cblp     int `json:"e_cblp"`  //
+	Cp       int `json:"e_cblp"`
+	Crlc     int `json:"e_crlc"`
+	Cparhdr  int `json:"e_cparhdr"`
 	Minalloc int `json:"e_minalloc"`
 	Maxalloc int `json:"e_maxalloc"`
-	Ss int `json:"e_ss"`
-	Sp int `json:"e_sp"`
-	Csum int `json:"e_csum"`
-	Ip int 	`json:"e_ip"`
-	Cs int 	`json:"e_cs"`
-	Lfarlc int `json:"e_lfarlc"`
-	Ovno int 	`json:"e_ovno"`
-	Res int `json:"e_res"`
-	Oemid int `json:"e_oemid"`
-	Oeminfo int `json:"e_oeminfo"`
-	Res2 int `json:"e_res2"`
-	Lfanew int `json:"e_lfanew"`
+	Ss       int `json:"e_ss"`
+	Sp       int `json:"e_sp"`
+	Csum     int `json:"e_csum"`
+	Ip       int `json:"e_ip"`
+	Cs       int `json:"e_cs"`
+	Lfarlc   int `json:"e_lfarlc"`
+	Ovno     int `json:"e_ovno"`
+	Res      int `json:"e_res"`
+	Oemid    int `json:"e_oemid"`
+	Oeminfo  int `json:"e_oeminfo"`
+	Res2     int `json:"e_res2"`
+	Lfanew   int `json:"e_lfanew"`
 }
 
 type CoffHeaders struct {
-	Machine int `json:"Machine"`
-    NumberOfSections int `json:"NumberOfSections"`
-    TimeDateStamp int `json:"TimeDateStamp"`
-    PointerToSymbolTable int `json:"TimeDateStamp"`
-    NumberOfSymbols int `json:"NumberOfSymbols"`
-    SizeOfOptionalHeader int `json:"SizeOfOptionalHeader"`
-    Characteristics int `json:"Characteristics"`
+	Machine              int `json:"Machine"`
+	NumberOfSections     int `json:"NumberOfSections"`
+	TimeDateStamp        int `json:"TimeDateStamp"`
+	PointerToSymbolTable int `json:"TimeDateStamp"`
+	NumberOfSymbols      int `json:"NumberOfSymbols"`
+	SizeOfOptionalHeader int `json:"SizeOfOptionalHeader"`
+	Characteristics      int `json:"Characteristics"`
 }
 
 type Directory struct {
 	VirtualAddress int `json:"VirtualAddress"`
-	Size int `json:"Size"`
+	Size           int `json:"Size"`
 }
 
 type Section struct {
-	VirtualAddress int `json:"VirtualAddress"`
-	PointerToRawData int `json:"PointerToRawData"`
+	VirtualAddress       int `json:"VirtualAddress"`
+	PointerToRawData     int `json:"PointerToRawData"`
 	PointerToRelocations int `json:"PointerToRelocations"` // always zero in executables
 	PointerToLinenumbers int `json:"PointerToLinenumbers"` //deprecated
-	NumberOfRelocations int `json:"NumberOfRelocations"`
-	NumberOfLinenumbers int `json:"NumberOfLinenumbers"` //deprecated 
-	Characteristics int `json:"Characteristics"`
+	NumberOfRelocations  int `json:"NumberOfRelocations"`
+	NumberOfLinenumbers  int `json:"NumberOfLinenumbers"` //deprecated
+	Characteristics      int `json:"Characteristics"`
 }
-
 
 // config structs
 type Metadata struct {
@@ -127,13 +125,13 @@ type Metadata struct {
 }
 
 type Config struct {
-	HTTPBinding        string
+	HTTPBinding string
 }
 
 var (
-	config    *Config
-	info      *log.Logger
-	metadata  Metadata = Metadata{
+	config   *Config
+	info     *log.Logger
+	metadata Metadata = Metadata{
 		Name:        "PEinfo",
 		Version:     "1.0.0",
 		Description: "./README.md",
@@ -240,22 +238,22 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	cstr := C.CString(sample_path)
 	// defer C.free(unsafe.Pointer(cstr))
 
-	err = C.pe_load_file(&ctx, cstr);
-	if (err != C.LIBPE_E_OK) {
-		C.pe_error_print(C.stderr, err);
+	err = C.pe_load_file(&ctx, cstr)
+	if err != C.LIBPE_E_OK {
+		C.pe_error_print(C.stderr, err)
 		return
 	}
 
-	err = C.pe_parse(&ctx);
-	if (err != C.LIBPE_E_OK) {
-		C.pe_error_print(C.stderr, err);
+	err = C.pe_parse(&ctx)
+	if err != C.LIBPE_E_OK {
+		C.pe_error_print(C.stderr, err)
 		return
 	}
 
-	if (!C.pe_is_pe(&ctx)) {
+	if !C.pe_is_pe(&ctx) {
 		return
 	}
-	
+
 	result := &Result{}
 
 	result = header_coff(ctx, result)
@@ -266,8 +264,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result = header_sections(ctx, result)
 	result.Sections_count = header_sections_count(ctx)
 
-	// TODO: as each of these are independent, we can use concurrency. 
-
+	// TODO: as each of these are independent, we can use concurrency.
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
 	json2http := json.NewEncoder(f_response)
@@ -279,12 +276,11 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	elapsed_time := time.Since(start_time)
-	info.Printf("Done, total time elapsed %s.\n",  elapsed_time)
+	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
 }
 
-
-func header_coff(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
-	coff := C.pe_coff(&ctx);
+func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	coff := C.pe_coff(&ctx)
 
 	temp_result.Coff.Machine = int(coff.Machine)
 	temp_result.Coff.NumberOfSections = int(coff.NumberOfSections)
@@ -297,8 +293,8 @@ func header_coff(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
 	return temp_result
 }
 
-func header_dos(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
-	dos := C.pe_dos(&ctx);
+func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	dos := C.pe_dos(&ctx)
 
 	temp_result.Dos.Magic = int(dos.e_magic)
 	temp_result.Dos.Cblp = int(dos.e_cblp)
@@ -323,10 +319,10 @@ func header_dos(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
 	return temp_result
 }
 
-func header_optional(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
-	optional := C.pe_optional(&ctx);
+func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	optional := C.pe_optional(&ctx)
 
-	temp_result.Optional.Magic  = int(optional.Magic)
+	temp_result.Optional.Magic = int(optional.Magic)
 	temp_result.Optional.MajorLinkerVersion = int(optional.MajorLinkerVersion)
 	temp_result.Optional.MinorLinkerVersion = int(optional.MinorLinkerVersion)
 	temp_result.Optional.SizeOfCode = int(optional.SizeOfCode)
@@ -359,32 +355,31 @@ func header_optional(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
 	return temp_result
 }
 
-func header_directories_count(ctx C.pe_ctx_t) (int) {
+func header_directories_count(ctx C.pe_ctx_t) int {
 	directories_count := C.pe_directories_count(&ctx)
 	return int(directories_count)
 }
 
-func header_directories(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
+func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	directories := C.pe_directories(&ctx)
-	temp_result.Directories.VirtualAddress = int((*directories).VirtualAddress)  // returns Virutal address
+	temp_result.Directories.VirtualAddress = int((*directories).VirtualAddress) // returns Virutal address
 	temp_result.Directories.Size = int((*directories).Size)
 	return temp_result
 }
 
-
-func header_sections_count(ctx C.pe_ctx_t) (int) {
+func header_sections_count(ctx C.pe_ctx_t) int {
 	sections_count := C.pe_sections_count(&ctx)
 	return int(sections_count)
 }
 
-func header_sections(ctx C.pe_ctx_t, temp_result *Result) (*Result) {
+func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	sections := C.pe_sections(&ctx)
 	temp_result.Sections.VirtualAddress = int((*sections).VirtualAddress)
 	temp_result.Sections.PointerToRawData = int((*sections).PointerToRawData)
-	temp_result.Sections.PointerToRelocations =  int((*sections).PointerToRelocations) // always zero in executables
+	temp_result.Sections.PointerToRelocations = int((*sections).PointerToRelocations) // always zero in executables
 	temp_result.Sections.PointerToLinenumbers = int((*sections).PointerToLinenumbers) //deprecated
 	temp_result.Sections.NumberOfRelocations = int((*sections).NumberOfRelocations)
-	temp_result.Sections.NumberOfLinenumbers = int((*sections).NumberOfLinenumbers)//deprecated 
+	temp_result.Sections.NumberOfLinenumbers = int((*sections).NumberOfLinenumbers) //deprecated
 	temp_result.Sections.Characteristics = int((*sections).Characteristics)
 
 	return temp_result

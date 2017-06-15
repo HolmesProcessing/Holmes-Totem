@@ -20,9 +20,11 @@ import json
 # Reading configuration file
 def ServiceConfig(filename):
     configPath = filename
-    # TODO : handle file not found exception
-    config = json.loads(open(configPath).read())
-    return config
+    try:
+        config = json.loads(open(configPath).read())
+        return config
+    except FileNotFoundError:
+        raise tornado.web.HTTPError(500)
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
@@ -150,11 +152,11 @@ class ZipMetaApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(Config["port"])
+    server.listen(Config["settings"]["port"])
     try:
-        tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
-        tornado.ioloop.IOLoop.instance().stop()
+        tornado.ioloop.IOLoop.current().stop()
 
 
 if __name__ == '__main__':

@@ -17,9 +17,11 @@ from time import localtime, strftime
 # reading configuration file
 def ServiceConfig(filename):
     configPath = filename
-    # TODO : handle file not found exception
-    config = json.loads(open(configPath).read())
-    return config
+    try:
+        config = json.loads(open(configPath).read())
+        return config
+    except FileNotFoundError:
+        raise tornado.web.HTTPError(500)
 
 Config = ServiceConfig("./service.conf")
 Metadata = {
@@ -107,9 +109,9 @@ def main():
     server = tornado.httpserver.HTTPServer(ASNApp())
     server.listen(Config["settings"]["port"])
     try:
-        tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
-        tornado.ioloop.IOLoop.instance().stop()
+        tornado.ioloop.IOLoop.current().stop()
 
 if __name__ == '__main__':
     main()

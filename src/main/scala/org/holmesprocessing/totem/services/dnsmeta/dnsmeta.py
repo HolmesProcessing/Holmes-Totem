@@ -17,12 +17,13 @@ import json
 # reading configuration file
 def ServiceConfig(filename):
     configPath = filename
-    # TODO : handle file not found exception
-    config = json.loads(open(configPath).read())
-    return config
+    try:
+        config = json.loads(open(configPath).read())
+        return config
+    except FileNotFoundError:
+        raise tornado.web.HTTPError(500)
 
 Config = ServiceConfig("./service.conf")
-Config["dnsmeta"]["rdtypes"] = [item.strip() for item in Config["dnsmeta"]["rdtypes"].split(',')]
 
 Metadata = {
     "Name"        : "DNSMeta",
@@ -105,9 +106,9 @@ def main():
     server = tornado.httpserver.HTTPServer(DNSApp())
     server.listen(Config["settings"]["port"])
     try:
-        tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
-        tornado.ioloop.IOLoop.instance().stop()
+        tornado.ioloop.IOLoop.current().stop()
 
 if __name__ == '__main__':
     main()

@@ -1,9 +1,10 @@
 {
 	"settings": {
-	"port": 8080
+		"port": 8080
 	},
 
 	"shodan": {
 		"apikey": SHODAN_API_KEY
 	}
 }
+

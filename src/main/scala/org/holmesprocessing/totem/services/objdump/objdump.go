@@ -102,7 +102,7 @@ func main() {
 	}
 
 	config = load_config(configPath)
-	opcodes_max, err = strconv.ParseInt(config.Settings.MaxNumberOfOpcodes, 10, 64)
+	opcodes_max, err = strconv.ParseInt(config.objdump.MaxNumberOfOpcodes, 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -119,11 +119,8 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	port := config.Settings.Port
-	address := fmt.Sprintf(":%s", port)
-
-	infoLogger.Printf("Binding to %s\n", address)
-	infoLogger.Fatal(http.ListenAndServe(address, router))
+	infoLogger.Printf("Binding to %s\n", config.settings.port)
+	infoLogger.Fatal(http.ListenAndServe(config.settings.port, router))
 }
 
 // Parse a configuration file into a configuration structure.

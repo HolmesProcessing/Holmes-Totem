@@ -2,6 +2,7 @@ package main
 
 // #include<libpe/pe.h>
 // #cgo LDFLAGS: -lpe
+// #cgo CFLAGS: -std=c99
 import "C"
 import (
 	//Imports for measuring execution time of requests
@@ -14,8 +15,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	_ "strconv"
+	"strconv"
 	"strings"
+	"unsafe"
 
 	//Imports for serving on a socket and handling routing of incoming request.
 	"encoding/json"
@@ -27,13 +29,17 @@ import (
 )
 
 type Result struct {
-	Optional          OptionalHeaders `json:"Optional"`
-	Dos               DosHeaders      `json:"DosHeaders"`
-	Coff              CoffHeaders     `json:"CoffHeaders"`
-	Directories       Directory       `json:"directories"`
-	Directories_count int             `json:"directories_count"`
-	Sections          Section         `json:"sections"`
-	Sections_count    int             `json:"sectionscount"`
+	Headers           Header       `json:"Headers"`
+	Directories       []*Directory `json:"directories"`
+	Directories_count int          `json:"directories_count"`
+	Sections          []*Section   `json:"sections"`
+	Sections_count    int          `json:"sectionscount"`
+}
+
+type Header struct {
+	Optional OptionalHeaders `json:"Optional"`
+	Dos      DosHeaders      `json:"DosHeaders"`
+	Coff     CoffHeaders     `json:"CoffHeaders"`
 }
 
 type OptionalHeaders struct {
@@ -91,28 +97,28 @@ type DosHeaders struct {
 }
 
 type CoffHeaders struct {
-	Machine              int `json:"Machine"`
-	NumberOfSections     int `json:"NumberOfSections"`
-	TimeDateStamp        int `json:"TimeDateStamp"`
-	PointerToSymbolTable int `json:"TimeDateStamp"`
-	NumberOfSymbols      int `json:"NumberOfSymbols"`
-	SizeOfOptionalHeader int `json:"SizeOfOptionalHeader"`
-	Characteristics      int `json:"Characteristics"`
+	Machine              string `json:"Machine"`
+	NumberOfSections     string `json:"NumberOfSections"`
+	TimeDateStamp        string `json:"TimeDateStamp"`
+	PointerToSymbolTable string `json:"PointerToSymbolTable"`
+	NumberOfSymbols      string `json:"NumberOfSymbols"`
+	SizeOfOptionalHeader string `json:"SizeOfOptionalHeader"`
+	Characteristics      string `json:"Characteristics"`
 }
 
 type Directory struct {
-	VirtualAddress int `json:"VirtualAddress"`
-	Size           int `json:"Size"`
+	Name           string `json:"Name"`
+	VirtualAddress string `json:"VirtualAddress"`
+	Size           int    `json:"Size"`
 }
 
 type Section struct {
-	VirtualAddress       int `json:"VirtualAddress"`
-	PointerToRawData     int `json:"PointerToRawData"`
-	PointerToRelocations int `json:"PointerToRelocations"` // always zero in executables
-	PointerToLinenumbers int `json:"PointerToLinenumbers"` //deprecated
-	NumberOfRelocations  int `json:"NumberOfRelocations"`
-	NumberOfLinenumbers  int `json:"NumberOfLinenumbers"` //deprecated
-	Characteristics      int `json:"Characteristics"`
+	Name                 string `json:"Name"`
+	VirtualAddress       string `json:"VirtualAddress"`
+	PointerToRawData     string `json:"PointerToRawData"`
+	PointerToRelocations string `json:"PointerToRelocations"` // always zero in executables
+	NumberOfRelocations  int    `json:"NumberOfRelocations"`
+	Characteristics      string `json:"Characteristics"`
 }
 
 // config structs
@@ -200,11 +206,11 @@ func load_config(configPath string) (*Config, error) {
 
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprintf(f_response, `<p>%s - %s</p>
-		<hr>
-		<p>%s</p>
-		<hr>
-		<p>%s</p>
-		`,
+        <hr>
+        <p>%s</p>
+        <hr>
+        <p>%s</p>
+        `,
 		metadata.Name,
 		metadata.Version,
 		metadata.Description,
@@ -282,13 +288,14 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	coff := C.pe_coff(&ctx)
 
-	temp_result.Coff.Machine = int(coff.Machine)
-	temp_result.Coff.NumberOfSections = int(coff.NumberOfSections)
-	temp_result.Coff.TimeDateStamp = int(coff.TimeDateStamp)
-	temp_result.Coff.PointerToSymbolTable = int(coff.PointerToSymbolTable)
-	temp_result.Coff.NumberOfSymbols = int(coff.NumberOfSymbols)
-	temp_result.Coff.SizeOfOptionalHeader = int(coff.SizeOfOptionalHeader)
-	temp_result.Coff.Characteristics = int(coff.Characteristics)
+	temp_result.Headers.Coff.Machine = fmt.Sprintf("%X", int(coff.Machine))
+	temp_result.Headers.Coff.NumberOfSections = fmt.Sprintf("%X", int(coff.NumberOfSections))
+	timestamp := getTimestamp(int(coff.TimeDateStamp))
+	temp_result.Headers.Coff.TimeDateStamp = fmt.Sprintf("%s", timestamp)
+	temp_result.Headers.Coff.PointerToSymbolTable = fmt.Sprintf("%X", int(coff.PointerToSymbolTable))
+	temp_result.Headers.Coff.NumberOfSymbols = fmt.Sprintf("%X", int(coff.NumberOfSymbols))
+	temp_result.Headers.Coff.SizeOfOptionalHeader = fmt.Sprintf("%X", int(coff.SizeOfOptionalHeader))
+	temp_result.Headers.Coff.Characteristics = fmt.Sprintf("%X", int(coff.Characteristics))
 
 	return temp_result
 }
@@ -296,25 +303,25 @@ func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
 func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	dos := C.pe_dos(&ctx)
 
-	temp_result.Dos.Magic = int(dos.e_magic)
-	temp_result.Dos.Cblp = int(dos.e_cblp)
-	temp_result.Dos.Cp = int(dos.e_cp)
-	temp_result.Dos.Crlc = int(dos.e_crlc)
-	temp_result.Dos.Cparhdr = int(dos.e_cparhdr)
-	temp_result.Dos.Minalloc = int(dos.e_minalloc)
-	temp_result.Dos.Maxalloc = int(dos.e_maxalloc)
-	temp_result.Dos.Ss = int(dos.e_ss)
-	temp_result.Dos.Sp = int(dos.e_sp)
-	temp_result.Dos.Csum = int(dos.e_csum)
-	temp_result.Dos.Ip = int(dos.e_ip)
-	temp_result.Dos.Cs = int(dos.e_cs)
-	temp_result.Dos.Lfarlc = int(dos.e_lfarlc)
-	temp_result.Dos.Ovno = int(dos.e_ovno)
-	temp_result.Dos.Res = int(dos.e_res[3])
-	temp_result.Dos.Oemid = int(dos.e_oemid)
-	temp_result.Dos.Oeminfo = int(dos.e_oeminfo)
-	temp_result.Dos.Res2 = int(dos.e_res2[9])
-	temp_result.Dos.Lfanew = int(dos.e_lfanew)
+	temp_result.Headers.Dos.Magic = int(dos.e_magic)
+	temp_result.Headers.Dos.Cblp = int(dos.e_cblp)
+	temp_result.Headers.Dos.Cp = int(dos.e_cp)
+	temp_result.Headers.Dos.Crlc = int(dos.e_crlc)
+	temp_result.Headers.Dos.Cparhdr = int(dos.e_cparhdr)
+	temp_result.Headers.Dos.Minalloc = int(dos.e_minalloc)
+	temp_result.Headers.Dos.Maxalloc = int(dos.e_maxalloc)
+	temp_result.Headers.Dos.Ss = int(dos.e_ss)
+	temp_result.Headers.Dos.Sp = int(dos.e_sp)
+	temp_result.Headers.Dos.Csum = int(dos.e_csum)
+	temp_result.Headers.Dos.Ip = int(dos.e_ip)
+	temp_result.Headers.Dos.Cs = int(dos.e_cs)
+	temp_result.Headers.Dos.Lfarlc = int(dos.e_lfarlc)
+	temp_result.Headers.Dos.Ovno = int(dos.e_ovno)
+	temp_result.Headers.Dos.Res = int(dos.e_res[3])
+	temp_result.Headers.Dos.Oemid = int(dos.e_oemid)
+	temp_result.Headers.Dos.Oeminfo = int(dos.e_oeminfo)
+	temp_result.Headers.Dos.Res2 = int(dos.e_res2[9])
+	temp_result.Headers.Dos.Lfanew = int(dos.e_lfanew)
 
 	return temp_result
 }
@@ -322,48 +329,72 @@ func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
 func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	optional := C.pe_optional(&ctx)
 
-	temp_result.Optional.Magic = int(optional.Magic)
-	temp_result.Optional.MajorLinkerVersion = int(optional.MajorLinkerVersion)
-	temp_result.Optional.MinorLinkerVersion = int(optional.MinorLinkerVersion)
-	temp_result.Optional.SizeOfCode = int(optional.SizeOfCode)
-	temp_result.Optional.SizeOfInitializedData = int(optional.SizeOfInitializedData)
-	temp_result.Optional.SizeOfUninitializedData = int(optional.SizeOfUninitializedData)
-	temp_result.Optional.AddressOfEntryPoint = int(optional.AddressOfEntryPoint)
-	temp_result.Optional.BaseOfCode = int(optional.BaseOfCode)
-	temp_result.Optional.ImageBase = int(optional.ImageBase)
-	temp_result.Optional.SectionAlignment = int(optional.SectionAlignment)
-	temp_result.Optional.FileAlignment = int(optional.FileAlignment)
-	temp_result.Optional.MajorOperatingSystemVersion = int(optional.MajorOperatingSystemVersion)
-	temp_result.Optional.MinorOperatingSystemVersion = int(optional.MinorOperatingSystemVersion)
-	temp_result.Optional.MajorImageVersion = int(optional.MajorImageVersion)
-	temp_result.Optional.MinorImageVersion = int(optional.MinorImageVersion)
-	temp_result.Optional.MajorSubsystemVersion = int(optional.MajorSubsystemVersion)
-	temp_result.Optional.MinorSubsystemVersion = int(optional.MinorSubsystemVersion)
-	temp_result.Optional.Reserved1 = int(optional.Reserved1)
-	temp_result.Optional.SizeOfImage = int(optional.SizeOfImage)
-	temp_result.Optional.SizeOfHeaders = int(optional.SizeOfHeaders)
-	temp_result.Optional.CheckSum = int(optional.CheckSum)
-	temp_result.Optional.Subsystem = int(optional.Subsystem)
-	temp_result.Optional.DllCharacteristics = int(optional.DllCharacteristics)
-	temp_result.Optional.SizeOfStackReserve = int(optional.SizeOfStackReserve)
-	temp_result.Optional.SizeOfStackCommit = int(optional.SizeOfStackCommit)
-	temp_result.Optional.SizeOfHeapReserve = int(optional.SizeOfHeapReserve)
-	temp_result.Optional.SizeOfHeapCommit = int(optional.SizeOfHeapCommit)
-	temp_result.Optional.LoaderFlags = int(optional.LoaderFlags)
-	temp_result.Optional.NumberOfRvaAndSizes = int(optional.NumberOfRvaAndSizes)
+	temp_result.Headers.Optional.Magic = int(optional.Magic)
+	temp_result.Headers.Optional.MajorLinkerVersion = int(optional.MajorLinkerVersion)
+	temp_result.Headers.Optional.MinorLinkerVersion = int(optional.MinorLinkerVersion)
+	temp_result.Headers.Optional.SizeOfCode = int(optional.SizeOfCode)
+	temp_result.Headers.Optional.SizeOfInitializedData = int(optional.SizeOfInitializedData)
+	temp_result.Headers.Optional.SizeOfUninitializedData = int(optional.SizeOfUninitializedData)
+	temp_result.Headers.Optional.AddressOfEntryPoint = int(optional.AddressOfEntryPoint)
+	temp_result.Headers.Optional.BaseOfCode = int(optional.BaseOfCode)
+	temp_result.Headers.Optional.ImageBase = int(optional.ImageBase)
+	temp_result.Headers.Optional.SectionAlignment = int(optional.SectionAlignment)
+	temp_result.Headers.Optional.FileAlignment = int(optional.FileAlignment)
+	temp_result.Headers.Optional.MajorOperatingSystemVersion = int(optional.MajorOperatingSystemVersion)
+	temp_result.Headers.Optional.MinorOperatingSystemVersion = int(optional.MinorOperatingSystemVersion)
+	temp_result.Headers.Optional.MajorImageVersion = int(optional.MajorImageVersion)
+	temp_result.Headers.Optional.MinorImageVersion = int(optional.MinorImageVersion)
+	temp_result.Headers.Optional.MajorSubsystemVersion = int(optional.MajorSubsystemVersion)
+	temp_result.Headers.Optional.MinorSubsystemVersion = int(optional.MinorSubsystemVersion)
+	temp_result.Headers.Optional.Reserved1 = int(optional.Reserved1)
+	temp_result.Headers.Optional.SizeOfImage = int(optional.SizeOfImage)
+	temp_result.Headers.Optional.SizeOfHeaders = int(optional.SizeOfHeaders)
+	temp_result.Headers.Optional.CheckSum = int(optional.CheckSum)
+	temp_result.Headers.Optional.Subsystem = int(optional.Subsystem)
+	temp_result.Headers.Optional.DllCharacteristics = int(optional.DllCharacteristics)
+	temp_result.Headers.Optional.SizeOfStackReserve = int(optional.SizeOfStackReserve)
+	temp_result.Headers.Optional.SizeOfStackCommit = int(optional.SizeOfStackCommit)
+	temp_result.Headers.Optional.SizeOfHeapReserve = int(optional.SizeOfHeapReserve)
+	temp_result.Headers.Optional.SizeOfHeapCommit = int(optional.SizeOfHeapCommit)
+	temp_result.Headers.Optional.LoaderFlags = int(optional.LoaderFlags)
+	temp_result.Headers.Optional.NumberOfRvaAndSizes = int(optional.NumberOfRvaAndSizes)
 
 	return temp_result
 }
 
 func header_directories_count(ctx C.pe_ctx_t) int {
-	directories_count := C.pe_directories_count(&ctx)
-	return int(directories_count)
+
+	count := C.pe_directories_count(&ctx)
+	return int(count)
 }
 
 func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	directories := C.pe_directories(&ctx)
-	temp_result.Directories.VirtualAddress = int((*directories).VirtualAddress) // returns Virutal address
-	temp_result.Directories.Size = int((*directories).Size)
+
+	count := C.pe_directories_count(&ctx)
+	if int(count) == 0 {
+		return &Result{} // return empty result
+	}
+	length := int(count)
+	var directories **C.IMAGE_DATA_DIRECTORY = C.pe_directories(&ctx)
+	sliceV := (*[1 << 30](*C.IMAGE_DATA_DIRECTORY))(unsafe.Pointer(directories))[:length:length]
+	if directories == nil {
+		return &Result{} // return empty result
+	}
+
+	temp_result.Directories = make([]*Directory, 17)
+
+	var i C.uint32_t = 0
+	for int(i) < length {
+		// fmt.Println(sliceV[i].VirtualAddress)
+
+		temp_result.Directories[i] = &Directory{
+			// Name: C.GoString(C.pe_directory_name(i)),
+			VirtualAddress: fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)), // returns Virutal address
+			Size:           int(sliceV[i].Size),
+		}
+		i++
+	}
+
 	return temp_result
 }
 
@@ -373,15 +404,41 @@ func header_sections_count(ctx C.pe_ctx_t) int {
 }
 
 func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	sections := C.pe_sections(&ctx)
-	temp_result.Sections.VirtualAddress = int((*sections).VirtualAddress)
-	temp_result.Sections.PointerToRawData = int((*sections).PointerToRawData)
-	temp_result.Sections.PointerToRelocations = int((*sections).PointerToRelocations) // always zero in executables
-	temp_result.Sections.PointerToLinenumbers = int((*sections).PointerToLinenumbers) //deprecated
-	temp_result.Sections.NumberOfRelocations = int((*sections).NumberOfRelocations)
-	temp_result.Sections.NumberOfLinenumbers = int((*sections).NumberOfLinenumbers) //deprecated
-	temp_result.Sections.Characteristics = int((*sections).Characteristics)
+
+	count := C.pe_sections_count(&ctx)
+	if int(count) == 0 {
+		return &Result{} // return empty result
+	}
+	length := int(count)
+	var sections **C.IMAGE_SECTION_HEADER = C.pe_sections(&ctx)
+	sliceV := (*[1 << 30](*C.IMAGE_SECTION_HEADER))(unsafe.Pointer(sections))[:length:length]
+	if sections == nil {
+		return &Result{} // return empty result
+	}
+
+	temp_result.Sections = make([]*Section, 6)
+	for i := 0; i < length; i++ {
+		// fmt.Println(sliceV[i].VirtualAddress)
+		temp_result.Sections[i] = &Section{
+			Name:                 fmt.Sprintf("%s", sliceV[i].Name),
+			VirtualAddress:       fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
+			PointerToRawData:     fmt.Sprintf("%X", int(sliceV[i].PointerToRawData)),
+			PointerToRelocations: fmt.Sprintf("%X", int(sliceV[i].PointerToRelocations)), // always zero in executables
+			NumberOfRelocations:  int(sliceV[i].NumberOfRelocations),
+			Characteristics:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
+		}
+	}
 
 	return temp_result
 
+}
+
+func getTimestamp(unixtime int) string {
+	i, err := strconv.ParseInt("956165981", 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	tm := time.Unix(i, 0)
+	timestamp := fmt.Sprintf("%s", tm.String())
+	return timestamp
 }

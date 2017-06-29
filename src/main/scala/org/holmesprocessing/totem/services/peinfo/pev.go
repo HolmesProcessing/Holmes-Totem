@@ -36,7 +36,13 @@ type Result struct {
 	Sections          []*Section   `json:"sections"`
 	Sections_count    int          `json:"sectionscount"`
 	PEHashes          Hashes        `json:"PEHash"` 
+	Exports          []*Export       `json:"Exports"`
 }
+
+type Export struct {
+	Addr  string `json:"Addr"`
+	FunctionName string `json:"FunctionName"`
+}	
 
 type Header struct {
 	Optional OptionalHeaders `json:"Optional"`
@@ -300,6 +306,7 @@ info.Println(" Headersections started")
 info.Println("Sections count started")
 	result.Sections_count = header_sections_count(ctx)
 	result = get_hashes(ctx, result)
+	result = get_exports(ctx, result)
 
 
 	// TODO: as each of these are independent, we can use concurrency.
@@ -316,6 +323,21 @@ info.Println("Sections count started")
 	elapsed_time := time.Since(start_time)
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
 }
+
+func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	var exports *C.exports = C.get_exports(&ctx)
+	count := C.get_exports_functions_count(&ctx)
+	length := int(count)	
+	sliceV := (*[1 << 30](C.exports))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
+	temp_result.Exports = make([]*Export, length)
+	for i:= 0; i<length; i++ {
+		temp_result.Exports[i] =  &Export {
+			Addr : C.GoString(sliceV[i].addr),
+			FunctionName : C.GoString(sliceV[i].function_name),
+		}
+	}
+	return temp_result
+}	
 
 func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	coff := C.pe_coff(&ctx)

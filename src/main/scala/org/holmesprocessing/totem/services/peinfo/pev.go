@@ -37,7 +37,8 @@ type Result struct {
 	Sections_count    int          `json:"sectionscount"`
 	PEHashes          Hashes        `json:"PEHash"` 
 	Exports          []*Export       `json:"Exports"`
-	Entrophy 	float32          `json"Entrophy"`
+	Entrophy 	float32          `json:"Entrophy"`
+	FPUTrick        bool             `json:"FPUtrick"`
 }
 
 type Export struct {
@@ -309,6 +310,7 @@ info.Println("Sections count started")
 	result = get_hashes(ctx, result)
 	result = get_exports(ctx, result)
 	result.Entrophy = get_entrophy_file(ctx)
+	result.FPUTrick = get_fputrick(ctx)
 
 
 	// TODO: as each of these are independent, we can use concurrency.
@@ -326,6 +328,11 @@ info.Println("Sections count started")
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
 }
 
+func get_fputrick(ctx C.pe_ctx_t) bool {
+	detected := C.fpu_trick(&ctx)
+	info.Println(bool(detected))
+	return bool(detected)
+}
 func get_entrophy_file(ctx C.pe_ctx_t) float32 {
 	entrophy := C.calculate_entropy_file(&ctx)
 	info.Println(float32(entrophy))

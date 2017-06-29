@@ -37,6 +37,7 @@ type Result struct {
 	Sections_count    int          `json:"sectionscount"`
 	PEHashes          Hashes        `json:"PEHash"` 
 	Exports          []*Export       `json:"Exports"`
+	Entrophy 	float32          `json"Entrophy"`
 }
 
 type Export struct {
@@ -307,6 +308,7 @@ info.Println("Sections count started")
 	result.Sections_count = header_sections_count(ctx)
 	result = get_hashes(ctx, result)
 	result = get_exports(ctx, result)
+	result.Entrophy = get_entrophy_file(ctx)
 
 
 	// TODO: as each of these are independent, we can use concurrency.
@@ -322,6 +324,12 @@ info.Println("Sections count started")
 
 	elapsed_time := time.Since(start_time)
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
+}
+
+func get_entrophy_file(ctx C.pe_ctx_t) float32 {
+	entrophy := C.calculate_entropy_file(&ctx)
+	info.Println(float32(entrophy))
+	return float32(entrophy)
 }
 
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {

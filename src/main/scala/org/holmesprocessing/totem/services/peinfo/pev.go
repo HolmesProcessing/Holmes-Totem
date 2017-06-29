@@ -248,9 +248,6 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	// footprint at the cost of a little bit of cpu efficiency (due to gc runs
 	// after every call to handler_analyze)
 	defer debug.FreeOSMemory()
-	var erro error
-
-info.Println(" started analysing Header started")
 	info.Println("Serving request:", request)
 
 	start_time := time.Now()
@@ -276,38 +273,27 @@ info.Println(" started analysing Header started")
 	err = C.pe_load_file(&ctx, cstr)
 	if err != C.LIBPE_E_OK {
 		C.pe_error_print(C.stderr, err)
-info.Println("unable to load file", erro.Error())
 		return
 	}
 
 	err = C.pe_parse(&ctx)
 	if err != C.LIBPE_E_OK {
 		C.pe_error_print(C.stderr, err)
-info.Println("unable to parse file file", erro.Error())
 		
 		return
 	}
 
 	if !C.pe_is_pe(&ctx) {
-	
-info.Println("not a pe file", erro.Error())
 		return
 	}
 
 	result := &Result{}
-info.Println("coff Header started")
 	result = header_coff(ctx, result)
-info.Println("dos Header started")
 	result = header_dos(ctx, result)
-info.Println("Optional Header started")
 	result = header_optional(ctx, result)
-info.Println("directories count started")
 	result.Directories_count = header_directories_count(ctx)
-info.Println("Header directories started")
 	result = header_directories(ctx, result)
-info.Println(" Headersections started")
 	result = header_sections(ctx, result)
-info.Println("Sections count started")
 	result.Sections_count = header_sections_count(ctx)
 	result = get_hashes(ctx, result)
 	result = get_exports(ctx, result)
@@ -343,12 +329,10 @@ func get_cpl_analysis(ctx C.pe_ctx_t) int {
 	
 func get_fputrick(ctx C.pe_ctx_t) bool {
 	detected := C.fpu_trick(&ctx)
-	info.Println(bool(detected))
 	return bool(detected)
 }
 func get_entrophy_file(ctx C.pe_ctx_t) float32 {
 	entrophy := C.calculate_entropy_file(&ctx)
-	info.Println(float32(entrophy))
 	return float32(entrophy)
 }
 
@@ -536,8 +520,6 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.Headers[2].Sha256 = fmt.Sprintf("%s", C.GoString(headers.optional.sha256))
 	temp_result.PEHashes.Headers[2].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.optional.ssdeep))
 
-	//temp_result.PEHashes.Headers[0]info.Printf(C.GoString(headers.coff.md5))	
-	//info.Printf(C.GoString(headers.optional.md5))	
 	return temp_result
 
 }
@@ -553,10 +535,7 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if sections == nil {
 		return &Result{} // return empty result
 	}
-	counter := 0;
 	temp_result.Sections = make([]*Section, length) 
-	info.Println(length);
-	info.Println("length of a slice %d",len(sliceV))
 	for i := 0; i < length; i++ {
 		//fmt.Println(sliceV[i].VirtualAddress)
 		temp_result.Sections[i] = &Section{
@@ -567,8 +546,6 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 			NumberOfRelocations:  int(sliceV[i].NumberOfRelocations),
 			Characteristics:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
 		}
-		counter = counter + 1
-	info.Println(counter)
 	}
 
 	return temp_result

@@ -1,3 +1,2 @@
-{
-	"HTTPBinding": ":8080"
-}
+[settings]
+Port        = 8080

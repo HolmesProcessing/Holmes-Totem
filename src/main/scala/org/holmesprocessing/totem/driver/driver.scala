@@ -17,6 +17,8 @@ import org.holmesprocessing.totem.services.virustotal.{VirustotalSuccess, Virust
 import org.holmesprocessing.totem.services.yara.{YaraSuccess, YaraWork}
 import org.holmesprocessing.totem.services.zipmeta.{ZipMetaSuccess, ZipMetaWork}
 import org.holmesprocessing.totem.services.pdfparse.{pdfparseSuccess, pdfparseWork}
+import org.holmesprocessing.totem.services.pdfparse.{PEMetaSuccess, PEMetaWork}
+
 
 import org.holmesprocessing.totem.types._
 import org.holmesprocessing.totem.util.DownloadSettings
@@ -120,6 +122,7 @@ object driver extends App with Instrumented {
         case "YARA" => Random.shuffle(services.getOrElse("yara", List())).head
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
         case "PDFPARSE" => Random.shuffle(services.getOrElse("pdfparse", List())).head
+        case "PEMETA" => Random.shuffle(services.getOrElse("pemeta", List())).head
         case _ => ""
       }
     }
@@ -157,6 +160,8 @@ object driver extends App with Instrumented {
           ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
         case ("PDFPARSE", li: List[String]) =>
           pdfparseWork(key, uuid_filename, taskingConfig.default_service_timeout, "PDFPARSE", GeneratePartial("PDFPARSE"), li)
+          case ("PEMETA", li: List[String]) =>
+          pemetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEMETA", GeneratePartial("PEMETA"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
@@ -181,6 +186,7 @@ object driver extends App with Instrumented {
         case x: YaraSuccess => conf.getString("totem.services.yara.resultRoutingKey")
         case x: ZipMetaSuccess => conf.getString("totem.services.zipmeta.resultRoutingKey")
         case x: pdfparseSuccess => conf.getString("totem.services.pdfparse.resultRoutingKey")
+        case x: PEMetaSuccess => conf.getString("totem.services.pemeta.resultRoutingKey")
 
         case _ => ""
       }

@@ -21,7 +21,7 @@ case class PEInfoWork(key: Long, filename: String, TimeoutMillis: Int, WorkType:
         PEInfoFailure(false, JString("Not found (File already deleted?)"), Arguments)
 
       case Left(StatusCode(500)) =>
-        PEInfoFailure(false, JString("PEInfoservice failed, check local logs"), Arguments) //would be ideal to print response body here
+        PEInfoFailure(false, JString("PEInfo service failed, check local logs"), Arguments) //would be ideal to print response body here
 
       case Left(StatusCode(code)) =>
         PEInfoFailure(false, JString("Some other code: " + code.toString), Arguments)

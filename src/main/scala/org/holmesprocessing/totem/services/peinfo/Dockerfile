@@ -8,12 +8,13 @@ WORKDIR /service
 RUN apk add --no-cache \
         git \
         && go get github.com/julienschmidt/httprouter \
-        && git clone https://github.com/merces/libpe.git \
+        && git clone -b testing https://github.com/boddumanohar/libpe.git \
         && rm -rf /var/cache/apk/*
 
 RUN apk add --no-cache \
         bash \
         build-base \
+            openssl-dev \
 	    make \
 	    g++ \
         && rm -rf /var/cache/apk/*
@@ -21,7 +22,6 @@ RUN apk add --no-cache \
 # Clean Up
 RUN apk del --purge \
         build-base \
-        git \
         && rm -rf /var/cache/apk/* yara-3.5.0
 
 # Set environment variables.

@@ -1,7 +1,8 @@
 package main
 
-// #include<libpe/pe.h>
-// #cgo LDFLAGS: -lpe
+// #include <libpe/pe.h>
+// #include <libpe/fuzzy.h>
+// #cgo LDFLAGS: -lpe -lssl -lcrypto -lm
 // #cgo CFLAGS: -std=c99
 import "C"
 import (
@@ -34,6 +35,7 @@ type Result struct {
 	Directories_count int          `json:"directories_count"`
 	Sections          []*Section   `json:"sections"`
 	Sections_count    int          `json:"sectionscount"`
+	PEHashes          Hashes        `json:"PEHash"` 
 }
 
 type Header struct {
@@ -121,6 +123,20 @@ type Section struct {
 	Characteristics      string `json:"Characteristics"`
 }
 
+type Hash struct {
+	Name string  `json:"Name"`
+	Md5 string `json:"md5"`
+	Sha1 string `json:"sha1"`
+	Sha256 string `json:"sha256"`
+	Ssdeep string `json:"ssdeep"`
+}
+
+type Hashes struct {
+	Headers [3]Hash `json:"Headers"` // Only 3 Headers : dos, coff, optional
+	Sections []*Hash `json:"Sections"`
+	FileHash Hash `json:"PEFile"`
+}
+	
 // config structs
 type Metadata struct {
 	Name        string
@@ -222,8 +238,11 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	// footprint at the cost of a little bit of cpu efficiency (due to gc runs
 	// after every call to handler_analyze)
 	defer debug.FreeOSMemory()
+	var erro error
 
+info.Println(" started analysing Header started")
 	info.Println("Serving request:", request)
+
 	start_time := time.Now()
 
 	obj := request.URL.Query().Get("obj")
@@ -247,28 +266,41 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	err = C.pe_load_file(&ctx, cstr)
 	if err != C.LIBPE_E_OK {
 		C.pe_error_print(C.stderr, err)
+info.Println("unable to load file", erro.Error())
 		return
 	}
 
 	err = C.pe_parse(&ctx)
 	if err != C.LIBPE_E_OK {
 		C.pe_error_print(C.stderr, err)
+info.Println("unable to parse file file", erro.Error())
+		
 		return
 	}
 
 	if !C.pe_is_pe(&ctx) {
+	
+info.Println("not a pe file", erro.Error())
 		return
 	}
 
 	result := &Result{}
-
+info.Println("coff Header started")
 	result = header_coff(ctx, result)
+info.Println("dos Header started")
 	result = header_dos(ctx, result)
+info.Println("Optional Header started")
 	result = header_optional(ctx, result)
+info.Println("directories count started")
 	result.Directories_count = header_directories_count(ctx)
+info.Println("Header directories started")
 	result = header_directories(ctx, result)
+info.Println(" Headersections started")
 	result = header_sections(ctx, result)
+info.Println("Sections count started")
 	result.Sections_count = header_sections_count(ctx)
+	result = get_hashes(ctx, result)
+
 
 	// TODO: as each of these are independent, we can use concurrency.
 
@@ -381,7 +413,7 @@ func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		return &Result{} // return empty result
 	}
 
-	temp_result.Directories = make([]*Directory, 17)
+	temp_result.Directories = make([]*Directory, length)
 
 	var i C.uint32_t = 0
 	for int(i) < length {
@@ -403,8 +435,64 @@ func header_sections_count(ctx C.pe_ctx_t) int {
 	return int(sections_count)
 }
 
-func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
+func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	// File Hash
+	file_hash := C.get_file_hash(&ctx)
+	temp_result.PEHashes.FileHash.Name = fmt.Sprintf("%s", C.GoString(file_hash.name))
+	temp_result.PEHashes.FileHash.Md5 = fmt.Sprintf("%s", C.GoString(file_hash.md5))
+	temp_result.PEHashes.FileHash.Sha1 = fmt.Sprintf("%s", C.GoString(file_hash.sha1))
+	temp_result.PEHashes.FileHash.Sha256 =  fmt.Sprintf("%s", C.GoString(file_hash.sha256))
+	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
 
+	// Section Hash 
+	var sections *C.hash_ = C.get_sections_hash(&ctx)
+	count := C.pe_sections_count(&ctx)
+	length := int(count)
+	sliceV := (*[1 << 30](C.hash_))(unsafe.Pointer(sections))[:length:length] // converting c array into Go slices
+	temp_result.PEHashes.Sections = make([]*Hash, length)
+	for i := 0; i<length; i++ {
+		temp_result.PEHashes.Sections[i] = &Hash {
+			Name : fmt.Sprintf("%s", C.GoString(sliceV[i].name)),
+			Md5 : fmt.Sprintf("%s", C.GoString(sliceV[i].md5)),
+			Sha1 : fmt.Sprintf("%s", C.GoString(sliceV[i].sha1)),
+			Sha256 : fmt.Sprintf("%s", C.GoString(sliceV[i].sha256)),
+			Ssdeep : fmt.Sprintf("%s", C.GoString(sliceV[i].ssdeep)),
+		
+		}
+	}
+
+	// Header Hash
+	headers := C.get_headers_hash(&ctx)
+	//temp_result.PEHashes.Headers = make([]*Hash, 4);  // only 3 headers : dos, coff, optional
+	
+	// for Dos header
+	temp_result.PEHashes.Headers[0].Name = fmt.Sprintf("%s", C.GoString(headers.dos.name))
+	temp_result.PEHashes.Headers[0].Md5 = fmt.Sprintf("%s", C.GoString(headers.dos.md5))
+	temp_result.PEHashes.Headers[0].Sha1 = fmt.Sprintf("%s", C.GoString(headers.dos.sha1))
+	temp_result.PEHashes.Headers[0].Sha256 = fmt.Sprintf("%s", C.GoString(headers.dos.sha256))
+	temp_result.PEHashes.Headers[0].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.dos.ssdeep))
+
+	// for coff Header
+	temp_result.PEHashes.Headers[1].Name = fmt.Sprintf("%s", C.GoString(headers.coff.name))
+	temp_result.PEHashes.Headers[1].Md5 = fmt.Sprintf("%s", C.GoString(headers.coff.md5))
+	temp_result.PEHashes.Headers[1].Sha1 = fmt.Sprintf("%s", C.GoString(headers.coff.sha1))
+	temp_result.PEHashes.Headers[1].Sha256 = fmt.Sprintf("%s", C.GoString(headers.coff.sha256))
+	temp_result.PEHashes.Headers[1].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.coff.ssdeep))
+
+	// for Optional Header
+	temp_result.PEHashes.Headers[2].Name = fmt.Sprintf("%s", C.GoString(headers.optional.name))
+	temp_result.PEHashes.Headers[2].Md5 = fmt.Sprintf("%s", C.GoString(headers.optional.md5))
+	temp_result.PEHashes.Headers[2].Sha1 = fmt.Sprintf("%s", C.GoString(headers.optional.sha1))
+	temp_result.PEHashes.Headers[2].Sha256 = fmt.Sprintf("%s", C.GoString(headers.optional.sha256))
+	temp_result.PEHashes.Headers[2].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.optional.ssdeep))
+
+	//temp_result.PEHashes.Headers[0]info.Printf(C.GoString(headers.coff.md5))	
+	//info.Printf(C.GoString(headers.optional.md5))	
+	return temp_result
+
+}
+
+func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	count := C.pe_sections_count(&ctx)
 	if int(count) == 0 {
 		return &Result{} // return empty result
@@ -415,10 +503,12 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if sections == nil {
 		return &Result{} // return empty result
 	}
-
-	temp_result.Sections = make([]*Section, 6)
+	counter := 0;
+	temp_result.Sections = make([]*Section, length) 
+	info.Println(length);
+	info.Println("length of a slice %d",len(sliceV))
 	for i := 0; i < length; i++ {
-		// fmt.Println(sliceV[i].VirtualAddress)
+		//fmt.Println(sliceV[i].VirtualAddress)
 		temp_result.Sections[i] = &Section{
 			Name:                 fmt.Sprintf("%s", sliceV[i].Name),
 			VirtualAddress:       fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
@@ -427,6 +517,8 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 			NumberOfRelocations:  int(sliceV[i].NumberOfRelocations),
 			Characteristics:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
 		}
+		counter = counter + 1
+	info.Println(counter)
 	}
 
 	return temp_result

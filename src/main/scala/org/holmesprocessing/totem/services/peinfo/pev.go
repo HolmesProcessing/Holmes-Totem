@@ -39,6 +39,8 @@ type Result struct {
 	Exports          []*Export       `json:"Exports"`
 	Entrophy 	float32          `json:"Entrophy"`
 	FPUTrick        bool             `json:"FPUtrick"`
+	CPLAnalysis       int 		`json:"CPLAnalysis"`             // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
+	CheckFakeEntryPoint int `json:"CheckFakeEntrypoint"`		//  0 -> Normal, 1 -> fake,  -1 -> null.
 }
 
 type Export struct {
@@ -311,7 +313,8 @@ info.Println("Sections count started")
 	result = get_exports(ctx, result)
 	result.Entrophy = get_entrophy_file(ctx)
 	result.FPUTrick = get_fputrick(ctx)
-
+	result.CPLAnalysis = get_cpl_analysis(ctx)
+	result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
 
 	// TODO: as each of these are independent, we can use concurrency.
 
@@ -328,6 +331,16 @@ info.Println("Sections count started")
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
 }
 
+func check_fake_entrypoint(ctx C.pe_ctx_t) int {
+	fake := C.check_fake_entrypoint(&ctx)
+	return int(fake)
+}
+
+func get_cpl_analysis(ctx C.pe_ctx_t) int {
+	cpl := C.get_cpl_analysis(&ctx)
+	return int(cpl)
+}
+	
 func get_fputrick(ctx C.pe_ctx_t) bool {
 	detected := C.fpu_trick(&ctx)
 	info.Println(bool(detected))

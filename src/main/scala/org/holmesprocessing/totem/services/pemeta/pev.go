@@ -30,23 +30,23 @@ import (
 )
 
 type Result struct {
-	Headers           Header       `json:"Headers"`
-	Directories       []*Directory `json:"directories"`
-	Directories_count int          `json:"directories_count"`
-	Sections          []*Section   `json:"sections"`
-	Sections_count    int          `json:"sectionscount"`
-	PEHashes          Hashes        `json:"PEHash"` 
-	Exports          []*Export       `json:"Exports"`
-	Entrophy 	float32          `json:"Entrophy"`
-	FPUTrick        bool             `json:"FPUtrick"`
-	CPLAnalysis       int 		`json:"CPLAnalysis"`             // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
-	CheckFakeEntryPoint int `json:"CheckFakeEntrypoint"`		//  0 -> Normal, 1 -> fake,  -1 -> null.
+	Headers             Header       `json:"Headers"`
+	Directories         []*Directory `json:"directories"`
+	Directories_count   int          `json:"directories_count"`
+	Sections            []*Section   `json:"sections"`
+	Sections_count      int          `json:"sectionscount"`
+	PEHashes            Hashes       `json:"PEHash"`
+	Exports             []*Export    `json:"Exports"`
+	Entrophy            float32      `json:"Entrophy"`
+	FPUTrick            bool         `json:"FPUtrick"`
+	CPLAnalysis         int          `json:"CPLAnalysis"`         // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
+	CheckFakeEntryPoint int          `json:"CheckFakeEntrypoint"` //  0 -> Normal, 1 -> fake,  -1 -> null.
 }
 
 type Export struct {
-	Addr  string `json:"Addr"`
+	Addr         string `json:"Addr"`
 	FunctionName string `json:"FunctionName"`
-}	
+}
 
 type Header struct {
 	Optional OptionalHeaders `json:"Optional"`
@@ -134,19 +134,19 @@ type Section struct {
 }
 
 type Hash struct {
-	Name string  `json:"Name"`
-	Md5 string `json:"md5"`
-	Sha1 string `json:"sha1"`
+	Name   string `json:"Name"`
+	Md5    string `json:"md5"`
+	Sha1   string `json:"sha1"`
 	Sha256 string `json:"sha256"`
 	Ssdeep string `json:"ssdeep"`
 }
 
 type Hashes struct {
-	Headers [3]Hash `json:"Headers"` // Only 3 Headers : dos, coff, optional
+	Headers  [3]Hash `json:"Headers"` // Only 3 Headers : dos, coff, optional
 	Sections []*Hash `json:"Sections"`
-	FileHash Hash `json:"PEFile"`
+	FileHash Hash    `json:"PEFile"`
 }
-	
+
 // config structs
 type Metadata struct {
 	Name        string
@@ -279,7 +279,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	err = C.pe_parse(&ctx)
 	if err != C.LIBPE_E_OK {
 		C.pe_error_print(C.stderr, err)
-		
+
 		return
 	}
 
@@ -326,7 +326,7 @@ func get_cpl_analysis(ctx C.pe_ctx_t) int {
 	cpl := C.get_cpl_analysis(&ctx)
 	return int(cpl)
 }
-	
+
 func get_fputrick(ctx C.pe_ctx_t) bool {
 	detected := C.fpu_trick(&ctx)
 	return bool(detected)
@@ -339,17 +339,17 @@ func get_entrophy_file(ctx C.pe_ctx_t) float32 {
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	var exports *C.exports = C.get_exports(&ctx)
 	count := C.get_exports_functions_count(&ctx)
-	length := int(count)	
+	length := int(count)
 	sliceV := (*[1 << 30](C.exports))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
 	temp_result.Exports = make([]*Export, length)
-	for i:= 0; i<length; i++ {
-		temp_result.Exports[i] =  &Export {
-			Addr : C.GoString(sliceV[i].addr),
-			FunctionName : C.GoString(sliceV[i].function_name),
+	for i := 0; i < length; i++ {
+		temp_result.Exports[i] = &Export{
+			Addr:         C.GoString(sliceV[i].addr),
+			FunctionName: C.GoString(sliceV[i].function_name),
 		}
 	}
 	return temp_result
-}	
+}
 
 func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	coff := C.pe_coff(&ctx)
@@ -475,30 +475,29 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.FileHash.Name = fmt.Sprintf("%s", C.GoString(file_hash.name))
 	temp_result.PEHashes.FileHash.Md5 = fmt.Sprintf("%s", C.GoString(file_hash.md5))
 	temp_result.PEHashes.FileHash.Sha1 = fmt.Sprintf("%s", C.GoString(file_hash.sha1))
-	temp_result.PEHashes.FileHash.Sha256 =  fmt.Sprintf("%s", C.GoString(file_hash.sha256))
+	temp_result.PEHashes.FileHash.Sha256 = fmt.Sprintf("%s", C.GoString(file_hash.sha256))
 	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
 
-	// Section Hash 
+	// Section Hash
 	var sections *C.hash_ = C.get_sections_hash(&ctx)
 	count := C.pe_sections_count(&ctx)
 	length := int(count)
 	sliceV := (*[1 << 30](C.hash_))(unsafe.Pointer(sections))[:length:length] // converting c array into Go slices
 	temp_result.PEHashes.Sections = make([]*Hash, length)
-	for i := 0; i<length; i++ {
-		temp_result.PEHashes.Sections[i] = &Hash {
-			Name : fmt.Sprintf("%s", C.GoString(sliceV[i].name)),
-			Md5 : fmt.Sprintf("%s", C.GoString(sliceV[i].md5)),
-			Sha1 : fmt.Sprintf("%s", C.GoString(sliceV[i].sha1)),
-			Sha256 : fmt.Sprintf("%s", C.GoString(sliceV[i].sha256)),
-			Ssdeep : fmt.Sprintf("%s", C.GoString(sliceV[i].ssdeep)),
-		
+	for i := 0; i < length; i++ {
+		temp_result.PEHashes.Sections[i] = &Hash{
+			Name:   fmt.Sprintf("%s", C.GoString(sliceV[i].name)),
+			Md5:    fmt.Sprintf("%s", C.GoString(sliceV[i].md5)),
+			Sha1:   fmt.Sprintf("%s", C.GoString(sliceV[i].sha1)),
+			Sha256: fmt.Sprintf("%s", C.GoString(sliceV[i].sha256)),
+			Ssdeep: fmt.Sprintf("%s", C.GoString(sliceV[i].ssdeep)),
 		}
 	}
 
 	// Header Hash
 	headers := C.get_headers_hash(&ctx)
 	//temp_result.PEHashes.Headers = make([]*Hash, 4);  // only 3 headers : dos, coff, optional
-	
+
 	// for Dos header
 	temp_result.PEHashes.Headers[0].Name = fmt.Sprintf("%s", C.GoString(headers.dos.name))
 	temp_result.PEHashes.Headers[0].Md5 = fmt.Sprintf("%s", C.GoString(headers.dos.md5))
@@ -535,7 +534,7 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if sections == nil {
 		return &Result{} // return empty result
 	}
-	temp_result.Sections = make([]*Section, length) 
+	temp_result.Sections = make([]*Section, length)
 	for i := 0; i < length; i++ {
 		//fmt.Println(sliceV[i].VirtualAddress)
 		temp_result.Sections[i] = &Section{

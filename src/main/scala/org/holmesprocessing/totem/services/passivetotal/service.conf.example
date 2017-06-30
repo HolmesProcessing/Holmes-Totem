@@ -1,5 +1,11 @@
-[settings]
-Port            = 8080
-APIUser         = YOUR-PASSIVETOTAL-USERNAME
-APIKey          = YOUR-PASSIVETOTAL-APIKEY
-RequestTimeout  = 60
+{
+	"settings": {
+		"port": ":8080"
+	},
+
+	"passivetotal": {
+		"APIUser": YOUR-PASSIVETOTAL-USERNAME,
+		"APIKey": YOUR-PASSIVETOTAL-APIKEY,
+		"RequestTimeout": 60
+	}
+}

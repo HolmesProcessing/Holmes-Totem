@@ -8,14 +8,23 @@ import os
 from os import path
 import shodan
 
+from shodanfile import runShodan
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-from holmeslibrary.services import ServiceConfig
-from shodanfile import runShodan
+import json
+
+# Reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    try:
+        config = json.loads(open(configPath).read())
+        return config
+    except FileNotFoundError:
+        raise tornado.web.HTTPError(500)
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
-api = shodan.Shodan(Config.settings.apikey)
+api = shodan.Shodan(Config["shodan"]["apikey"])
 
 Metadata = {
     "Name"        : "Shodan",
@@ -74,8 +83,11 @@ class Application(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(Application())
-    server.listen(Config.settings.port)
-    tornado.ioloop.IOLoop.instance().start()
+    server.listen(Config["port"])
+    try:
+        tornado.ioloop.IOLoop.current().start()
+    except KeyboardInterrupt:
+        tornado.ioloop.IOLoop.current().stop()
 
 
 if __name__ == '__main__':

@@ -106,9 +106,12 @@ totem {
       uri = ["http://127.0.0.1:7780/analyze/?obj="]
       resultRoutingKey = "pdfparse.result.static.totem"
     }
-    pemeta {
-      uri = ["http://127.0.0.1:7800/analyze/?obj="]
-      resultRoutingKey = "pemeta.result.static.totem"
+    cfg {
+      uri = ["http://127.0.0.1:7790/analyze/?obj="]
+      resultRoutingKey = "cfg.result.static.totem"
     }
+ pemeta {
+      uri = ["http://127.0.0.1:7800/analyze/?obj="]
+      resultRoutingKey = "pemeta.result.static.totem"    
   }
 }

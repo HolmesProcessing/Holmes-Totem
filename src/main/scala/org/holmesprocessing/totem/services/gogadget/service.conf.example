@@ -1,5 +1,10 @@
 {
-	"HTTPBinding": ":8080",
-	"MaxNumberOfGadgets": 10000,
-	"SearchDepth": 10
+	"settings": {
+		"HTTPBinding": ":8080"
+	},
+
+	"gogadget": {
+		"MaxNumberOfGadgets": 10000,
+		"SearchDepth": 10
+	}
 }

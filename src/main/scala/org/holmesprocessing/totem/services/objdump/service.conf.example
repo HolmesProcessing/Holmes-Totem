@@ -1,3 +1,9 @@
-[settings]
-Port        = 8080
-MaxNumberOfOpcodes = 10000
+{
+	"settings": {
+		"port": ":8080"
+	},
+
+	"objdump": {
+		"MaxNumberOfOpcodes" = 10000
+	}
+}

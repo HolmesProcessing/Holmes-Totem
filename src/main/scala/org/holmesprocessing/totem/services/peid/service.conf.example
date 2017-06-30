@@ -1,7 +1,11 @@
-[settings]
-Port        = 8080
+{
+	"settings": {
+		"port": 8080
+	},
+	"yara_rules": {
+		"get_remote": false,
+		"download_url": "<https://127.0.0.1/services/peid/rules>",
+		"local_path": "rules.yar"
+	}
 
-[yara_rules]
-get_remote = False
-download_url = <https://127.0.0.1/services/peid/rules>
-local_path = rules.yar
+}

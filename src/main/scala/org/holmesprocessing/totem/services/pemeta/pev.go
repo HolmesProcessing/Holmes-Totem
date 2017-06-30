@@ -449,12 +449,12 @@ func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	temp_result.Directories = make([]*Directory, length)
 
-	var i C.uint32_t = 0
+	var i C.ImageDirectoryEntry = 0
 	for int(i) < length {
 		// fmt.Println(sliceV[i].VirtualAddress)
 
 		temp_result.Directories[i] = &Directory{
-			// Name: C.GoString(C.pe_directory_name(i)),
+			Name: C.GoString(C.pe_directory_name(i)),
 			VirtualAddress: fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)), // returns Virutal address
 			Size:           int(sliceV[i].Size),
 		}

@@ -21,4 +21,6 @@ export CONFSTORAGE_YARA=${CONFSTORAGE}yara/
 export CONFSTORAGE_ZIPMETA=${CONFSTORAGE}zipmeta/
 export CONFSTORAGE_PDFPARSE=${CONFSTORAGE}pdfparse/
 export CONFSTORAGE_CFG=${CONFSTORAGE}cfg/
+export CONFSTORAGE_PEMETA=${CONFSTORAGE}pemeta/
+
 docker-compose -f ./docker-compose.yml up -d --build

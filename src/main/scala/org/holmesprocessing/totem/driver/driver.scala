@@ -18,6 +18,7 @@ import org.holmesprocessing.totem.services.yara.{YaraSuccess, YaraWork}
 import org.holmesprocessing.totem.services.zipmeta.{ZipMetaSuccess, ZipMetaWork}
 import org.holmesprocessing.totem.services.pdfparse.{pdfparseSuccess, pdfparseWork}
 import org.holmesprocessing.totem.services.cfg.{cfgSuccess, cfgWork}
+import org.holmesprocessing.totem.services.pemeta.{PEMetaSuccess, PEMetaWork}
 
 import org.holmesprocessing.totem.types._
 import org.holmesprocessing.totem.util.DownloadSettings
@@ -122,6 +123,7 @@ object driver extends App with Instrumented {
         case "ZIPMETA" => Random.shuffle(services.getOrElse("zipmeta", List())).head
         case "PDFPARSE" => Random.shuffle(services.getOrElse("pdfparse", List())).head
         case "CFG" => Random.shuffle(services.getOrElse("cfg", List())).head
+        case "PEMETA" => Random.shuffle(services.getOrElse("pemeta", List())).head
         case _ => ""
       }
     }
@@ -161,6 +163,8 @@ object driver extends App with Instrumented {
           pdfparseWork(key, uuid_filename, taskingConfig.default_service_timeout, "PDFPARSE", GeneratePartial("PDFPARSE"), li)
         case ("CFG", li: List[String]) =>
           cfgWork(key, uuid_filename, taskingConfig.default_service_timeout, "CFG", GeneratePartial("CFG"), li)
+        case ("PEMETA", li: List[String]) =>
+          PEMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEMETA", GeneratePartial("PEMETA"), li)
         case (s: String, li: List[String]) =>
           UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
@@ -186,6 +190,7 @@ object driver extends App with Instrumented {
         case x: ZipMetaSuccess => conf.getString("totem.services.zipmeta.resultRoutingKey")
         case x: pdfparseSuccess => conf.getString("totem.services.pdfparse.resultRoutingKey")
         case x: cfgSuccess => conf.getString("totem.services.cfg.resultRoutingKey")
+        case x: PEMetaSuccess => conf.getString("totem.services.pemeta.resultRoutingKey")
         case _ => ""
       }
     }

@@ -1,4 +1,9 @@
 {
-	"HTTPBinding": ":8080",
-	"MaxNumberofObjects": 1000
+	"settings": {
+		"HTTPBinding": ":8080"
+	},
+
+	"pdfparse": {
+		"MaxNumberofObjects": 1000
+	}
 }

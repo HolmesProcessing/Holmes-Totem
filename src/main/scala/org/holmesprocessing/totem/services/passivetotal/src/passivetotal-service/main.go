@@ -98,10 +98,8 @@ func main() {
 	router := httprouter.New()
 	router.GET("/analyze/", handlerAnalyze)
 	router.GET("/", handlerInfo)
-	port := cfg.Settings.Port
-	address := fmt.Sprintf(":%s", port)
-	infoLogger.Printf("Binding to %s\n", address)
-	infoLogger.Fatal(http.ListenAndServe(address, router))
+	infoLogger.Printf("Binding to %s\n", cfg.settings.port)
+	infoLogger.Fatal(http.ListenAndServe(cfg.settings.port, router))
 }
 
 func handlerInfo(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -158,9 +156,9 @@ func doPassiveTotalLookup(r *http.Request, p httprouter.Params) (interface{}, in
 	// via the request body into it (all options can be overriden):
 	aqs := &passivetotal.ApiQuerySettings{
 		Object:   obj,
-		Username: cfg.Settings.APIUser,
-		ApiKey:   cfg.Settings.APIKey,
-		Timeout:  cfg.Settings.RequestTimeout,
+		Username: cfg.passivetotal.APIUser,
+		ApiKey:   cfg.passivetotal.APIKey,
+		Timeout:  cfg.passivetotal.RequestTimeout,
 	}
 
 	if r.Body != nil {

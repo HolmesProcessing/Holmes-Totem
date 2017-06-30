@@ -98,8 +98,8 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	info.Printf("Binding to %s\n", config.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.settings.HTTPBinding, router))
 }
 
 // Parse a configuration file into a Config structure.
@@ -167,7 +167,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.SearchDepth), "--binary", sample_path)
+	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.gogadget.SearchDepth), "--binary", sample_path)
 	stdout, err := process.StdoutPipe()
 	if err != nil {
 		http.Error(f_response, "Creating stdout pipe failed", 500)
@@ -198,7 +198,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		UniqueGadgets: 0,
 		Truncated:     false,
 		SearchDepth:   config.SearchDepth,
-		Gadgets:       make([]*Gadget, config.MaxNumberOfGadgets),
+		Gadgets:       make([]*Gadget, config.gogadget.MaxNumberOfGadgets),
 	}
 
 	// Sanity check for the first line
@@ -229,7 +229,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 		// did we reach the maximum?
 		gadgetCounter += 1
-		if gadgetCounter == config.MaxNumberOfGadgets {
+		if gadgetCounter == config.gogadget.MaxNumberOfGadgets {
 			result.Truncated = true
 			break
 		}

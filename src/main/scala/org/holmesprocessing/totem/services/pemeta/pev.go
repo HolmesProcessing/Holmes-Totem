@@ -332,17 +332,30 @@ func get_fputrick(ctx C.pe_ctx_t) bool {
 	return bool(detected)
 }
 func get_entrophy_file(ctx C.pe_ctx_t) float32 {
+
+	info.Println("calculating entrophy")
 	entrophy := C.calculate_entropy_file(&ctx)
+
 	return float32(entrophy)
 }
 
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	var exports *C.exports = C.get_exports(&ctx)
+
+	exports := C.get_exports(&ctx)
+	if exports == nil {
+		info.Println("nill value")
+		return temp_result
+	}
 	count := C.get_exports_functions_count(&ctx)
 	length := int(count)
+	if length == 0 { // go ahead and create slice
+		return temp_result
+	}
 	sliceV := (*[1 << 30](C.exports))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
 	temp_result.Exports = make([]*Export, length)
+
 	for i := 0; i < length; i++ {
+
 		temp_result.Exports[i] = &Export{
 			Addr:         C.GoString(sliceV[i].addr),
 			FunctionName: C.GoString(sliceV[i].function_name),
@@ -454,7 +467,7 @@ func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		// fmt.Println(sliceV[i].VirtualAddress)
 
 		temp_result.Directories[i] = &Directory{
-			Name: C.GoString(C.pe_directory_name(i)),
+			Name:           C.GoString(C.pe_directory_name(i)),
 			VirtualAddress: fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)), // returns Virutal address
 			Size:           int(sliceV[i].Size),
 		}
@@ -479,18 +492,18 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
 
 	// Section Hash
-	var sections *C.hash_ = C.get_sections_hash(&ctx)
-	count := C.pe_sections_count(&ctx)
-	length := int(count)
-	sliceV := (*[1 << 30](C.hash_))(unsafe.Pointer(sections))[:length:length] // converting c array into Go slices
+	var sections C.hash_section = C.get_sections_hash(&ctx)
+	//count := C.pe_sections_count(&ctx)
+	length := int(sections.count)
+	sliceV := (*[1 << 30](C.hash_))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
 	temp_result.PEHashes.Sections = make([]*Hash, length)
 	for i := 0; i < length; i++ {
 		temp_result.PEHashes.Sections[i] = &Hash{
-			Name:   fmt.Sprintf("%s", C.GoString(sliceV[i].name)),
-			Md5:    fmt.Sprintf("%s", C.GoString(sliceV[i].md5)),
-			Sha1:   fmt.Sprintf("%s", C.GoString(sliceV[i].sha1)),
-			Sha256: fmt.Sprintf("%s", C.GoString(sliceV[i].sha256)),
-			Ssdeep: fmt.Sprintf("%s", C.GoString(sliceV[i].ssdeep)),
+			Name:   C.GoString(sliceV[i].name),
+			Md5:    C.GoString(sliceV[i].md5),
+			Sha1:   C.GoString(sliceV[i].sha1),
+			Sha256: C.GoString(sliceV[i].sha256),
+			Ssdeep: C.GoString(sliceV[i].ssdeep),
 		}
 	}
 

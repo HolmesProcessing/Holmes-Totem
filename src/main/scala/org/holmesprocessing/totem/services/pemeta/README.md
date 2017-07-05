@@ -2,7 +2,7 @@
 
 ## Description
 
-This service extracts meta information about a Windows Portable Executable file.
+This service extracts meta information about a Windows Portable Executable file. The analyser library used in PEV's [libpe](https://github.com/merces/libpe). PEV is PE file analysis toolkit. Its feature rich, fast and is written C Programing langauge. This pemeta services wraps all the features of PEV's libpe using golang's cgo.
 
 ### Output
 
@@ -145,8 +145,28 @@ This service extracts meta information about a Windows Portable Executable file.
 
 ## Usage
 
+### Building
 Build and start the docker container using the included Dockerfile. Since this container needs to have access to the sample file, you need to run this container with:
 
 `-v /tmp:/tmp:ro`
 
 This allows the container to access /tmp on the local file system in read-only mode.
+
+### `FPU Trick`
+This functionality gives information about undocumented anti-disassembly fpu trick detection. Basically This feature finds of if there is any analysis avoidance techniquesused with that PE File.
+
+This value for this key will be `true` if PEV detects fpu tricks. And returns `false` if there are not such trick used. 
+
+### `CPLAnalysis`
+For this PEV's [cpload](http://pev.sourceforge.net/doc/manual/en_us/ch06.html#cpload) tool is used.
+
+The feature tells details about `.cpl` format files.
+**Output Details:**
+-1 -> Not a DLL
+0 -> no threat
+1 -> This could be a potential malware
+
+### `CheckFakeEntrypoint`
+This feature check if there the entry point is fake. Checks if we are able to get Sections form the AddressOfEntryPoint. If we able to get, then it returns Normal (0) otherwise it returns fake (-1)
+0 -> Normal
+1 -> Fake

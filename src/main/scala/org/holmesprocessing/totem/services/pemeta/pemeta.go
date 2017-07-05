@@ -37,7 +37,7 @@ type Result struct {
 	Sections_count      int          `json:"sectionscount"`
 	PEHashes            Hashes       `json:"PEHash"`
 	Exports             []*Export    `json:"Exports"`
-	Imports             []Import    `json:"Imports"`
+	Imports             []Import     `json:"Imports"`
 	Entrophy            float32      `json:"Entrophy"`
 	FPUTrick            bool         `json:"FPUtrick"`
 	CPLAnalysis         int          `json:"CPLAnalysis"`         // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
@@ -45,7 +45,7 @@ type Result struct {
 }
 
 type Import struct {
-	Dllname   string `json:"DllName"`
+	Dllname   string   `json:"DllName"`
 	Functions []string `json:"Functions"`
 }
 
@@ -94,7 +94,7 @@ type OptionalHeaders struct {
 
 type DosHeaders struct {
 	Magic    int `json:"e_magic"` // Magic Number
-	Cblp     int `json:"e_cblp"`  //
+	Cblp     int `json:"e_cblp"`
 	Cp       int `json:"e_cblp"`
 	Crlc     int `json:"e_crlc"`
 	Cparhdr  int `json:"e_cparhdr"`
@@ -131,12 +131,11 @@ type Directory struct {
 }
 
 type Section struct {
-	Name                 string `json:"Name"`
-	VirtualAddress       string `json:"VirtualAddress"`
-	PointerToRawData     string `json:"PointerToRawData"`
-	PointerToRelocations string `json:"PointerToRelocations"` // always zero in executables
-	NumberOfRelocations  int    `json:"NumberOfRelocations"`
-	Characteristics      string `json:"Characteristics"`
+	Name                string `json:"Name"`
+	VirtualAddress      string `json:"VirtualAddress"`
+	PointerToRawData    string `json:"PointerToRawData"`
+	NumberOfRelocations int    `json:"NumberOfRelocations"`
+	Characteristics     string `json:"Characteristics"`
 }
 
 type Hash struct {
@@ -325,7 +324,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 }
 
 func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	imports := C.get_imports(&ctx);
+	imports := C.get_imports(&ctx)
 	dll_count := int(imports.dll_count)
 	fmt.Printf("Dll count %d\n", dll_count)
 	if dll_count == 0 {
@@ -334,24 +333,21 @@ func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 	temp_result.Imports = make([]Import, dll_count)
 	dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.names))[:dll_count:dll_count] // converting c array into Go slices because indexing of C arrays in not possible in Go.
-	for i := 0; i<dll_count; i++ {
-		//fmt.Println(C.GoString(dllnames[i]))
+	for i := 0; i < dll_count; i++ {
+
 		temp_result.Imports[i].Dllname = C.GoString(dllnames[i])
-		//temp_result.Exports[i] = C.GoString(sliceV[i])
+
 		dllname_functions := (*[1 << 30](C.function))(unsafe.Pointer(imports.functions))[:dll_count:dll_count]
+
 		functions_count := int(dllname_functions[i].count)
-		//function_strings := make([]string, functions_count)
-		temp_result.Imports[i].Functions = make([]string, functions_count)
 		function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dllname_functions[i].functions))[:functions_count:functions_count]
-		for j:=0; j<functions_count; j++ {
-		//	strings.append(import_sample.functions[i].functions[j]) //todo
-	    //	}
-			//fmt.Println("This is were the error will be \n")
-			//fmt.Println(C.GoString(function_names[j]))
+
+		temp_result.Imports[i].Functions = make([]string, functions_count)
+		for j := 0; j < functions_count; j++ {
+
 			temp_result.Imports[i].Functions[j] = C.GoString(function_names[j])
-			//function_strings[j] = C.GoString(function_names[j])
+
 		}
-		//temp_result.Imports[i].Functions = function_strings
 	}
 	return temp_result
 }
@@ -387,7 +383,7 @@ func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 	count := C.get_exports_functions_count(&ctx)
 	length := int(count)
-	if length == 0 { // go ahead and create slice
+	if length == 0 {
 		return temp_result
 	}
 	sliceV := (*[1 << 30](C.exports))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
@@ -446,7 +442,7 @@ func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	optional := C.pe_optional(&ctx)
-	if (optional._type == C.MAGIC_PE32) {
+	if optional._type == C.MAGIC_PE32 {
 		//fmt.Println(optional._32.Magic)
 		temp_result.Headers.Optional.Magic = int(optional._32.Magic)
 
@@ -479,7 +475,7 @@ func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		temp_result.Headers.Optional.LoaderFlags = int(optional._32.LoaderFlags)
 		temp_result.Headers.Optional.NumberOfRvaAndSizes = int(optional._32.NumberOfRvaAndSizes)
 	}
-	if (optional._type == C.MAGIC_PE64) {
+	if optional._type == C.MAGIC_PE64 {
 		//fmt.Println(optional._32.Magic)
 		temp_result.Headers.Optional.Magic = int(optional._64.Magic)
 
@@ -599,13 +595,12 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.Headers[1].Sha256 = fmt.Sprintf("%s", C.GoString(headers.coff.sha256))
 	temp_result.PEHashes.Headers[1].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.coff.ssdeep))
 
-	// **cannot support C struct with Go incompatable filed allignment**
 	// for Optional Header
-	/*temp_result.PEHashes.Headers[2].Name = fmt.Sprintf("%s", C.GoString(headers.optional.name))
+	temp_result.PEHashes.Headers[2].Name = fmt.Sprintf("%s", C.GoString(headers.optional.name))
 	temp_result.PEHashes.Headers[2].Md5 = fmt.Sprintf("%s", C.GoString(headers.optional.md5))
 	temp_result.PEHashes.Headers[2].Sha1 = fmt.Sprintf("%s", C.GoString(headers.optional.sha1))
 	temp_result.PEHashes.Headers[2].Sha256 = fmt.Sprintf("%s", C.GoString(headers.optional.sha256))
-	temp_result.PEHashes.Headers[2].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.optional.ssdeep)) */
+	temp_result.PEHashes.Headers[2].Ssdeep = fmt.Sprintf("%s", C.GoString(headers.optional.ssdeep))
 
 	return temp_result
 
@@ -626,12 +621,11 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	for i := 0; i < length; i++ {
 		//fmt.Println(sliceV[i].VirtualAddress)
 		temp_result.Sections[i] = &Section{
-			Name:                 fmt.Sprintf("%s", sliceV[i].Name),
-			VirtualAddress:       fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
-			PointerToRawData:     fmt.Sprintf("%X", int(sliceV[i].PointerToRawData)),
-			PointerToRelocations: fmt.Sprintf("%X", int(sliceV[i].PointerToRelocations)), // always zero in executables
-			NumberOfRelocations:  int(sliceV[i].NumberOfRelocations),
-			Characteristics:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
+			Name:                fmt.Sprintf("%s", sliceV[i].Name),
+			VirtualAddress:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
+			PointerToRawData:    fmt.Sprintf("%X", int(sliceV[i].PointerToRawData)),
+			NumberOfRelocations: int(sliceV[i].NumberOfRelocations),
+			Characteristics:     fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
 		}
 	}
 

@@ -27,14 +27,14 @@ RUN apk del --purge \
 # Set environment variables.
 ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
+# Making quick changes. REMOVING PRAGMA VALUES FOR THE SAKE OF GETTING OPTIONAL HEADERS.
+RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/hdr_optional.h
+RUN sed -i 's/.*pack(pop).*//g' /service/libpe/hdr_optional.h
+
 # Installing Libpe (- PEV's library)
 RUN cd /service/libpe \
 	&& make \
 	&& make install
-
-# Making quick changes. REMOVING PRAGMA VALUES FOR THE SAKE OF GETTING OPTIONAL HEADERS.
-RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/hdr_optional.h
-RUN sed -i 's/.*pack(pop).*//g' /service/libpe/hdr_optional.h
 # add Service files to the container.
 
 COPY LICENSE /service

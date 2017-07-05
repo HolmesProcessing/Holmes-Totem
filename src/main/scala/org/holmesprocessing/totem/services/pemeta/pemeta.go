@@ -37,10 +37,16 @@ type Result struct {
 	Sections_count      int          `json:"sectionscount"`
 	PEHashes            Hashes       `json:"PEHash"`
 	Exports             []*Export    `json:"Exports"`
+	Imports             []Import    `json:"Imports"`
 	Entrophy            float32      `json:"Entrophy"`
 	FPUTrick            bool         `json:"FPUtrick"`
 	CPLAnalysis         int          `json:"CPLAnalysis"`         // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
 	CheckFakeEntryPoint int          `json:"CheckFakeEntrypoint"` //  0 -> Normal, 1 -> fake,  -1 -> null.
+}
+
+type Import struct {
+	Dllname   string `json:"DllName"`
+	Functions []string `json:"Functions"`
 }
 
 type Export struct {
@@ -297,6 +303,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result.Sections_count = header_sections_count(ctx)
 	result = get_hashes(ctx, result)
 	result = get_exports(ctx, result)
+	result = get_imports(ctx, result)
 	result.Entrophy = get_entrophy_file(ctx)
 	result.FPUTrick = get_fputrick(ctx)
 	result.CPLAnalysis = get_cpl_analysis(ctx)
@@ -315,6 +322,38 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	elapsed_time := time.Since(start_time)
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
+}
+
+func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
+	imports := C.get_imports(&ctx);
+	dll_count := int(imports.dll_count)
+	fmt.Printf("Dll count %d\n", dll_count)
+	if dll_count == 0 {
+		fmt.Println(" Exports count 0 ")
+		return temp_result
+	}
+	temp_result.Imports = make([]Import, dll_count)
+	dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.names))[:dll_count:dll_count] // converting c array into Go slices because indexing of C arrays in not possible in Go.
+	for i := 0; i<dll_count; i++ {
+		//fmt.Println(C.GoString(dllnames[i]))
+		temp_result.Imports[i].Dllname = C.GoString(dllnames[i])
+		//temp_result.Exports[i] = C.GoString(sliceV[i])
+		dllname_functions := (*[1 << 30](C.function))(unsafe.Pointer(imports.functions))[:dll_count:dll_count]
+		functions_count := int(dllname_functions[i].count)
+		//function_strings := make([]string, functions_count)
+		temp_result.Imports[i].Functions = make([]string, functions_count)
+		function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dllname_functions[i].functions))[:functions_count:functions_count]
+		for j:=0; j<functions_count; j++ {
+		//	strings.append(import_sample.functions[i].functions[j]) //todo
+	    //	}
+			//fmt.Println("This is were the error will be \n")
+			//fmt.Println(C.GoString(function_names[j]))
+			temp_result.Imports[i].Functions[j] = C.GoString(function_names[j])
+			//function_strings[j] = C.GoString(function_names[j])
+		}
+		//temp_result.Imports[i].Functions = function_strings
+	}
+	return temp_result
 }
 
 func check_fake_entrypoint(ctx C.pe_ctx_t) int {
@@ -406,9 +445,9 @@ func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
 }
 
 func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	optional := C.pe_optional(&ctx)
+	//optional := C.pe_optional(&ctx)
 
-	temp_result.Headers.Optional.Magic = int(optional.Magic)
+	/*temp_result.Headers.Optional.Magic = int(optional.Magic)
 	temp_result.Headers.Optional.MajorLinkerVersion = int(optional.MajorLinkerVersion)
 	temp_result.Headers.Optional.MinorLinkerVersion = int(optional.MinorLinkerVersion)
 	temp_result.Headers.Optional.SizeOfCode = int(optional.SizeOfCode)
@@ -436,7 +475,7 @@ func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.Headers.Optional.SizeOfHeapReserve = int(optional.SizeOfHeapReserve)
 	temp_result.Headers.Optional.SizeOfHeapCommit = int(optional.SizeOfHeapCommit)
 	temp_result.Headers.Optional.LoaderFlags = int(optional.LoaderFlags)
-	temp_result.Headers.Optional.NumberOfRvaAndSizes = int(optional.NumberOfRvaAndSizes)
+	temp_result.Headers.Optional.NumberOfRvaAndSizes = int(optional.NumberOfRvaAndSizes)*/
 
 	return temp_result
 }

@@ -4,47 +4,47 @@ FROM golang:alpine
 RUN mkdir -p /service
 WORKDIR /service
 
-# Get Golang and PEV dependencies
+# Get Golang dependencies
 RUN apk add --no-cache \
         git \
         && go get github.com/julienschmidt/httprouter \
-        && git clone -b testing https://github.com/boddumanohar/libpe.git \
         && rm -rf /var/cache/apk/*
 
+# Get PEV dependencies
 RUN apk add --no-cache \
         bash \
         build-base \
-            openssl-dev \
+        openssl-dev \
 	    make \
-	    g++ \
+        && git clone -b testing https://github.com/boddumanohar/libpe.git \
         && rm -rf /var/cache/apk/*
 
 # Clean Up
 RUN apk del --purge \
-        build-base \
-        && rm -rf /var/cache/apk/* yara-3.5.0
+        #build-base \
+        git 
 
 # Set environment variables.
 ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
-# Installing Libpe
+# Installing Libpe (- PEV's library)
 RUN cd /service/libpe \
 	&& make \
 	&& make install
 
-# Making quick changes.
-RUN sed -i 's/.*pe_optional.*/IMAGE_OPTIONAL_HEADER_64 *pe_optional(pe_ctx_t *ctx);/g' /service/libpe/pe.h
-
+# Making quick changes. REMOVING PRAGMA VALUES FOR THE SAKE OF GETTING OPTIONAL HEADERS.
+RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/hdr_optional.h
+RUN sed -i 's/.*pack(pop).*//g' /service/libpe/hdr_optional.h
 # add Service files to the container.
 
 COPY LICENSE /service
 COPY README.md /service
-COPY pev.go /service
-RUN go build pev.go
+COPY pemeta.go /service
+RUN go build pemeta.go
 
 # add the configuration file (possibly from a storage uri)
 ARG conf=service.conf
 ADD $conf /service/service.conf
 
 
-CMD ["./pev", "--config=service.conf"]
+CMD ["./pemeta", "--config=service.conf"]

@@ -8,6 +8,8 @@ import traceback
 import tornado
 from tornado import web, httpserver, ioloop
 
+import time
+
 # reading configuration file
 
 Metadata = {
@@ -29,14 +31,7 @@ def ServiceConfig(filename):
 Config = ServiceConfig("./service.conf")
 
 def retrieve_flags(flag_dict, flag_filter):
-    """Read the flags from a dictionary and return them in a usable form.
-
-    Will return a list of (flag, value) for all flags in "flag_dict"
-    matching the filter "flag_filter".
-    """
-
-    return [(f[0], f[1]) for f in list(flag_dict.items()) if
-            isinstance(f[0], (str, bytes)) and f[0].startswith(flag_filter)]
+    return [(f[0], f[1]) for f in list(flag_dict.items()) if isinstance(f[0], (str, bytes)) and f[0].startswith(flag_filter)]
 
 def _headers(exe):
     headers = {}
@@ -76,23 +71,122 @@ def _dataDirectories(exe):
         directories.append(directory.dump_dict())
     return directories
 
-def _directory_bound_imports():
-    return "bound imports"
+def _directory_bound_imports(exe):
+    data = list()
+    for bound_imp_desc in exe.DIRECTORY_ENTRY_BOUND_IMPORT:
+        bound_imp_desc_dict = dict()
+        data['Bound imports'].append(bound_imp_desc_dict)
 
-def _directory_tls():
-    return "tls Directory"
+        bound_imp_desc_dict.update(bound_imp_desc.struct.dump_dict())
+        bound_imp_desc_dict['DLL'] = bound_imp_desc.name
 
-def _relocations_directory():
-    return "relocation directory"
+        for bound_imp_ref in bound_imp_desc.entries:
+            bound_imp_ref_dict = dict()
+            bound_imp_ref_dict.update(bound_imp_ref.struct.dump_dict())
+            bound_imp_ref_dict['DLL'] = bound_imp_ref.name
 
-def _relocations():
-    return "relocations"
+    return data
 
-def _debug_Directory():
-    return "debug directory"
+def _imported_symbols(exe):
+    data = list()
+    for module in exe.DIRECTORY_ENTRY_IMPORT:
+        import_list = []
+        data.append(import_list)
+        import_list.append(module.struct.dump_dict())
+        for symbol in module.imports:
+            symbol_dict = {}
+            if symbol.import_by_ordinal is True:
+                symbol_dict['DLL'] = module.dll
+                symbol_dict['Ordinal'] = symbol.ordinal
+            else:
+                symbol_dict['DLL'] = module.dll
+                symbol_dict['Name'] = symbol.name
+                symbol_dict['Hint'] = symbol.hint
 
-def _resources_data_entry():
-    return "resources entry"
+            if symbol.bound:
+                symbol_dict['Bound'] = symbol.bound
+
+    return data
+
+def _relocations_directory(exe):
+    data = list()
+    for base_reloc in exe.DIRECTORY_ENTRY_BASERELOC:
+        base_reloc_list = list()
+        data.append(base_reloc_list)
+        base_reloc_list.append(base_reloc.struct.dump_dict())
+        for reloc in base_reloc.entries:
+            reloc_dict = dict()
+            base_reloc_list.append(reloc_dict)
+            reloc_dict['RVA'] = reloc.rva
+            try:
+                reloc_dict['Type'] = RELOCATION_TYPE[reloc.type][16:]
+            except KeyError:
+                reloc_dict['Type'] = reloc.type
+    return data
+
+def _debug_Directory(exe):
+    data = list()
+    for dbg in exe.DIRECTORY_ENTRY_DEBUG:
+        dbg_dict = dict()
+        data.append(dbg_dict)
+        dbg_dict.update(dbg.struct.dump_dict())
+        dbg_dict['Type'] = DEBUG_TYPE.get(dbg.struct.Type, dbg.struct.Type)
+    return data
+
+def _resources_data_entry(exe):
+    data = list()
+    data.append(exe.DIRECTORY_ENTRY_RESOURCE.struct.dump_dict())
+
+    for resource_type in exe.DIRECTORY_ENTRY_RESOURCE.entries:
+        resource_type_dict = dict()
+
+        if resource_type.name is not None:
+            resource_type_dict['Name'] = resource_type.name
+        else:
+            resource_type_dict['Id'] = (
+                resource_type.struct.Id, pefile.RESOURCE_TYPE.get(resource_type.struct.Id, '-'))
+
+        resource_type_dict.update(resource_type.struct.dump_dict())
+        data.append(resource_type_dict)
+
+        if hasattr(resource_type, 'directory'):
+            directory_list = list()
+            directory_list.append(resource_type.directory.struct.dump_dict())
+            data.append(directory_list)
+
+            for resource_id in resource_type.directory.entries:
+                resource_id_dict = dict()
+
+                if resource_id.name is not None:
+                    resource_id_dict['Name'] = resource_id.name
+                else:
+                    resource_id_dict['Id'] = resource_id.struct.Id
+
+                resource_id_dict.update(resource_id.struct.dump_dict())
+                directory_list.append(resource_id_dict)
+
+                if hasattr(resource_id, 'directory'):
+                    resource_id_list = list()
+                    resource_id_list.append(resource_id.directory.struct.dump_dict())
+                    directory_list.append(resource_id_list)
+
+                    for resource_lang in resource_id.directory.entries:
+                        if hasattr(resource_lang, 'data'):
+                            resource_lang_dict = dict()
+                            resource_lang_dict['LANG'] = resource_lang.data.lang
+                            resource_lang_dict['SUBLANG'] = resource_lang.data.sublang
+                            resource_lang_dict['LANG_NAME'] = pefile.LANG.get(resource_lang.data.lang, '*unknown*')
+                            resource_lang_dict['SUBLANG_NAME'] = pefile.get_sublang_name_for_lang(resource_lang.data.lang, resource_lang.data.sublang)
+                            resource_lang_dict.update(resource_lang.struct.dump_dict())
+                            resource_lang_dict.update(resource_lang.data.struct.dump_dict())
+                            resource_id_list.append(resource_lang_dict)
+                    if hasattr(resource_id.directory, 'strings') and resource_id.directory.strings:
+                        for idx, res_string in list(resource_id.directory.strings.items()):
+                            resource_id_list.append(res_string.encode(
+                                    'unicode-escape',
+                                    'backslashreplace').decode(
+                                        'ascii'))       
+    return data
 
 def _version_Information(exe):
     version_info = []
@@ -103,227 +197,89 @@ def _version_Information(exe):
 
     return version_info
 
-def _export_directory():
-    return "export directory"
+def _export_directory(exe):
+    data = list()
+    data.append(exe.DIRECTORY_ENTRY_EXPORT.struct.dump_dict())
+    for export in exe.DIRECTORY_ENTRY_EXPORT.symbols:
+        export_dict = dict()
+        if export.address is not None:
+            export_dict.update({'Ordinal': export.ordinal, 'RVA': export.address, 'Name': export.name})
+            if export.forwarder:
+                export_dict['forwarder'] = export.forwarder
+        data.append(export_dict)
+    return data
 
-def _delay_import_directory():
-    return "import directory"
+def _delay_import_directory(exe):
+    data = list()
+    for module in pe.DIRECTORY_ENTRY_DELAY_IMPORT:
+        module_list = list()
+        data['Delay Imported symbols'].append(module_list)
+        module_list.append(module.struct.dump_dict())
 
-def _get_imhash():
-    return "get imhash"
+        for symbol in module.imports:
+            symbol_dict = dict()
+            if symbol.import_by_ordinal is True:
+                symbol_dict['DLL'] = module.dll
+                symbol_dict['Ordinal'] = symbol.ordinal
+            else:
+                symbol_dict['DLL'] = module.dll
+                symbol_dict['Name'] = symbol.name
+                symbol_dict['Hint'] = symbol.hint
 
-def _get_imports_table():
-    return "imports table"
+            if symbol.bound:
+                symbol_dict['Bound'] = symbol.bound
+            module_list.append(symbol_dict)
 
-def _get_memory_mapped_image():
-    return "memory mapped image"
-
-def _resources_strings():
-    return "resources"
-
-def _resources_strings():
-    return "resource strings"
-
-def _get_sections_by_offset():
-    return "sections by offset"
-
-def _is_exe():
-    return "exe"
-
-def _is_dll():
-    return "dll"
-
-def _is_driver():
-    return "driver"
-
-def _get_overlay_data_start_offset():
-    return "overlay start"
-
-def _get_overlay():
-    return "overlay"
-
-def _adjust_fileAllignment():
-    return "file allignment"
-    
-def _adjust_sectionAlligment():
-    return "section allignment"
+    return data
 
 def PEInfoRun(obj):
     data = {}
     try:
         pe = pefile.PE(obj)
-        print("loaded pefile")
     except pefile.PEFormatError as e:
         return e
-    # data = pe.dump_dict()
-    #printf("returing data")
-    #return data
-    # data["HEADERS"] = _headers(pe)
-    # data["Sections"] = _sections(pe)
+  
+    data["HEADERS"] = _headers(pe)
+    data["Sections"] = _sections(pe)
 
-    # data["DllCharacteristics"] = _dll_characteristics_flags(pe)
+    data["DllCharacteristics"] = _dll_characteristics_flags(pe)
     
-    # if (hasattr(pe, 'OPTIONAL_HEADER') and hasattr(pe.OPTIONAL_HEADER, 'DATA_DIRECTORY') ):
-    #     data["directories"] = _dataDirectories(pe)
+    if (hasattr(pe, 'OPTIONAL_HEADER') and hasattr(pe.OPTIONAL_HEADER, 'DATA_DIRECTORY') ):
+         data["directories"] = _dataDirectories(pe)
 
-    # if hasattr(pe, 'VS_VERSIONINFO'):
-    #     data["VersionInfo"] = _version_Information(pe)
+    if hasattr(pe, 'VS_VERSIONINFO'):
+         data["VersionInfo"] = _version_Information(pe)
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
-    #     data['Exported symbols'] = list()
-    #     data['Exported symbols'].append(pe.DIRECTORY_ENTRY_EXPORT.struct.dump_dict())
-    #     for export in pe.DIRECTORY_ENTRY_EXPORT.symbols:
-    #         export_dict = dict()
-    #         if export.address is not None:
-    #             export_dict.update({'Ordinal': export.ordinal, 'RVA': export.address, 'Name': export.name})
-    #             if export.forwarder:
-    #                 export_dict['forwarder'] = export.forwarder
-    #         data['Exported symbols'].append(export_dict)
+    if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+        data['Exported symbols'] = _export_directory(pe)
 
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
-        data['Importedsymbols'] = list()
-        for module in pe.DIRECTORY_ENTRY_IMPORT:
-            import_list = []
-            data['Importedsymbols'].append(import_list)
-            import_list.append(module.struct.dump_dict())
-            for symbol in module.imports:
-                symbol_dict = {}
-                if symbol.import_by_ordinal is True:
-                    symbol_dict['DLL'] = module.dll
-                    symbol_dict['Ordinal'] = symbol.ordinal
-                else:
-                    symbol_dict['DLL'] = module.dll
-                    symbol_dict['Name'] = symbol.name
-                    symbol_dict['Hint'] = symbol.hint
-
-                if symbol.bound:
-                    symbol_dict['Bound'] = symbol.bound
-                import_list.append(symbol_dict)
+        data['Importedsymbols'] = _imported_symbols(pe)
         
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_BOUND_IMPORT'):
-    #             data['Bound imports'] = list()
-    #             for bound_imp_desc in pe.DIRECTORY_ENTRY_BOUND_IMPORT:
-    #                 bound_imp_desc_dict = dict()
-    #                 data['Bound imports'].append(bound_imp_desc_dict)
+    if hasattr(pe, 'DIRECTORY_ENTRY_BOUND_IMPORT'):
+                data['Bound imports'] = _directory_bound_imports(pe)
 
-    #                 bound_imp_desc_dict.update(bound_imp_desc.struct.dump_dict())
-    #                 bound_imp_desc_dict['DLL'] = bound_imp_desc.name
+    if hasattr(pe, 'DIRECTORY_ENTRY_DELAY_IMPORT'):
+                data['Delay Imported symbols'] = _delay_import_directory(pe)
 
-    #                 for bound_imp_ref in bound_imp_desc.entries:
-    #                     bound_imp_ref_dict = dict()
-    #                     bound_imp_ref_dict.update(bound_imp_ref.struct.dump_dict())
-    #                     bound_imp_ref_dict['DLL'] = bound_imp_ref.name
-
-    # if hasattr(pe, 'DIRECTORY_ENTRY_DELAY_IMPORT'):
-    #             data['Delay Imported symbols'] = list()
-    #             for module in pe.DIRECTORY_ENTRY_DELAY_IMPORT:
-    #                 module_list = list()
-    #                 data['Delay Imported symbols'].append(module_list)
-    #                 module_list.append(module.struct.dump_dict())
-
-    #                 for symbol in module.imports:
-    #                     symbol_dict = dict()
-    #                     if symbol.import_by_ordinal is True:
-    #                         symbol_dict['DLL'] = module.dll
-    #                         symbol_dict['Ordinal'] = symbol.ordinal
-    #                     else:
-    #                         symbol_dict['DLL'] = module.dll
-    #                         symbol_dict['Name'] = symbol.name
-    #                         symbol_dict['Hint'] = symbol.hint
-
-    #                     if symbol.bound:
-    #                         symbol_dict['Bound'] = symbol.bound
-    #                     module_list.append(symbol_dict)
-
-    # if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
-    #         data['Resource directory'] = list()
-    #         data['Resource directory'].append(pe.DIRECTORY_ENTRY_RESOURCE.struct.dump_dict())
-
-    #         for resource_type in pe.DIRECTORY_ENTRY_RESOURCE.entries:
-    #             resource_type_dict = dict()
-
-    #             if resource_type.name is not None:
-    #                 resource_type_dict['Name'] = resource_type.name
-    #             else:
-    #                 resource_type_dict['Id'] = (
-    #                     resource_type.struct.Id, pefile.RESOURCE_TYPE.get(resource_type.struct.Id, '-'))
-
-    #             resource_type_dict.update(resource_type.struct.dump_dict())
-    #             data['Resource directory'].append(resource_type_dict)
-
-    #             if hasattr(resource_type, 'directory'):
-    #                 directory_list = list()
-    #                 directory_list.append(resource_type.directory.struct.dump_dict())
-    #                 data['Resource directory'].append(directory_list)
-
-    #                 for resource_id in resource_type.directory.entries:
-    #                     resource_id_dict = dict()
-
-    #                     if resource_id.name is not None:
-    #                         resource_id_dict['Name'] = resource_id.name
-    #                     else:
-    #                         resource_id_dict['Id'] = resource_id.struct.Id
-
-    #                     resource_id_dict.update(resource_id.struct.dump_dict())
-    #                     directory_list.append(resource_id_dict)
-
-    #                     if hasattr(resource_id, 'directory'):
-    #                         resource_id_list = list()
-    #                         resource_id_list.append(resource_id.directory.struct.dump_dict())
-    #                         directory_list.append(resource_id_list)
-
-    #                         for resource_lang in resource_id.directory.entries:
-    #                             if hasattr(resource_lang, 'data'):
-    #                                 resource_lang_dict = dict()
-    #                                 resource_lang_dict['LANG'] = resource_lang.data.lang
-    #                                 resource_lang_dict['SUBLANG'] = resource_lang.data.sublang
-    #                                 resource_lang_dict['LANG_NAME'] = pefile.LANG.get(resource_lang.data.lang, '*unknown*')
-    #                                 resource_lang_dict['SUBLANG_NAME'] = pefile.get_sublang_name_for_lang(resource_lang.data.lang, resource_lang.data.sublang)
-    #                                 resource_lang_dict.update(resource_lang.struct.dump_dict())
-    #                                 resource_lang_dict.update(resource_lang.data.struct.dump_dict())
-    #                                 resource_id_list.append(resource_lang_dict)
-    #                         if hasattr(resource_id.directory, 'strings') and resource_id.directory.strings:
-    #                             for idx, res_string in list(resource_id.directory.strings.items()):
-    #                                 resource_id_list.append(res_string.encode(
-    #                                         'unicode-escape',
-    #                                         'backslashreplace').decode(
-    #                                             'ascii'))
-
-    # if ( hasattr(pe, 'DIRECTORY_ENTRY_TLS') and
-    #          pe.DIRECTORY_ENTRY_TLS and
-    #          pe.DIRECTORY_ENTRY_TLS.struct ):
-    #         data['TLS'] = pe.DIRECTORY_ENTRY_TLS.struct.dump_dict()
+    if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
+            data['Resource directory'] = _resources_data_entry(pe)
+            
+    if ( hasattr(pe, 'DIRECTORY_ENTRY_TLS') and pe.DIRECTORY_ENTRY_TLS and pe.DIRECTORY_ENTRY_TLS.struct ):
+            data['TLS'] = pe.DIRECTORY_ENTRY_TLS.struct.dump_dict()
 
 
-    # if ( hasattr(pe, 'DIRECTORY_ENTRY_LOAD_CONFIG') and pe.DIRECTORY_ENTRY_LOAD_CONFIG and pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct ):
-    #     data['LOAD_CONFIG'] = pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct.dump_dict()
+    if ( hasattr(pe, 'DIRECTORY_ENTRY_LOAD_CONFIG') and pe.DIRECTORY_ENTRY_LOAD_CONFIG and pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct ):
+        data['LOAD_CONFIG'] = pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct.dump_dict()
 
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
-    #     data['Debug information'] = list()
-    #     for dbg in pe.DIRECTORY_ENTRY_DEBUG:
-    #         dbg_dict = dict()
-    #         data['Debug information'].append(dbg_dict)
-    #         dbg_dict.update(dbg.struct.dump_dict())
-    #         dbg_dict['Type'] = DEBUG_TYPE.get(dbg.struct.Type, dbg.struct.Type)
+    if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
+        data['Debug information'] = _debug_Directory(pe)
 
 
-    # if hasattr(pe, 'DIRECTORY_ENTRY_BASERELOC'):
-    #     dump_dict['Base relocations'] = list()
-    #     for base_reloc in pe.DIRECTORY_ENTRY_BASERELOC:
-    #         base_reloc_list = list()
-    #         dump_dict['Base relocations'].append(base_reloc_list)
-    #         base_reloc_list.append(base_reloc.struct.dump_dict())
-    #         for reloc in base_reloc.entries:
-    #             reloc_dict = dict()
-    #             base_reloc_list.append(reloc_dict)
-    #             reloc_dict['RVA'] = reloc.rva
-    #             try:
-    #                 reloc_dict['Type'] = RELOCATION_TYPE[reloc.type][16:]
-    #             except KeyError:
-    #                 reloc_dict['Type'] = reloc.type
-
+    if hasattr(pe, 'DIRECTORY_ENTRY_BASERELOC'):
+        data['Base relocations'] = _relocations_directory(pe)
 
     return data
 
@@ -332,10 +288,10 @@ class PEInfoProcess(tornado.web.RequestHandler):
         try:
             filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp', filename)
+            start_time = time.time()
             data = PEInfoRun(fullPath)
-            print("startin")
             self.write(data)
-            print("did not fail")
+            print("--- Done analysing Total time taken %s ms --- \n" % ((time.time() - start_time)*1000))
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
         except TypeError as e:

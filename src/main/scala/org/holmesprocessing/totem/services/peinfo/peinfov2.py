@@ -1,4 +1,3 @@
-import pefile
 import json
 
 import os

@@ -7,6 +7,12 @@ RUN pip3 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
+# get go dependencies
+#RUN apk add --no-cache \
+#		git \
+    #&& git clone https://github.com/erocarrera/pefile.git \
+    #&& rm -rf /var/cache/apk/*
+
 # add the files to the container
 COPY LICENSE /service
 COPY README.md /service

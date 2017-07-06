@@ -14,9 +14,9 @@ import time
 
 Metadata = {
         "Name"  :   "PEInfo",
-        "Version" : "1.0",
+        "Version" : "2.0",
         "Description" : "./README.md",
-        "Copyright": "Copyright 2016 Holmes Group LLC",
+        "Copyright": "Copyright 2017 Holmes Group LLC",
         "License" : "./LICENSE"
     }
 

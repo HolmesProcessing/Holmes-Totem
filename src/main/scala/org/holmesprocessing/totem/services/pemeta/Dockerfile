@@ -25,7 +25,7 @@ RUN apk del --purge \
         git 
 
 # Set environment variables.
-ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
 
 # Making quick changes. REMOVING PRAGMA VALUES FOR THE SAKE OF GETTING OPTIONAL HEADERS.
 RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/hdr_optional.h

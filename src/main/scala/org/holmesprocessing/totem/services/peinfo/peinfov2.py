@@ -119,7 +119,7 @@ def _relocations_directory(exe):
             base_reloc_list.append(reloc_dict)
             reloc_dict['RVA'] = reloc.rva
             try:
-                reloc_dict['Type'] = RELOCATION_TYPE[reloc.type][16:]
+                reloc_dict['Type'] = pefile.RELOCATION_TYPE[reloc.type][16:]
             except KeyError:
                 reloc_dict['Type'] = reloc.type
     return data
@@ -130,7 +130,7 @@ def _debug_Directory(exe):
         dbg_dict = dict()
         data.append(dbg_dict)
         dbg_dict.update(dbg.struct.dump_dict())
-        dbg_dict['Type'] = DEBUG_TYPE.get(dbg.struct.Type, dbg.struct.Type)
+        dbg_dict['Type'] = pefile.DEBUG_TYPE.get(dbg.struct.Type, dbg.struct.Type)
     return data
 
 def _resources_data_entry(exe):
@@ -207,6 +207,7 @@ def _export_directory(exe):
             if export.forwarder:
                 export_dict['forwarder'] = export.forwarder
         data.append(export_dict)
+    print(data)
     return data
 
 def _delay_import_directory(exe):
@@ -242,7 +243,7 @@ def PEInfoRun(obj):
     data["HEADERS"] = _headers(pe)
     data["Sections"] = _sections(pe)
 
-    data["DllCharacteristics"] = _dll_characteristics_flags(pe)
+    # data["DllCharacteristics"] = _dll_characteristics_flags(pe)
     
     if (hasattr(pe, 'OPTIONAL_HEADER') and hasattr(pe.OPTIONAL_HEADER, 'DATA_DIRECTORY') ):
          data["directories"] = _dataDirectories(pe)

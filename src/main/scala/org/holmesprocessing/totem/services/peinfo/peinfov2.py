@@ -207,7 +207,6 @@ def _export_directory(exe):
             if export.forwarder:
                 export_dict['forwarder'] = export.forwarder
         data.append(export_dict)
-    print(data)
     return data
 
 def _delay_import_directory(exe):

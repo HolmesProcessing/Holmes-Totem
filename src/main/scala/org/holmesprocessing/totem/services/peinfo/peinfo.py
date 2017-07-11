@@ -19,9 +19,18 @@ import binascii
 import hashlib
 import struct
 from time import localtime, strftime
+import time
 
-# imports for services
-from holmeslibrary.services import ServiceConfig
+import json
+
+# reading configuration file
+def ServiceConfig(filename):
+    configPath = filename
+    try:
+        config = json.loads(open(configPath).read())
+        return config
+    except FileNotFoundError:
+        raise tornado.web.HTTPError(500)
 
 # Get service meta information and configuration
 Config = ServiceConfig("./service.conf")
@@ -491,8 +500,10 @@ class PEInfoProcess(tornado.web.RequestHandler):
         try:
             filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp/', filename)
+            start_time = time.time()
             data = PEInfoRun(fullPath)
             self.write(data)
+            print("--- Done analysing Total time taken %s ms --- \n" % ((time.time() - start_time)*1000))
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
         except TypeError as e:
@@ -541,7 +552,7 @@ class PEApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(PEApp())
-    server.listen(Config.settings.port)
+    server.listen(Config["settings"]["port"])
     tornado.ioloop.IOLoop.instance().start()
 
 

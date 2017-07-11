@@ -49,10 +49,18 @@ type Metadata struct {
 	License     string
 }
 
+type Setting struct {
+	HTTPBinding string `json:"HTTPBinding"`
+}
+
+type GoGadget struct {
+	MaxNumberOfGadgets int `json:"MaxNumberOfGadgets"`
+	SearchDepth        int `json:"SearchDepth"`
+}
+
 type Config struct {
-	HTTPBinding        string //cvp: saving port is an unnecessary limitation; the binding allows for assigning the IP address too which is nicer
-	MaxNumberOfGadgets int
-	SearchDepth        int
+	Settings Setting  `json:"settings"`
+	Logic    GoGadget `json:"gogadget"`
 }
 
 var (
@@ -98,8 +106,8 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	info.Printf("Binding to %s\n", config.settings.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.settings.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 // Parse a configuration file into a Config structure.
@@ -167,7 +175,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.gogadget.SearchDepth), "--binary", sample_path)
+	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.Logic.SearchDepth), "--binary", sample_path)
 	stdout, err := process.StdoutPipe()
 	if err != nil {
 		http.Error(f_response, "Creating stdout pipe failed", 500)
@@ -197,8 +205,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result := &Result{
 		UniqueGadgets: 0,
 		Truncated:     false,
-		SearchDepth:   config.SearchDepth,
-		Gadgets:       make([]*Gadget, config.gogadget.MaxNumberOfGadgets),
+		SearchDepth:   config.Logic.SearchDepth,
+		Gadgets:       make([]*Gadget, config.Logic.MaxNumberOfGadgets),
 	}
 
 	// Sanity check for the first line
@@ -229,7 +237,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 		// did we reach the maximum?
 		gadgetCounter += 1
-		if gadgetCounter == config.gogadget.MaxNumberOfGadgets {
+		if gadgetCounter == config.Logic.MaxNumberOfGadgets {
 			result.Truncated = true
 			break
 		}

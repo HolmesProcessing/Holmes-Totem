@@ -1,4 +1,4 @@
-import pefile
+from pefilenew import pefile
 import json
 
 import os

@@ -2,7 +2,8 @@ FROM python:alpine
 
 # add tornado
 RUN pip3 install tornado
-
+#RUN pip install pefilev2==2.0
+RUN pip3 install pefilenew
 # create folder
 RUN mkdir -p /service
 WORKDIR /service
@@ -17,9 +18,9 @@ WORKDIR /service
 COPY LICENSE /service
 COPY README.md /service
 COPY peinfov2.py /service
-COPY ordlookup /service/ordlookup
-COPY peutils.py /service
-COPY pefile.py /service
+#COPY ordlookup /service/ordlookup
+#COPY peutils.py /service
+#COPY pefile.py /service
 # add the configuration file (possibly from a storage uri)
 ARG conf=service.conf
 ADD $conf /service/service.conf

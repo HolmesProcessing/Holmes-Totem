@@ -1,8 +1,8 @@
-# PEInfo service for Holmes-Totem
+# PEInfo 2.0 service for Holmes-Totem
 
 ## Description
 
-This service extracts meta information contained in PE32 binary files. Currently the work is based on the CRITs implemention of PEInfo, which in turn is based on PEFILE. However, we have modified to fix some minor errors and also perform additional extractions.
+This service extracts meta information contained in PE binary files. Currently the work is based on the implemention of [pefile](https://github.com/erocarrera/pefile).
 
 ## Usage
 

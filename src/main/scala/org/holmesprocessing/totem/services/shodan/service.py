@@ -83,7 +83,7 @@ class Application(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(Application())
-    server.listen(Config["port"])
+    server.listen(Config["settings"]["port"])
     try:
         tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:

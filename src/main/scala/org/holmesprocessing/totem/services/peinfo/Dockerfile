@@ -3,12 +3,16 @@ FROM python:alpine
 # add tornado
 RUN pip3 install tornado
 
-# add pefile library
-RUN pip3 install pefilenew
-
 # create folder
 RUN mkdir -p /service
 WORKDIR /service
+
+###
+# peinfo v2 specific options
+##
+
+# add dependencies for peinfo v2
+RUN pip3 install pefilenew
 
 # add the files to the container
 COPY LICENSE /service

@@ -291,7 +291,7 @@ class PEInfoProcess(tornado.web.RequestHandler):
             start_time = time.time()
             data = PEInfoRun(fullPath)
             self.write(data)
-            print("--- Done analysing Total time taken %s ms --- \n" % ((time.time() - start_time)*1000))
+            #print("--- Done analysing Total time taken %s ms --- \n" % ((time.time() - start_time)*1000))
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
         except TypeError as e:
@@ -339,7 +339,7 @@ def main():
     server = tornado.httpserver.HTTPServer(PEApp())
     server.listen(Config["settings"]["port"])
     try:
-        tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
         tornado.ioloop.IOLoop.current().stop()
 

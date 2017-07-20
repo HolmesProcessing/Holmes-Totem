@@ -1,4 +1,9 @@
 {
-	"HTTPBinding": ":8080",
-	"MaxNumberOfArcs": 100000
+	"settings": {
+		"HTTPBinding": ":8080"
+	},
+
+	"cfg": {
+		"MaxNumberOfArcs": 100000
+	}
 }

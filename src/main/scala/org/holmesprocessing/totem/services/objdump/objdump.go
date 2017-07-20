@@ -54,13 +54,13 @@ type Setting struct {
 	HTTPBinding string `json:"HTTPBinding"`
 }
 
-type Objdump struct {
+type OBJDUMP struct {
 	MaxNumberOfOpcodes int `json:"MaxNumberOfOpcodes"`
 }
 
 type Config struct {
 	Settings Setting `json:"settings"`
-	Logic     Objdump `json:"Logic"`
+	Objdump  OBJDUMP `json:"objdump"`
 }
 
 // global variables

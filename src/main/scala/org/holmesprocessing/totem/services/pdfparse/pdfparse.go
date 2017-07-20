@@ -29,6 +29,7 @@ var (
 	}
 )
 
+// Result structs
 type Result struct {
 	Truncated      bool      `json:"Truncated"`
 	Comments       int       `json:"Comments"`
@@ -44,18 +45,19 @@ type Object struct {
 	Values   []int  `json:"Values"`
 }
 
+
 // Config structs
 type Setting struct {
 	HTTPBinding string `json:"HTTPBinding"`
 }
 
-type PDFParse struct {
+type PDFPARSE struct {
 	MaxNumberOfObjects int `json:"MaxNumberOfObjects"`
 }
 
 type Config struct {
 	Settings Setting  `json:"settings"`
-	Logic    PDFParse `json:"pdfparse"`
+	Pdfparse    PDFPARSE `json:"pdfparse"`
 }
 
 type Metadata struct {
@@ -181,7 +183,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		Trailer:        final[2],
 		StartXref:      final[3],
 		IndirectObject: final[4],
-		Objects:        make([]*Object, config.Logic.MaxNumberOfObjects),
+		Objects:        make([]*Object, config.Pdfparse.MaxNumberOfObjects),
 	}
 
 	counter := 0
@@ -207,7 +209,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		}
 		counter++
 
-		if counter == config.Logic.MaxNumberOfObjects {
+		if counter == config.Pdfparse.MaxNumberOfObjects {
 			result.Truncated = true
 			break
 		}

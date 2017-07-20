@@ -42,7 +42,7 @@ type Settings struct {
 	HTTPBinding string `json:"HTTPBinding"`
 }
 
-type VirusTotal struct {
+type VIRUSTOTAL struct {
 	ApiKey               string `json:"ApiKey"`
 	UploadUnknownSamples bool   `json:"UplaodUnknownSample"`
 	RequestTimeout       int    `json:"RequestTimeout"`
@@ -50,7 +50,7 @@ type VirusTotal struct {
 
 type Config struct {
 	Setting Settings   `json:"settings"`
-	Logic   VirusTotal `json:"virustotal"`
+	Virustotal VIRUSTOTAL `json:"virustotal"`
 }
 
 var (
@@ -83,7 +83,7 @@ func main() {
 	if err != nil {
 		info.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
-	client = &http.Client{Timeout: time.Duration(config.Logic.RequestTimeout) * time.Second}
+	client = &http.Client{Timeout: time.Duration(config.Virustotal.RequestTimeout) * time.Second}
 
 	router := httprouter.New()
 	router.GET("/analyze/", handler_analyze)
@@ -132,8 +132,8 @@ func load_config(configPath string) (*Config, error) {
 	}
 
 	// validate ApiKey
-	_, err := hex.DecodeString(config.Logic.ApiKey)
-	if len(config.Logic.ApiKey) != 64 || err != nil {
+	_, err := hex.DecodeString(config.Virustotal.ApiKey)
+	if len(config.Virustotal.ApiKey) != 64 || err != nil {
 		info.Println("Apikey seems to be invalid! Please supply a valid key!")
 		return config, err
 	}
@@ -199,7 +199,7 @@ func vtWork(hash, fPath string) (string, error) {
 	// 0 = unknwon
 	// 1 = found
 	// 2 = processing
-	if vtr.ResponseCode == 0 && config.Logic.UploadUnknownSamples {
+	if vtr.ResponseCode == 0 && config.Virustotal.UploadUnknownSamples {
 		hash, err = uploadSample(fPath)
 		if err != nil {
 			return "", err
@@ -240,7 +240,7 @@ func getReport(md5 string) ([]byte, error) {
 
 	form := url.Values{}
 	form.Add("resource", md5)
-	form.Add("apikey", config.Logic.ApiKey)
+	form.Add("apikey", config.Virustotal.ApiKey)
 
 	req, err := http.NewRequest("POST", "https://www.virustotal.com/vtapi/v2/file/report", strings.NewReader(form.Encode()))
 	req.PostForm = form
@@ -283,7 +283,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	_, err = io.Copy(part, file)
 
-	err = writer.WriteField("apikey", config.Logic.ApiKey)
+	err = writer.WriteField("apikey", config.Virustotal.ApiKey)
 	if err != nil {
 		return "", err
 	}

@@ -41,26 +41,26 @@ type Gadget struct {
 }
 
 // config structs
-type Metadata struct {
-	Name        string
-	Version     string
-	Description string
-	Copyright   string
-	License     string
-}
-
 type Setting struct {
 	HTTPBinding string `json:"HTTPBinding"`
 }
 
-type GoGadget struct {
+type GOGADGET struct {
 	MaxNumberOfGadgets int `json:"MaxNumberOfGadgets"`
 	SearchDepth        int `json:"SearchDepth"`
 }
 
 type Config struct {
 	Settings Setting  `json:"settings"`
-	Logic    GoGadget `json:"gogadget"`
+	Gogadget GOGADGET `json:"gogadget"`
+}
+
+type Metadata struct {
+	Name        string
+	Version     string
+	Description string
+	Copyright   string
+	License     string
 }
 
 var (
@@ -175,7 +175,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		return
 	}
 
-	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.Logic.SearchDepth), "--binary", sample_path)
+	process := exec.Command(ROPgadget, "--depth", strconv.Itoa(config.Gogadget.SearchDepth), "--binary", sample_path)
 	stdout, err := process.StdoutPipe()
 	if err != nil {
 		http.Error(f_response, "Creating stdout pipe failed", 500)
@@ -205,8 +205,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result := &Result{
 		UniqueGadgets: 0,
 		Truncated:     false,
-		SearchDepth:   config.Logic.SearchDepth,
-		Gadgets:       make([]*Gadget, config.Logic.MaxNumberOfGadgets),
+		SearchDepth:   config.Gogadget.SearchDepth,
+		Gadgets:       make([]*Gadget, config.Gogadget.MaxNumberOfGadgets),
 	}
 
 	// Sanity check for the first line
@@ -237,7 +237,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 		// did we reach the maximum?
 		gadgetCounter += 1
-		if gadgetCounter == config.Logic.MaxNumberOfGadgets {
+		if gadgetCounter == config.Gogadget.MaxNumberOfGadgets {
 			result.Truncated = true
 			break
 		}

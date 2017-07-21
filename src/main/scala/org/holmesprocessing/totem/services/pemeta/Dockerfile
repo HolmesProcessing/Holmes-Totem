@@ -16,7 +16,7 @@ RUN apk add --no-cache \
         build-base \
         openssl-dev \
 	    make \
-        && git clone -b testing https://github.com/boddumanohar/libpe.git \
+        && git clone https://github.com/boddumanohar/libpe.git \
         && rm -rf /var/cache/apk/*
 
 # Clean Up

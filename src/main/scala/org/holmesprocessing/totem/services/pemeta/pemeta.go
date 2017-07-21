@@ -1,7 +1,11 @@
 package main
 
 // #include <libpe/pe.h>
-// #include <libpe/fuzzy.h>
+// #include <libpe/hashes.h>
+// #include <libpe/misc.h>
+// #include <libpe/imports.h>
+// #include <libpe/exports.h>
+// #include <libpe/peres.h>
 // #cgo LDFLAGS: -lpe -lssl -lcrypto -lm
 // #cgo CFLAGS: -std=c99
 import "C"
@@ -38,10 +42,50 @@ type Result struct {
 	PEHashes            Hashes       `json:"PEHash"`
 	Exports             []*Export    `json:"Exports"`
 	Imports             []Import     `json:"Imports"`
+	Resources           Resource     `json:"resources"`
 	Entrophy            float32      `json:"Entrophy"`
 	FPUTrick            bool         `json:"FPUtrick"`
 	CPLAnalysis         int          `json:"CPLAnalysis"`         // 0 -> No Threat, 1 -> Malware, -1 -> Not a dll.
 	CheckFakeEntryPoint int          `json:"CheckFakeEntrypoint"` //  0 -> Normal, 1 -> fake,  -1 -> null.
+}
+
+type Resource struct {
+	ResourceDirectory []*RDT_RESOURCE_DIRECTORY `json:"RESOURCE_DIRECTORY"`
+	DirectoryEntry    []*RDT_DIRECTORY_ENTRY    `json:"DIRECTORY_ENTRY"`
+	DataString        []*RDT_DATA_STRING        `json:"DATA_STRING"`
+	DataEntry         []*RDT_DATA_ENTRY         `json:"DATA_ENTRY"`
+}
+
+type RDT_RESOURCE_DIRECTORY struct {
+	NodeType             int `json:"NodeType"`
+	Characteristics      int `json:"Characteristics"`
+	TimeDateStamp        int `json:"TimeDateStamp"`
+	MajorVersion         int `json:"MajorVersion"`
+	MinorVersion         int `json:"MinorVersion"`
+	NumberOfNamedEntries int `json:"NumberOfNamedEntries"`
+	NumberOfIdEntries    int `json:"NumberOfIdEntries"`
+}
+
+type RDT_DIRECTORY_ENTRY struct {
+	NodeType          int `json:"NodeType"`
+	NameOffset        int `json:"NameOffset"`
+	NameIsString      int `json:"NameIsString"`
+	OffsetIsDirectory int `json:"OffsetIsDirectory"`
+	DataIsDirectory   int `json:"DataIsDirectory"`
+}
+
+type RDT_DATA_STRING struct {
+	NodeType int `json"NodeType"`
+	Strlen   int `json:"Strlen"`
+	String   int `json:"String"`
+}
+
+type RDT_DATA_ENTRY struct {
+	NodeType     int `json:"NodeType"`
+	OffsetToData int `json:"OffsetToData"`
+	Size         int `json:"Size"`
+	CodePage     int `json:"CodePage"`
+	Reserved     int `json:"Reserved"`
 }
 
 type Import struct {
@@ -303,6 +347,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	result = get_hashes(ctx, result)
 	result = get_exports(ctx, result)
 	result = get_imports(ctx, result)
+	result = get_resources(ctx, result)
 	result.Entrophy = get_entrophy_file(ctx)
 	result.FPUTrick = get_fputrick(ctx)
 	result.CPLAnalysis = get_cpl_analysis(ctx)
@@ -323,21 +368,83 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	info.Printf("Done, total time elapsed %s.\n", elapsed_time)
 }
 
+func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
+
+	resources_count := C.get_resources_count(&ctx)
+	resources := C.get_resources(&ctx)
+
+	res_count := int(resources_count.resourcesDirectory)
+	dirEntry_count := int(resources_count.directoryEntry)
+	dataString_count := int(resources_count.dataString)
+	dataEntry_count := int(resources_count.dataEntry)
+
+	temp_result.Resources.ResourceDirectory = make([]*RDT_RESOURCE_DIRECTORY, res_count)
+	temp_result.Resources.DirectoryEntry = make([]*RDT_DIRECTORY_ENTRY, dirEntry_count)
+	temp_result.Resources.DataString = make([]*RDT_DATA_STRING, dataString_count)
+	temp_result.Resources.DataEntry = make([]*RDT_DATA_ENTRY, dataEntry_count)
+
+	resourcesDirectory := (*[1 << 30](C.type_RDT_RESOURCE_DIRECTORY))(unsafe.Pointer(resources.resourcesDirectory))[:res_count:res_count]
+	for i := 0; i < res_count; i++ {
+		temp_result.Resources.ResourceDirectory[i] = &RDT_RESOURCE_DIRECTORY{
+			NodeType:             int(resourcesDirectory[i].NodeType),
+			Characteristics:      int(resourcesDirectory[i].Characteristics),
+			TimeDateStamp:        int(resourcesDirectory[i].TimeDateStamp),
+			MajorVersion:         int(resourcesDirectory[i].MajorVersion),
+			MinorVersion:         int(resourcesDirectory[i].MinorVersion),
+			NumberOfNamedEntries: int(resourcesDirectory[i].NumberOfNamedEntries),
+			NumberOfIdEntries:    int(resourcesDirectory[i].NumberOfIdEntries),
+		}
+	}
+
+	directoryEntry := (*[1 << 30](C.type_RDT_DIRECTORY_ENTRY))(unsafe.Pointer(resources.directoryEntry))[:dirEntry_count:dirEntry_count]
+	for i := 0; i < dirEntry_count; i++ {
+		temp_result.Resources.DirectoryEntry[i] = &RDT_DIRECTORY_ENTRY{
+			NodeType:          int(directoryEntry[i].NodeType),
+			NameOffset:      int(directoryEntry[i].NameOffset),
+			NameIsString:      int(directoryEntry[i].NameIsString),
+			OffsetIsDirectory: int(directoryEntry[i].OffsetIsDirectory),
+			DataIsDirectory:   int(directoryEntry[i].DataIsDirectory),
+		}
+	}
+
+	dataString := (*[1 << 30](C.type_RDT_DATA_STRING))(unsafe.Pointer(resources.dataString))[:dataString_count:dataString_count]
+	for i := 0; i < dataString_count; i++ {
+		temp_result.Resources.DataString[i] = &RDT_DATA_STRING{
+			NodeType: int(dataString[i].NodeType),
+			Strlen:   int(dataString[i].Strlen),
+			String:   int(dataString[i].String),
+		}
+	}
+
+	dataEntry := (*[1 << 30](C.type_RDT_DATA_ENTRY))(unsafe.Pointer(resources.dataEntry))[:dirEntry_count:dirEntry_count]
+	for i := 0; i < dataEntry_count; i++ {
+		temp_result.Resources.DataEntry[i] = &RDT_DATA_ENTRY{
+			NodeType:     int(dataEntry[i].NodeType),
+			OffsetToData: int(dataEntry[i].OffsetToData),
+			Size:         int(dataEntry[i].Size),
+			CodePage:     int(dataEntry[i].CodePage),
+			Reserved:     int(dataEntry[i].Reserved),
+		}
+	}
+	return temp_result
+}
 func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	imports := C.get_imports(&ctx)
 	dll_count := int(imports.dll_count)
-	fmt.Printf("Dll count %d\n", dll_count)
+	//fmt.Printf("Dll count %d\n", dll_count)
 	if dll_count == 0 {
-		fmt.Println(" Exports count 0 ")
+		//fmt.Println(" Exports count 0 ")
 		return temp_result
 	}
 	temp_result.Imports = make([]Import, dll_count)
-	dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.names))[:dll_count:dll_count] // converting c array into Go slices because indexing of C arrays in not possible in Go.
+
+	// converting c array into Go slices because indexing of C arrays in not possible in Go.
+	dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.dllNames))[:dll_count:dll_count]
 	for i := 0; i < dll_count; i++ {
 
 		temp_result.Imports[i].Dllname = C.GoString(dllnames[i])
 
-		dllname_functions := (*[1 << 30](C.function))(unsafe.Pointer(imports.functions))[:dll_count:dll_count]
+		dllname_functions := (*[1 << 30](C.function_t))(unsafe.Pointer(imports.functions))[:dll_count:dll_count]
 
 		functions_count := int(dllname_functions[i].count)
 		function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dllname_functions[i].functions))[:functions_count:functions_count]
@@ -353,7 +460,7 @@ func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 }
 
 func check_fake_entrypoint(ctx C.pe_ctx_t) int {
-	fake := C.check_fake_entrypoint(&ctx)
+	fake := C.pe_has_fake_entrypoint(&ctx)
 	return int(fake)
 }
 
@@ -386,13 +493,13 @@ func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if length == 0 {
 		return temp_result
 	}
-	sliceV := (*[1 << 30](C.exports))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
+	sliceV := (*[1 << 30](C.exports_t))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
 	temp_result.Exports = make([]*Export, length)
 
 	for i := 0; i < length; i++ {
 
 		temp_result.Exports[i] = &Export{
-			Addr:         C.GoString(sliceV[i].addr),
+			Addr:         fmt.Sprintf("%X", sliceV[i].addr),
 			FunctionName: C.GoString(sliceV[i].function_name),
 		}
 	}

@@ -244,42 +244,49 @@ def PEInfoRun(obj):
 
     # data["DllCharacteristics"] = _dll_characteristics_flags(pe)
     
+    data["directories"] = {}
     if (hasattr(pe, 'OPTIONAL_HEADER') and hasattr(pe.OPTIONAL_HEADER, 'DATA_DIRECTORY') ):
          data["directories"] = _dataDirectories(pe)
 
+    data["VersionInfo"] = {}
     if hasattr(pe, 'VS_VERSIONINFO'):
          data["VersionInfo"] = _version_Information(pe)
 
+    data['Exports'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
-        data['Exported symbols'] = _export_directory(pe)
+        data['Exports'] = _export_directory(pe)
 
+    data['Importedsymbols'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         data['Importedsymbols'] = _imported_symbols(pe)
         
-
+    data['BoundImports'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_BOUND_IMPORT'):
-                data['Bound imports'] = _directory_bound_imports(pe)
+        data['BoundImports'] = _directory_bound_imports(pe)
 
+    data['DelayImportedSymbols'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_DELAY_IMPORT'):
-                data['Delay Imported symbols'] = _delay_import_directory(pe)
+        data['DelayImportedSymbols'] = _delay_import_directory(pe)
 
+    data['ResourceDirectory'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
-            data['Resource directory'] = _resources_data_entry(pe)
+            data['ResourceDirectory'] = _resources_data_entry(pe)
             
+    data['TLS'] = {}
     if ( hasattr(pe, 'DIRECTORY_ENTRY_TLS') and pe.DIRECTORY_ENTRY_TLS and pe.DIRECTORY_ENTRY_TLS.struct ):
             data['TLS'] = pe.DIRECTORY_ENTRY_TLS.struct.dump_dict()
 
-
+    data['LOAD_CONFIG'] = {}
     if ( hasattr(pe, 'DIRECTORY_ENTRY_LOAD_CONFIG') and pe.DIRECTORY_ENTRY_LOAD_CONFIG and pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct ):
         data['LOAD_CONFIG'] = pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct.dump_dict()
 
-
+    data['DebugInfo'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_DEBUG'):
-        data['Debug information'] = _debug_Directory(pe)
+        data['DebugInfo'] = _debug_Directory(pe)
 
-
+    data['BaseRelocations'] = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_BASERELOC'):
-        data['Base relocations'] = _relocations_directory(pe)
+        data['BaseRelocations'] = _relocations_directory(pe)
 
     return data
 

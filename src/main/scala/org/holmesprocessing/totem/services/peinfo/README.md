@@ -387,7 +387,7 @@ This allows the container to access /tmp on the local file system in read-only m
             "SHA-512": "bf29af186073f7b7e1ff971df310d739bfafbb59ad8bb5bf9715ca298aec189ffcc5ed7b1626d645a8bbf1ae84cabe17b0b01cf283f4efd1930c0b3a0bafa55c"
         },
     ],
-    "directories": [
+    "Directories": [
         {
             "Structure": "IMAGE_DIRECTORY_ENTRY_EXPORT",
             "VirtualAddress": {
@@ -597,7 +597,8 @@ This allows the container to access /tmp on the local file system in read-only m
             }
         }
     ],
-    "Exported symbols": [
+	"VersionInfo": {},
+    "Exports": [
         {
             "Structure": "IMAGE_EXPORT_DIRECTORY",
             "Characteristics": {
@@ -694,7 +695,9 @@ This allows the container to access /tmp on the local file system in read-only m
             }
         ]
     ],
-    "Resource directory": [
+	"BoundImports": {},
+	"DelayImportedSymbols": {},
+    "ResourceDirectory": [
         {
             "Structure": "IMAGE_RESOURCE_DIRECTORY",
             "Characteristics": {

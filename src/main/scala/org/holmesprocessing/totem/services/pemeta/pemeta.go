@@ -194,6 +194,7 @@ type Hashes struct {
 	Headers  [3]Hash `json:"Headers"` // Only 3 Headers : dos, coff, optional
 	Sections []*Hash `json:"Sections"`
 	FileHash Hash    `json:"PEFile"`
+	Imphash string `json"Imphash"`
 }
 
 // config structs
@@ -667,6 +668,10 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.FileHash.Sha1 = fmt.Sprintf("%s", C.GoString(file_hash.sha1))
 	temp_result.PEHashes.FileHash.Sha256 = fmt.Sprintf("%s", C.GoString(file_hash.sha256))
 	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
+
+		imphash :=	C.imphash(&ctx, 2)
+		temp_result.PEHashes.Imphash = C.GoString(imphash)
+		fmt.Println(C.GoString(imphash))
 
 	// Section Hash
 	var sections C.hash_section = C.get_sections_hash(&ctx)

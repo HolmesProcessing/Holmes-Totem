@@ -24,6 +24,8 @@ import (
 	"strings"
 	"unsafe"
 
+	"sync"
+
 	//Imports for serving on a socket and handling routing of incoming request.
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
@@ -180,6 +182,8 @@ type Section struct {
 	PointerToRawData    string `json:"PointerToRawData"`
 	NumberOfRelocations int    `json:"NumberOfRelocations"`
 	Characteristics     string `json:"Characteristics"`
+	VirtualSize         int    `json"VirtualSize"`
+	SizeOfRawData       int    `json:"SizeOfRawData"`
 }
 
 type Hash struct {
@@ -338,21 +342,84 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	result := &Result{}
-	result = header_coff(ctx, result)
-	result = header_dos(ctx, result)
+	wg := &sync.WaitGroup{}
+	wg.Add(15)
+
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		result = header_coff(ctx, result)
+	}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		result = header_dos(ctx, result)
+	}(wg)
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = header_optional(ctx, result) //cannot support optional headers because Golang reject incompactable field allignment.
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.Directories_count = header_directories_count(ctx)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = header_directories(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = header_sections(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.Sections_count = header_sections_count(ctx)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = get_hashes(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = get_exports(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = get_imports(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result = get_resources(ctx, result)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.Entrophy = get_entrophy_file(ctx)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.FPUTrick = get_fputrick(ctx)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.CPLAnalysis = get_cpl_analysis(ctx)
+}(wg)
+
+go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 	result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
+}(wg)
+
+wg.Wait()
 
 	// TODO: as each of these are independent, we can use concurrency.
 
@@ -717,6 +784,14 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	return temp_result
 
 }
+/*func union_to_guint32_ptr(cbytes [8]byte) (result *_Ctype_uint32_t) {
+    buf := bytes.NewBuffer(cbytes[:])
+	var ptr uint64
+    if err := binary.Read(buf, binary.LittleEndian, &ptr); err == nil {
+    return (*_Ctype_guint32)(unsafe.Pointer(ptr))
+	}
+  return nil
+}*/
 
 func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	count := C.pe_sections_count(&ctx)
@@ -729,6 +804,10 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if sections == nil {
 		return &Result{} // return empty result
 	}
+	type tagKbdInput struct {
+		    typ uint32
+			   va  C.uint32_t
+			}
 	temp_result.Sections = make([]*Section, length)
 	for i := 0; i < length; i++ {
 		//fmt.Println(sliceV[i].VirtualAddress)
@@ -738,7 +817,12 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 			PointerToRawData:    fmt.Sprintf("%X", int(sliceV[i].PointerToRawData)),
 			NumberOfRelocations: int(sliceV[i].NumberOfRelocations),
 			Characteristics:     fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
+			//VirtualSize:          ,
+			SizeOfRawData:        int(sliceV[i].SizeOfRawData),
 		}
+		fmt.Println("hello ")
+		fmt.Println((*tagKbdInput)(unsafe.Pointer(sliceV[i])).va)
+		
 	}
 
 	return temp_result

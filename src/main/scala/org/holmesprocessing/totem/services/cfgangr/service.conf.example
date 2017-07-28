@@ -1,4 +1,3 @@
 {
-	"HTTPBinding": ":8080",
-	"MaxNumberOfArcs": 100000
+	"HTTPBinding": ":8080"
 }

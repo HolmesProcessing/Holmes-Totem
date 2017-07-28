@@ -1,8 +1,6 @@
 import angr
-import argparse
 from angrutils import *
 from os import remove
-import sys
 
 # imports for converting dot graph to json graph
 import networkx as nx

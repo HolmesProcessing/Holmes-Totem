@@ -2,22 +2,7 @@
 
 ## Description
 
-A simple service that utilizes the open-source library 'angr' to retrieve the control flow graph (CFG) from a binary. This service dumps the CFG into dot format.
-
-### Output
-```json
-results = {
-	"truncated": <boolean>,
-	"arcs": {
-		[
-		"tail":  <string>,
-		"head":  <string>,
-		"label": <string>
-		]
-		...
-	}
-}
-```
+A simple service that utilizes the open-source library 'angr' to retrieve the control flow graph (CFG) from a binary. This service dumps the CFG into JSON format.
 
 ## Usage
 

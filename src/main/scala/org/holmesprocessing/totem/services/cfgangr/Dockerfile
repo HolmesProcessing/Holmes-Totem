@@ -8,12 +8,6 @@ RUN pip2 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
-# add holmeslibrary
-RUN wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
-	&& tar xf v0.1.tar.gz \
-	&& mv Holmes-Totem-Service* holmeslibrary \
-	&& rm -rf /var/cache/apk/* v0.1.tar.gz
-
 ###
 # cfgangr specific options
 ###

@@ -13,7 +13,7 @@ WORKDIR /service
 ###
 
 # add dependencies for cfgangr
-RUN pip2 install angr angr-utils networkx
+RUN pip2 install angr networkx
 
 
 # add the files to the container

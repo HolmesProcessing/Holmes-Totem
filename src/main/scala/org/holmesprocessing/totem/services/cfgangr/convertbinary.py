@@ -1,5 +1,4 @@
 import angr
-from angrutils import *
 
 # imports for graph handling
 import networkx as nx

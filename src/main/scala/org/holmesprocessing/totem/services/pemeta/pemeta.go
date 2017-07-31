@@ -198,7 +198,7 @@ type Hashes struct {
 	Headers  [3]Hash `json:"Headers"` // Only 3 Headers : dos, coff, optional
 	Sections []*Hash `json:"Sections"`
 	FileHash Hash    `json:"PEFile"`
-	Imphash string `json"Imphash"`
+	Imphash  string  `json"Imphash"`
 }
 
 // config structs
@@ -350,78 +350,76 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		result = header_coff(ctx, result)
 	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
 		result = header_dos(ctx, result)
 	}(wg)
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = header_optional(ctx, result) //cannot support optional headers because Golang reject incompactable field allignment.
-}(wg)
+		result = header_optional(ctx, result) //cannot support optional headers because Golang reject incompactable field allignment.
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.Directories_count = header_directories_count(ctx)
-}(wg)
+		result.Directories_count = header_directories_count(ctx)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = header_directories(ctx, result)
-}(wg)
+		result = header_directories(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = header_sections(ctx, result)
-}(wg)
+		result = header_sections(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.Sections_count = header_sections_count(ctx)
-}(wg)
+		result.Sections_count = header_sections_count(ctx)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = get_hashes(ctx, result)
-}(wg)
+		result = get_hashes(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = get_exports(ctx, result)
-}(wg)
+		result = get_exports(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = get_imports(ctx, result)
-}(wg)
+		result = get_imports(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result = get_resources(ctx, result)
-}(wg)
+		result = get_resources(ctx, result)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.Entrophy = get_entrophy_file(ctx)
-}(wg)
+		result.Entrophy = get_entrophy_file(ctx)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.FPUTrick = get_fputrick(ctx)
-}(wg)
+		result.FPUTrick = get_fputrick(ctx)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.CPLAnalysis = get_cpl_analysis(ctx)
-}(wg)
+		result.CPLAnalysis = get_cpl_analysis(ctx)
+	}(wg)
 
-go func(wg *sync.WaitGroup) {
+	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-	result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
-}(wg)
+		result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
+	}(wg)
 
-wg.Wait()
-
-	// TODO: as each of these are independent, we can use concurrency.
+	wg.Wait()
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
 	json2http := json.NewEncoder(f_response)
@@ -439,12 +437,19 @@ wg.Wait()
 func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	resources_count := C.get_resources_count(&ctx)
+
 	resources := C.get_resources(&ctx)
+	defer C.pe_dealloc_peres(&resources)
 
 	res_count := int(resources_count.resourcesDirectory)
 	dirEntry_count := int(resources_count.directoryEntry)
 	dataString_count := int(resources_count.dataString)
 	dataEntry_count := int(resources_count.dataEntry)
+
+	if resources.err != C.LIBPE_E_PERES_OK {
+		// TODO:Return an error code?? So that totem get notified about this particular error?
+		return temp_result;
+	}
 
 	temp_result.Resources.ResourceDirectory = make([]*RDT_RESOURCE_DIRECTORY, res_count)
 	temp_result.Resources.DirectoryEntry = make([]*RDT_DIRECTORY_ENTRY, dirEntry_count)
@@ -468,7 +473,7 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	for i := 0; i < dirEntry_count; i++ {
 		temp_result.Resources.DirectoryEntry[i] = &RDT_DIRECTORY_ENTRY{
 			NodeType:          int(directoryEntry[i].NodeType),
-			NameOffset:      int(directoryEntry[i].NameOffset),
+			NameOffset:        int(directoryEntry[i].NameOffset),
 			NameIsString:      int(directoryEntry[i].NameIsString),
 			OffsetIsDirectory: int(directoryEntry[i].OffsetIsDirectory),
 			DataIsDirectory:   int(directoryEntry[i].DataIsDirectory),
@@ -498,6 +503,13 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 }
 func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	imports := C.get_imports(&ctx)
+	defer C.dealloc_imports(imports);
+
+	if imports.err != C.LIBPE_E_IMPORTS_OK {
+		//TODO: Return a error code so that TOTEM gets notifed about this  particular error
+		return temp_result;
+	}
+
 	dll_count := int(imports.dll_count)
 	//fmt.Printf("Dll count %d\n", dll_count)
 	if dll_count == 0 {
@@ -552,16 +564,20 @@ func get_entrophy_file(ctx C.pe_ctx_t) float32 {
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	exports := C.get_exports(&ctx)
-	if exports == nil {
-		info.Println("nill value")
+	count := C.get_exports_functions_count(&ctx)
+	defer C.pe_dealloc_exports(exports.exports,count)
+
+	if exports.err != C.LIBPE_E_EXPORTS_OK {
+		// TODO: Return an HTTP error code so that totem gets notifed about the error?
 		return temp_result
 	}
-	count := C.get_exports_functions_count(&ctx)
+
 	length := int(count)
 	if length == 0 {
 		return temp_result
 	}
-	sliceV := (*[1 << 30](C.exports_t))(unsafe.Pointer(exports))[:length:length] // converting c array into Go slices
+
+	sliceV := (*[1 << 30](C.exports_t))(unsafe.Pointer(exports.exports))[:length:length] // converting c array into Go slices
 	temp_result.Exports = make([]*Export, length)
 
 	for i := 0; i < length; i++ {
@@ -696,13 +712,13 @@ func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	count := C.pe_directories_count(&ctx)
 	if int(count) == 0 {
-		return &Result{} // return empty result
+		return temp_result // return empty result
 	}
 	length := int(count)
 	var directories **C.IMAGE_DATA_DIRECTORY = C.pe_directories(&ctx)
 	sliceV := (*[1 << 30](*C.IMAGE_DATA_DIRECTORY))(unsafe.Pointer(directories))[:length:length]
 	if directories == nil {
-		return &Result{} // return empty result
+		return temp_result // return empty result
 	}
 
 	temp_result.Directories = make([]*Directory, length)
@@ -730,21 +746,27 @@ func header_sections_count(ctx C.pe_ctx_t) int {
 func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	// File Hash
 	file_hash := C.get_file_hash(&ctx)
+	defer C.dealloc_filehash(file_hash)
+
+	if file_hash.err != C.LIBPE_E_HASHES_OK {
+		return temp_result
+	}
 	temp_result.PEHashes.FileHash.Name = fmt.Sprintf("%s", C.GoString(file_hash.name))
 	temp_result.PEHashes.FileHash.Md5 = fmt.Sprintf("%s", C.GoString(file_hash.md5))
 	temp_result.PEHashes.FileHash.Sha1 = fmt.Sprintf("%s", C.GoString(file_hash.sha1))
 	temp_result.PEHashes.FileHash.Sha256 = fmt.Sprintf("%s", C.GoString(file_hash.sha256))
 	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
 
-		imphash :=	C.imphash(&ctx, 2)
-		temp_result.PEHashes.Imphash = C.GoString(imphash)
-		fmt.Println(C.GoString(imphash))
+	imphash := C.imphash(&ctx, 2)
+	temp_result.PEHashes.Imphash = C.GoString(imphash)
+	fmt.Println(C.GoString(imphash))
 
 	// Section Hash
-	var sections C.hash_section = C.get_sections_hash(&ctx)
+	var sections C.hash_section_t = C.get_sections_hash(&ctx)
+	defer C.dealloc_sections_hashes(sections)
 	//count := C.pe_sections_count(&ctx)
 	length := int(sections.count)
-	sliceV := (*[1 << 30](C.hash_))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
+	sliceV := (*[1 << 30](C.hash_t))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
 	temp_result.PEHashes.Sections = make([]*Hash, length)
 	for i := 0; i < length; i++ {
 		temp_result.PEHashes.Sections[i] = &Hash{
@@ -758,6 +780,10 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	// Header Hash
 	headers := C.get_headers_hash(&ctx)
+	defer C.dealloc_hdr_hashes(headers)
+	if headers.err != C.LIBPE_E_HASHES_OK {
+		return temp_result
+	}
 	//temp_result.PEHashes.Headers = make([]*Hash, 4);  // only 3 headers : dos, coff, optional
 
 	// for Dos header
@@ -784,6 +810,7 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	return temp_result
 
 }
+
 /*func union_to_guint32_ptr(cbytes [8]byte) (result *_Ctype_uint32_t) {
     buf := bytes.NewBuffer(cbytes[:])
 	var ptr uint64
@@ -796,7 +823,7 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	count := C.pe_sections_count(&ctx)
 	if int(count) == 0 {
-		return &Result{} // return empty result
+		return temp_result // return empty result
 	}
 	length := int(count)
 	var sections **C.IMAGE_SECTION_HEADER = C.pe_sections(&ctx)
@@ -805,12 +832,11 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		return &Result{} // return empty result
 	}
 	type tagKbdInput struct {
-		    typ uint32
-			   va  C.uint32_t
-			}
+		typ uint32
+		va  C.uint32_t
+	}
 	temp_result.Sections = make([]*Section, length)
 	for i := 0; i < length; i++ {
-		//fmt.Println(sliceV[i].VirtualAddress)
 		temp_result.Sections[i] = &Section{
 			Name:                fmt.Sprintf("%s", sliceV[i].Name),
 			VirtualAddress:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
@@ -818,11 +844,10 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 			NumberOfRelocations: int(sliceV[i].NumberOfRelocations),
 			Characteristics:     fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
 			//VirtualSize:          ,
-			SizeOfRawData:        int(sliceV[i].SizeOfRawData),
+			SizeOfRawData: int(sliceV[i].SizeOfRawData),
 		}
-		fmt.Println("hello ")
 		fmt.Println((*tagKbdInput)(unsafe.Pointer(sliceV[i])).va)
-		
+
 	}
 
 	return temp_result

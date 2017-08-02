@@ -1,4 +1,4 @@
-from pefilenew import pefile
+import pefile
 import json
 
 import os
@@ -211,7 +211,7 @@ def _export_directory(exe):
 
 def _delay_import_directory(exe):
     data = list()
-    for module in pe.DIRECTORY_ENTRY_DELAY_IMPORT:
+    for module in exe.DIRECTORY_ENTRY_DELAY_IMPORT:
         module_list = list()
         data['Delay Imported symbols'].append(module_list)
         module_list.append(module.struct.dump_dict())

@@ -12,7 +12,7 @@ WORKDIR /service
 ##
 
 # add dependencies for peinfo v2
-RUN pip3 install pefilenew
+RUN pip3 install --upgrade pefile
 
 # add the files to the container
 COPY LICENSE /service

@@ -7,6 +7,10 @@ RUN pip3 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
+###
+# richheader specific options
+###
+
 # add the files to the container
 COPY LICENSE /service
 COPY README.md /service

@@ -10,6 +10,10 @@ WORKDIR /service
 # add dependencies for asnmeta
 RUN pip3 install dnspython
 
+###
+# ansmeta specific options
+###
+
 # add the files to the container
 COPY LICENSE /service
 COPY README.md /service

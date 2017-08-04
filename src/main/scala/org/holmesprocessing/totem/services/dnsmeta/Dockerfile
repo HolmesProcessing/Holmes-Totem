@@ -7,12 +7,12 @@ RUN pip3 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
-# add dependencies for asnmeta
-RUN pip3 install dnspython
-
 ###
 # dnsmeta specific options
 ###
+
+# add dependencies for asnmeta
+RUN pip3 install dnspython
 
 # add the files to the container
 COPY LICENSE /service

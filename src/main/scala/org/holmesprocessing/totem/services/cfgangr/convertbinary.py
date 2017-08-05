@@ -50,12 +50,13 @@ def _truncateGraph(cfg):
             new_node = str(sequence) + ' ' + repr(n.addr) +  ' ' + str(n.name)
             sequence += 1
             lookup[n] = new_node
-            graph.add_node(new_node, label = n.label, simprocedure = n.simprocedure_name, syscall = n.syscall)
+            graph.add_node(new_node, label = n.label, syscall = n.syscall)
 
     # Update the edges
     for src, dst, data in cfg.edges(data=True):
         new_src = lookup[src]
         new_dst = lookup[dst]
+        data.pop('ins_addr', None)
         data.pop('stmt_idx', None)
         graph.add_edge(new_src, new_dst, data=data)
 

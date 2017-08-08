@@ -13,12 +13,10 @@ import (
 import (
 	"flag"
 	"fmt"
-	"github.com/go-ini/ini"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 )
 
@@ -43,7 +41,6 @@ import (
 	"strconv"
 )
 
-// config structs
 type Metadata struct {
 	Name        string
 	Version     string
@@ -51,12 +48,19 @@ type Metadata struct {
 	Copyright   string
 	License     string
 }
-type Settings struct {
-	Port               string
-	MaxNumberOfOpcodes string
+
+// config structs
+type Setting struct {
+	HTTPBinding string `json:"HTTPBinding"`
 }
+
+type OBJDUMP struct {
+	MaxNumberOfOpcodes int `json:"MaxNumberOfOpcodes"`
+}
+
 type Config struct {
-	Settings Settings
+	Settings Setting `json:"settings"`
+	Objdump  OBJDUMP `json:"objdump"`
 }
 
 // global variables
@@ -88,24 +92,12 @@ func main() {
 	flag.StringVar(&configPath, "config", "", "Path to the configuration file")
 	flag.Parse()
 
-	// read metadata-files
-	if data, err := ioutil.ReadFile(metadata.Description); err == nil {
-		metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
-	}
-	if data, err := ioutil.ReadFile(metadata.License); err == nil {
-		metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
-	}
-
-	if configPath == "" {
-		configPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-		configPath += "/service.conf"
-	}
-
-	config = load_config(configPath)
-	opcodes_max, err = strconv.ParseInt(config.objdump.MaxNumberOfOpcodes, 10, 64)
+	config, err := load_config(configPath)
 	if err != nil {
 		panic(err)
 	}
+
+	//opcodes_max := config.Logic.MaxNumberOfOpcodes
 
 	// find objdump binary path
 	if binary, err := exec.LookPath("objdump"); err != nil {
@@ -119,102 +111,38 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	infoLogger.Printf("Binding to %s\n", config.settings.port)
-	infoLogger.Fatal(http.ListenAndServe(config.settings.port, router))
+	infoLogger.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	infoLogger.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 // Parse a configuration file into a configuration structure.
-func load_config(configPath string) Config {
+func load_config(configPath string) (*Config, error) {
+	config := &Config{}
 
-	// Create a new config object. Initialize it empty for now.
-	config := Config{Settings: Settings{}}
-
-	// Prepare reflection to be able to set values later.
-	r_settings := reflect.ValueOf(&(config.Settings)).Elem()
-
-	// Attempt to read the INI-File. If it fails to open and read from the file,
-	// throw a fatal error and exit.
-	inifile, err := ini.Load(configPath)
-	if err != nil {
-		infoLogger.Fatalf("Unable to read config file %s", configPath)
+	// if no path is supplied look in the current dir
+	if configPath == "" {
+		configPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		configPath += "/service.conf"
 	}
 
-	// Get a list of all section names in the INI-File and iterate over them.
-	// Convert each name to lower case and check if it corresponds to one of our
-	// sections. If this is the case, set the respective mapping so we can find
-	// this section within the INI-File again. (See loop over section_list)
-	sections := make(map[string]string)
-	for _, section_name := range inifile.SectionStrings() {
-		lower_case := strings.ToLower(section_name)
-		if lower_case == "metadata" || lower_case == "settings" {
-			infoLogger.Printf("Found section %s (%s)\n", lower_case, section_name)
-			sections[lower_case] = section_name
+	cfile, _ := os.Open(configPath)
+	if err := json.NewDecoder(cfile).Decode(&config); err != nil {
+		return config, err
+	}
+
+	if metadata.Description != "" {
+		if data, err := ioutil.ReadFile(string(metadata.Description)); err == nil {
+			metadata.Description = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 
-	// If one of our required sections isn't supplied, error out.
-	if _, exists := sections["settings"]; !exists {
-		infoLogger.Fatalln("Fatal Error: Unable to find a settings section in the supplied config")
-	}
-
-	// Iterate through the two sections and then over all relevant keys.
-	// Using a lot of helper structures here, looks ugly, but effectively makes
-	// this a bit more efficient and allows using the same code for all sections
-	// and contained keys.
-	type Mapping struct {
-		key       string
-		key_lower string
-		exists    bool
-		value     string
-	}
-	section_list := [2]string{"metadata", "settings"}
-	ini_map := make(map[string]map[string]*Mapping)
-	ini_keys := make(map[string][]string)
-	ini_keys["settings"] = []string{"Port", "MaxNumberOfOpcodes"}
-
-	for _, section_name := range section_list {
-		// Per section we require a ini_map section, create it.
-		// it consists of a Mapping struct reference containing information
-		// about the setting parameter.
-		ini_map[section_name] = make(map[string]*Mapping)
-		for _, key := range ini_keys[section_name] {
-			lower_case := strings.ToLower(key)
-			// Since map entries are not addressable, we don't put in the struct
-			// directly, but rather an address, making its values modifiable.
-			ini_map[section_name][lower_case] = &Mapping{key: key, key_lower: lower_case}
-		}
-		// Grab the actual INI-File section to work with.
-		section := inifile.Section(sections[section_name])
-		// Go through all keys within this section.
-		// We don't know which exact keys the setting values have (upper and
-		// lower case may be mixed), as such we convert each key to lower case
-		// and check if a respective mapping exists within the ini_map.
-		// If that is the case, we define that the mapping is now "existing" and
-		// fill in the value stored in the INI-File.
-		// We only consider the LAST value of the respective key.
-		for _, key := range section.KeyStrings() {
-			lower_case := strings.ToLower(key)
-			if mapping, exists := ini_map[section_name][lower_case]; exists {
-				mapping.exists = true
-				mapping.value = section.Key(key).String()
-			}
-		}
-		// Once we're finished with the keys, go over all mappings of this
-		// section.
-		// If a mapping doesn't exist, throw a fatal error and exit.
-		// If it exists however, use previously initialized reflection to set
-		// the respective values in the config struct.
-		// In case we are in the metadata section and if the key is description
-		// or license load the file contents instead if the file is available.
-		for _, mapping := range ini_map[section_name] {
-			if !mapping.exists {
-				infoLogger.Fatalf("Fatal Error: Missing key %s in the %s config\n", mapping.key, section_name)
-			}
-			r_settings.FieldByName(mapping.key).SetString(mapping.value)
+	if metadata.License != "" {
+		if data, err := ioutil.ReadFile(string(metadata.License)); err == nil {
+			metadata.License = strings.Replace(string(data), "\n", "<br>", -1)
 		}
 	}
 
-	return config
+	return config, nil
 }
 
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {

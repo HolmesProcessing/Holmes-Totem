@@ -42,7 +42,7 @@ class CFGAngrProcess(tornado.web.RequestHandler):
     def get(self):
         try:
             filename = self.get_argument("obj", strip=False)
-            fullPath = (os.path.join('/tmp/', filename), filename)
+            fullPath = os.path.join('/tmp/', filename)
             data = CFGAngrRun(fullPath)
             self.write(data)
         except tornado.web.MissingArgumentError:

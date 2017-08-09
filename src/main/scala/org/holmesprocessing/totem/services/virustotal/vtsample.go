@@ -38,11 +38,19 @@ type Metadata struct {
 }
 
 //TODO: unifying info url. saving cvp's comments from gogadget as they should be addressed
+type Settings struct {
+	HTTPBinding string `json:"HTTPBinding"`
+}
+
+type VIRUSTOTAL struct {
+	ApiKey               string `json:"ApiKey"`
+	UploadUnknownSamples bool   `json:"UplaodUnknownSample"`
+	RequestTimeout       int    `json:"RequestTimeout"`
+}
+
 type Config struct {
-	HTTPBinding          string //cvp: saving port is an unnecessary limitation; the binding allows for assigning the IP address too which is nicer
-	ApiKey               string
-	UploadUnknownSamples bool
-	RequestTimeout       int
+	Setting Settings   `json:"settings"`
+	Virustotal VIRUSTOTAL `json:"virustotal"`
 }
 
 var (
@@ -75,13 +83,13 @@ func main() {
 	if err != nil {
 		info.Fatalln("Couldn't decode config file without errors!", err.Error())
 	}
-	client = &http.Client{Timeout: time.Duration(config.virustotal.RequestTimeout) * time.Second}
+	client = &http.Client{Timeout: time.Duration(config.Virustotal.RequestTimeout) * time.Second}
 
 	router := httprouter.New()
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
-	info.Printf("Binding to %s\n", config.settings.HTTPBinding)
-	info.Fatal(http.ListenAndServe(config.settings.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.Setting.HTTPBinding)
+	info.Fatal(http.ListenAndServe(config.Setting.HTTPBinding, router))
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -124,8 +132,8 @@ func load_config(configPath string) (*Config, error) {
 	}
 
 	// validate ApiKey
-	_, err := hex.DecodeString(config.ApiKey)
-	if len(config.ApiKey) != 64 || err != nil {
+	_, err := hex.DecodeString(config.Virustotal.ApiKey)
+	if len(config.Virustotal.ApiKey) != 64 || err != nil {
 		info.Println("Apikey seems to be invalid! Please supply a valid key!")
 		return config, err
 	}
@@ -191,7 +199,7 @@ func vtWork(hash, fPath string) (string, error) {
 	// 0 = unknwon
 	// 1 = found
 	// 2 = processing
-	if vtr.ResponseCode == 0 && config.virustotal.UploadUnknownSamples {
+	if vtr.ResponseCode == 0 && config.Virustotal.UploadUnknownSamples {
 		hash, err = uploadSample(fPath)
 		if err != nil {
 			return "", err
@@ -232,7 +240,7 @@ func getReport(md5 string) ([]byte, error) {
 
 	form := url.Values{}
 	form.Add("resource", md5)
-	form.Add("apikey", config.virustotal.ApiKey)
+	form.Add("apikey", config.Virustotal.ApiKey)
 
 	req, err := http.NewRequest("POST", "https://www.virustotal.com/vtapi/v2/file/report", strings.NewReader(form.Encode()))
 	req.PostForm = form
@@ -275,7 +283,7 @@ func uploadSample(fPath string) (string, error) {
 	}
 	_, err = io.Copy(part, file)
 
-	err = writer.WriteField("apikey", config.virustotal.ApiKey)
+	err = writer.WriteField("apikey", config.Virustotal.ApiKey)
 	if err != nil {
 		return "", err
 	}

@@ -66,7 +66,7 @@ type Settings struct {
 	RequestTimeout int
 }
 type Config struct {
-	Settings Settings
+	Setting Settings
 }
 
 // main logic

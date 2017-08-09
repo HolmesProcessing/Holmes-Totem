@@ -14,16 +14,10 @@ RUN apk add --no-cache \
 # objdump specific options
 ###
 
-# Get Go dependencies and binutils
+# Get binutils : objdump is part of binutils
 RUN apk add --no-cache \
-		binutils \
+		binutils \ 
 	&& rm -rf /var/cache/apk/*
-RUN go get "github.com/go-ini/ini"
-
-# clean up
-RUN apk del --purge \
-		git \
-	&& rm -rf /var/cache/apk/* yara-3.5.0
 
 # add the files to the container
 COPY LICENSE /service

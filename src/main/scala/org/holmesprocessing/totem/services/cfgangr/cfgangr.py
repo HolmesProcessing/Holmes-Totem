@@ -7,12 +7,11 @@ import traceback
 import os
 from os import path
 
-#import for parsing configuration file
-import json
+# imports for cfgangr
+import convertbinary
 
-# imports for ASNMeta
-import gatherasn
-from time import localtime, strftime
+#imports for reading configuration file
+import json
 
 # reading configuration file
 def ServiceConfig(filename):
@@ -24,45 +23,30 @@ def ServiceConfig(filename):
         raise tornado.web.HTTPError(500)
 
 Config = ServiceConfig("./service.conf")
+
 Metadata = {
-    "Name"        : "ASNMeta",
+    "Name"        : "CFGAngr",
     "Version"     : "1.0",
     "Description" : "./README.md",
     "License"     : "./LICENSE"
 }
 
 
-def ASNMetaRun(ipaddress):
-    asninfo = gatherasn.GatherASN(ipaddress,
-                                    Config["asnmeta"]["dns_server"], 
-                                    Config["asnmeta"]["asn_ipv4_query"], 
-                                    Config["asnmeta"]["asn_ipv6_query"],
-                                    Config["asnmeta"]["asn_peer_query"],
-                                    Config["asnmeta"]["asn_name_query"])
-    
-    asninfo.query_asn_origin()
-
-    if asninfo.get_ip_version() == 4:
-        asninfo.query_asn_peer()
-
-    if asninfo.get_asn_number():
-        asninfo.query_asn_name('AS{}'.format(asninfo.get_asn_number()))
-
-    return asninfo.get_all_known_data()
+def CFGAngrRun(binary):
+    # Returns the CFG of a binary in JSON format
+    data = convertbinary.generateCFG(binary)
+    return data
 
 
-class ASNMetaProcess(tornado.web.RequestHandler):
+class CFGAngrProcess(tornado.web.RequestHandler):
     def get(self):
         try:
-            ipaddress = self.get_argument('obj', strip=False)
-            data = ASNMetaRun(ipaddress)
+            filename = self.get_argument("obj", strip=False)
+            fullPath = os.path.join('/tmp/', filename)
+            data = CFGAngrRun(fullPath)
             self.write(data)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
-        except gatherasn.IPTypeError:
-            raise tornado.web.HTTPError(400)
-        except gatherasn.IPFormatError:
-            raise tornado.web.HTTPError(404)
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
@@ -80,12 +64,12 @@ class Info(tornado.web.RequestHandler):
             name        = str(Metadata["Name"]).replace("\n", "<br>"),
             version     = str(Metadata["Version"]).replace("\n", "<br>"),
             description = str(Metadata["Description"]).replace("\n", "<br>"),
-            license     = str(Metadata["License"]).replace("\n", "<br>")
+            license     = str(Metadata["License"]).replace("\n", "<br>"),
         )
         self.write(info)
 
 
-class ASNApp(tornado.web.Application):
+class CFGAngrApp(tornado.web.Application):
     def __init__(self):
         for key in ["Description", "License"]:
             fpath = Metadata[key]
@@ -95,7 +79,7 @@ class ASNApp(tornado.web.Application):
 
         handlers = [
             (r'/', Info),
-            (r'/analyze/', ASNMetaProcess),
+            (r'/analyze/', CFGAngrProcess),
         ]
         settings = dict(
             template_path=path.join(path.dirname(__file__), 'templates'),
@@ -106,7 +90,7 @@ class ASNApp(tornado.web.Application):
 
 
 def main():
-    server = tornado.httpserver.HTTPServer(ASNApp())
+    server = tornado.httpserver.HTTPServer(CFGAngrApp())
     server.listen(Config["settings"]["httpbinding"])
     try:
         tornado.ioloop.IOLoop.current().start()

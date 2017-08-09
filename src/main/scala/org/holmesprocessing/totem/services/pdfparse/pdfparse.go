@@ -29,6 +29,7 @@ var (
 	}
 )
 
+// Result structs
 type Result struct {
 	Truncated      bool      `json:"Truncated"`
 	Comments       int       `json:"Comments"`
@@ -44,9 +45,19 @@ type Object struct {
 	Values   []int  `json:"Values"`
 }
 
+
+// Config structs
+type Setting struct {
+	HTTPBinding string `json:"HTTPBinding"`
+}
+
+type PDFPARSE struct {
+	MaxNumberOfObjects int `json:"MaxNumberOfObjects"`
+}
+
 type Config struct {
-	HTTPBinding        string
-	MaxNumberOfObjects int
+	Settings Setting  `json:"settings"`
+	Pdfparse    PDFPARSE `json:"pdfparse"`
 }
 
 type Metadata struct {
@@ -76,8 +87,8 @@ func main() {
 	router := httprouter.New()
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
-	info.Printf("Binding to %s\n", config.settings.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.settings.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 func handler_info(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -172,7 +183,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		Trailer:        final[2],
 		StartXref:      final[3],
 		IndirectObject: final[4],
-		Objects:        make([]*Object, config.pdfparse.MaxNumberOfObjects),
+		Objects:        make([]*Object, config.Pdfparse.MaxNumberOfObjects),
 	}
 
 	counter := 0
@@ -198,7 +209,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 		}
 		counter++
 
-		if counter == config.pdfparse.MaxNumberOfObjects {
+		if counter == config.Pdfparse.MaxNumberOfObjects {
 			result.Truncated = true
 			break
 		}

@@ -6,6 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import org.holmesprocessing.totem.actors._
 import org.holmesprocessing.totem.services.asnmeta.{ASNMetaSuccess, ASNMetaWork}
 import org.holmesprocessing.totem.services.cfg.{cfgSuccess, cfgWork}
+import org.holmesprocessing.totem.services.cfgangr.{cfgAngrSuccess, cfgAngrWork}
 import org.holmesprocessing.totem.services.dnsmeta.{DNSMetaSuccess, DNSMetaWork}
 import org.holmesprocessing.totem.services.gogadget.{GoGadgetSuccess, GoGadgetWork}
 import org.holmesprocessing.totem.services.objdump.{ObjdumpSuccess, ObjdumpWork}
@@ -111,6 +112,7 @@ object driver extends App with Instrumented {
       work match {
         case "ASNMETA" => Random.shuffle(services.getOrElse("asnmeta", List())).head
         case "CFG" => Random.shuffle(services.getOrElse("cfg", List())).head
+        case "CFGANGR" => Random.shuffle(services.getOrElse("cfgangr", List())).head
         case "DNSMETA" => Random.shuffle(services.getOrElse("dnsmeta", List())).head
         case "GOGADGET" => Random.shuffle(services.getOrElse("gogadget", List())).head
         case "OBJDUMP" => Random.shuffle(services.getOrElse("objdump", List())).head
@@ -139,7 +141,9 @@ object driver extends App with Instrumented {
           ASNMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "ASNMETA", GeneratePartial("ASNMETA"), li)
         case ("CFG", li: List[String]) =>
           cfgWork(key, uuid_filename, taskingConfig.default_service_timeout, "CFG", GeneratePartial("CFG"), li)
-	case ("DNSMETA", li: List[String]) =>
+		case ("CFGANGR", li: List[String]) =>
+          cfgAngrWork(key, uuid_filename, taskingConfig.default_service_timeout, "CFGANGR", GeneratePartial("CFGANGR"), li)
+		case ("DNSMETA", li: List[String]) =>
           DNSMetaWork(key, orig_filename, taskingConfig.default_service_timeout, "DNSMETA", GeneratePartial("DNSMETA"), li)
         case ("GOGADGET", li: List[String]) =>
           GoGadgetWork(key, uuid_filename, taskingConfig.default_service_timeout, "GOGADGET", GeneratePartial("GOGADGET"), li)
@@ -149,13 +153,13 @@ object driver extends App with Instrumented {
           PassiveTotalWork(key, orig_filename, taskingConfig.default_service_timeout, "PASSIVETOTAL", GeneratePartial("PASSIVETOTAL"), li)
         case ("PDFPARSE", li: List[String]) =>
           pdfparseWork(key, uuid_filename, taskingConfig.default_service_timeout, "PDFPARSE", GeneratePartial("PDFPARSE"), li)
-	case ("PEID", li: List[String]) =>
+		case ("PEID", li: List[String]) =>
           PEiDWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEID", GeneratePartial("PEID"), li)
         case ("PEINFO", li: List[String]) =>
           PEInfoWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEINFO", GeneratePartial("PEINFO"), li)
         case ("PEMETA", li: List[String]) =>
           PEMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "PEMETA", GeneratePartial("PEMETA"), li)
-	case ("RICHHEADER", li: List[String]) =>
+		case ("RICHHEADER", li: List[String]) =>
           RichHeaderWork(key, uuid_filename, taskingConfig.default_service_timeout, "RICHHEADER", GeneratePartial("RICHHEADER"), li)
         case ("SHODAN", li: List[String]) =>
           ShodanWork(key, orig_filename, taskingConfig.default_service_timeout, "SHODAN", GeneratePartial("SHODAN"), li)
@@ -165,7 +169,7 @@ object driver extends App with Instrumented {
           YaraWork(key, uuid_filename, taskingConfig.default_service_timeout, "YARA", GeneratePartial("YARA"), li)
         case ("ZIPMETA", li: List[String]) =>
           ZipMetaWork(key, uuid_filename, taskingConfig.default_service_timeout, "ZIPMETA", GeneratePartial("ZIPMETA"), li)
-        case (s: String, li: List[String]) =>
+		case (s: String, li: List[String]) =>
           UnsupportedWork(key, orig_filename, 1, s, GeneratePartial(s), li)
         case _ => Unit //need to set this to a non Unit type.
       }).collect({
@@ -178,6 +182,7 @@ object driver extends App with Instrumented {
       work match {
         case x: ASNMetaSuccess => conf.getString("totem.services.asnmeta.resultRoutingKey")
         case x: cfgSuccess => conf.getString("totem.services.cfg.resultRoutingKey")
+        case x: cfgAngrSuccess => conf.getString("totem.services.cfgangr.resultRoutingKey")
         case x: DNSMetaSuccess => conf.getString("totem.services.dnsmeta.resultRoutingKey")
         case x: GoGadgetSuccess => conf.getString("totem.services.gogadget.resultRoutingKey")
         case x: ObjdumpSuccess => conf.getString("totem.services.objdump.resultRoutingKey")

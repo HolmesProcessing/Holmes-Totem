@@ -13,6 +13,7 @@ import (
 	//Imports for measuring execution time of requests
 	"time"
 
+	"reflect"
 	//Imports for reading the config, logging and command line argument parsing.
 	"flag"
 	"fmt"
@@ -221,7 +222,7 @@ var (
 	info     *log.Logger
 	metadata Metadata = Metadata{
 		Name:        "pemta",
-		Version:     "0.5.0", //we using a boddumanohar's testing branch as dependency
+		Version:     "1.0",
 		Description: "./README.md",
 		Copyright:   "Copyright 2017 Holmes Group LLC",
 		License:     "./LICENSE",
@@ -256,7 +257,6 @@ func main() {
 }
 
 // Parse a configuration file into a Config structure.
-
 func load_config(configPath string) (*Config, error) {
 	config := &Config{}
 
@@ -344,88 +344,21 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	result := &Result{}
-	// wg := &sync.WaitGroup{}
-	// wg.Add(15)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result = header_coff(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result = header_dos(ctx, result)
-	// }(wg)
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result = header_optional(ctx, result) //cannot support optional headers because Golang reject incompactable field allignment.
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result.Directories_count = header_directories_count(ctx)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result = header_directories(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result = header_sections(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result.Sections_count = header_sections_count(ctx)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		// fmt.Println("hashes here")
-		result = get_hashes(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		// fmt.Println("exports here");
-		result = get_exports(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		// fmt.Println("imports here")
-		result = get_imports(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		// fmt.Println("resources here")
-		result = get_resources(ctx, result)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result.Entrophy = get_entrophy_file(ctx)
-	// }(wg)
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-	fmt.Println("getting fpu trick");
-		result.FPUTrick = get_fputrick(ctx)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result.CPLAnalysis = get_cpl_analysis(ctx)
-	// }(wg)
-
-	// go func(wg *sync.WaitGroup) {
-		// defer wg.Done()
-		result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
-	// }(wg)
-
-	// wg.Wait()
+	result = header_coff(ctx, result)
+	result = header_dos(ctx, result)
+	result = header_optional(ctx, result)
+	result.Directories_count = header_directories_count(ctx)
+	result = header_directories(ctx, result)
+	result = header_sections(ctx, result)
+	result.Sections_count = header_sections_count(ctx)
+	result = get_hashes(ctx, result)
+	result = get_exports(ctx, result)
+	result = get_imports(ctx, result)
+	result = get_resources(ctx, result)
+	result.Entrophy = get_entrophy_file(ctx)
+	result.FPUTrick = get_fputrick(ctx)
+	result.CPLAnalysis = get_cpl_analysis(ctx)
+	result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
 	json2http := json.NewEncoder(f_response)
@@ -441,9 +374,8 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 }
 
 func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
-
+	
 	resources_count := C.get_resources_count(&ctx)
-
 	resources := C.get_resources(&ctx)
 	defer C.pe_dealloc_peres(resources)
 
@@ -453,7 +385,6 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	dataEntry_count := int(resources_count.dataEntry)
 
 	if resources.err != C.LIBPE_E_OK {
-		// TODO:Return an error code?? So that totem get notified about this particular error?
 		return temp_result;
 	}
 
@@ -462,7 +393,7 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.Resources.DataString = make([]*RDT_DATA_STRING, dataString_count)
 	temp_result.Resources.DataEntry = make([]*RDT_DATA_ENTRY, dataEntry_count)
 
-	resourcesDirectory := (*[1 << 30](C.type_RDT_RESOURCE_DIRECTORY))(unsafe.Pointer(resources.resourcesDirectory))[:res_count:res_count]
+	resourcesDirectory := arr_of_resourceDirectory(resources.resourcesDirectory, res_count)
 	for i := 0; i < res_count; i++ {
 		temp_result.Resources.ResourceDirectory[i] = &RDT_RESOURCE_DIRECTORY{
 			NodeType:             int(resourcesDirectory[i].NodeType),
@@ -475,7 +406,7 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		}
 	}
 
-	directoryEntry := (*[1 << 30](C.type_RDT_DIRECTORY_ENTRY))(unsafe.Pointer(resources.directoryEntry))[:dirEntry_count:dirEntry_count]
+	directoryEntry := arr_of_directoryEntry(resources.directoryEntry, dirEntry_count)
 	for i := 0; i < dirEntry_count; i++ {
 		temp_result.Resources.DirectoryEntry[i] = &RDT_DIRECTORY_ENTRY{
 			NodeType:          int(directoryEntry[i].NodeType),
@@ -486,7 +417,7 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		}
 	}
 
-	dataString := (*[1 << 30](C.type_RDT_DATA_STRING))(unsafe.Pointer(resources.dataString))[:dataString_count:dataString_count]
+	dataString := arr_of_dataString(resources.dataString, dataString_count)
 	for i := 0; i < dataString_count; i++ {
 		temp_result.Resources.DataString[i] = &RDT_DATA_STRING{
 			NodeType: int(dataString[i].NodeType),
@@ -495,7 +426,7 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		}
 	}
 
-	dataEntry := (*[1 << 30](C.type_RDT_DATA_ENTRY))(unsafe.Pointer(resources.dataEntry))[:dirEntry_count:dirEntry_count]
+	dataEntry := arr_of_dataEntry(resources.dataEntry, dirEntry_count)
 	for i := 0; i < dataEntry_count; i++ {
 		temp_result.Resources.DataEntry[i] = &RDT_DATA_ENTRY{
 			NodeType:     int(dataEntry[i].NodeType),
@@ -507,12 +438,12 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 	return temp_result
 }
+
 func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	imports := C.pe_get_imports(&ctx)
 	defer C.pe_dealloc_imports(imports);
 
 	if imports.err != C.LIBPE_E_OK {
-		//TODO: Return a error code so that TOTEM gets notifed about this  particular error
 		return temp_result;
 	}
 
@@ -520,27 +451,19 @@ func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if dll_count == 0 {
 		return temp_result
 	}
-	fmt.Println(dll_count)
-	dlls := (*[1 << 30](C.pe_imported_dll_t))(unsafe.Pointer(imports.dlls))[:dll_count:dll_count]
-
+	
+	dlls := arr_of_dlls(imports.dlls, dll_count)
+	
 	temp_result.Imports = make([]Import, dll_count)
-
-	// converting c array into Go slices because indexing of C arrays in not possible in Go.
-	///dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.dlls.name))[:dll_count:dll_count]
 	for i := 0; i < dll_count; i++ {
 
 		temp_result.Imports[i].Dllname = C.GoString(dlls[i].name)
-
 		functions_count := int(dlls[i].functions_count)
-		dll_functions := (*[1 << 30](C.pe_imported_function_t))(unsafe.Pointer(dlls[i].functions))[:functions_count:functions_count]
-		// function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dll_functions[i].name))[:functions_count:functions_count]
-
+		dll_functions := arr_of_dll_functions(dlls[i].functions, functions_count)
 		temp_result.Imports[i].Functions = make([]string, functions_count)
-		
+
 		for j := 0; j < functions_count; j++ {
-
 			temp_result.Imports[i].Functions[j] = C.GoString(dll_functions[j].name)
-
 		}
 	}
 	return temp_result
@@ -560,22 +483,18 @@ func get_fputrick(ctx C.pe_ctx_t) bool {
 	detected := C.pe_fpu_trick(&ctx)
 	return bool(detected)
 }
+
 func get_entrophy_file(ctx C.pe_ctx_t) float32 {
-
-	info.Println("calculating entrophy")
 	entrophy := C.pe_calculate_entropy_file(&ctx)
-
 	return float32(entrophy)
 }
 
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
-
 	exports := C.pe_get_exports(&ctx)
 	functions_count := int(exports.functions_count)
 	defer C.pe_dealloc_exports(exports)
 
 	if exports.err != C.LIBPE_E_OK {
-		// TODO: Return an HTTP error code so that totem gets notifed about the error?
 		return temp_result
 	}
 
@@ -583,11 +502,10 @@ func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		return temp_result
 	}
 
-	exports_functions := (*[1 << 30](*C.pe_exported_function_t))(unsafe.Pointer(exports.functions))[:functions_count:functions_count] // converting c array into Go slices
+	exports_functions := arr_of_exports_functions(exports.functions, functions_count)
 	temp_result.Exports = make([]*Export, functions_count)
 
 	for i := 0; i < functions_count; i++ {
-
 		temp_result.Exports[i] = &Export{
 			Addr:         fmt.Sprintf("%X", exports_functions[i].addr),
 			FunctionName: C.GoString(exports_functions[i].name),
@@ -640,9 +558,8 @@ func header_dos(ctx C.pe_ctx_t, temp_result *Result) *Result {
 func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	optional := C.pe_optional(&ctx)
 	if optional._type == C.MAGIC_PE32 {
-		//fmt.Println(optional._32.Magic)
-		temp_result.Headers.Optional.Magic = int(optional._32.Magic)
 
+		temp_result.Headers.Optional.Magic = int(optional._32.Magic)
 		temp_result.Headers.Optional.MajorLinkerVersion = int(optional._32.MajorLinkerVersion)
 		temp_result.Headers.Optional.MinorLinkerVersion = int(optional._32.MinorLinkerVersion)
 		temp_result.Headers.Optional.SizeOfCode = int(optional._32.SizeOfCode)
@@ -673,9 +590,8 @@ func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 		temp_result.Headers.Optional.NumberOfRvaAndSizes = int(optional._32.NumberOfRvaAndSizes)
 	}
 	if optional._type == C.MAGIC_PE64 {
-		//fmt.Println(optional._32.Magic)
-		temp_result.Headers.Optional.Magic = int(optional._64.Magic)
 
+		temp_result.Headers.Optional.Magic = int(optional._64.Magic)
 		temp_result.Headers.Optional.MajorLinkerVersion = int(optional._64.MajorLinkerVersion)
 		temp_result.Headers.Optional.MinorLinkerVersion = int(optional._64.MinorLinkerVersion)
 		temp_result.Headers.Optional.SizeOfCode = int(optional._64.SizeOfCode)
@@ -709,20 +625,18 @@ func header_optional(ctx C.pe_ctx_t, temp_result *Result) *Result {
 }
 
 func header_directories_count(ctx C.pe_ctx_t) int {
-
 	count := C.pe_directories_count(&ctx)
 	return int(count)
 }
 
 func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
-
 	count := C.pe_directories_count(&ctx)
 	if int(count) == 0 {
 		return temp_result // return empty result
 	}
 	length := int(count)
-	var directories **C.IMAGE_DATA_DIRECTORY = C.pe_directories(&ctx)
-	sliceV := (*[1 << 30](*C.IMAGE_DATA_DIRECTORY))(unsafe.Pointer(directories))[:length:length]
+	directories := C.pe_directories(&ctx)
+	arr_directories := arr_of_hdr_directories(directories, length)
 	if directories == nil {
 		return temp_result // return empty result
 	}
@@ -731,16 +645,14 @@ func header_directories(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	var i C.ImageDirectoryEntry = 0
 	for int(i) < length {
-		// fmt.Println(sliceV[i].VirtualAddress)
 
 		temp_result.Directories[i] = &Directory{
 			Name:           C.GoString(C.pe_directory_name(i)),
-			VirtualAddress: fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)), // returns Virutal address
-			Size:           int(sliceV[i].Size),
+			VirtualAddress: fmt.Sprintf("%X", int(arr_directories[i].VirtualAddress)), // returns Virutal address
+			Size:           int(arr_directories[i].Size),
 		}
 		i++
 	}
-
 	return temp_result
 }
 
@@ -765,22 +677,21 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	imphash := C.pe_imphash(&ctx, 2)
 	temp_result.PEHashes.Imphash = C.GoString(imphash)
-	fmt.Println(C.GoString(imphash))
 
-	// Section Hash
-	var sections C.pe_hash_section_t = C.get_sections_hash(&ctx)
+	sections := C.get_sections_hash(&ctx)
 	defer C.pe_dealloc_sections_hashes(sections)
-	//count := C.pe_sections_count(&ctx)
 	length := int(sections.count)
-	sliceV := (*[1 << 30](C.pe_hash_t))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
+	
+	arr_hash := arr_of_hash(sections.sections, length)
+	
 	temp_result.PEHashes.Sections = make([]*Hash, length)
 	for i := 0; i < length; i++ {
 		temp_result.PEHashes.Sections[i] = &Hash{
-			Name:   C.GoString(sliceV[i].name),
-			Md5:    C.GoString(sliceV[i].md5),
-			Sha1:   C.GoString(sliceV[i].sha1),
-			Sha256: C.GoString(sliceV[i].sha256),
-			Ssdeep: C.GoString(sliceV[i].ssdeep),
+			Name:   C.GoString(arr_hash[i].name),
+			Md5:    C.GoString(arr_hash[i].md5),
+			Sha1:   C.GoString(arr_hash[i].sha1),
+			Sha256: C.GoString(arr_hash[i].sha256),
+			Ssdeep: C.GoString(arr_hash[i].ssdeep),
 		}
 	}
 
@@ -790,7 +701,6 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	if headers.err != C.LIBPE_E_OK {
 		return temp_result
 	}
-	//temp_result.PEHashes.Headers = make([]*Hash, 4);  // only 3 headers : dos, coff, optional
 
 	// for Dos header
 	temp_result.PEHashes.Headers[0].Name = fmt.Sprintf("%s", C.GoString(headers.dos.name))
@@ -824,9 +734,12 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 	length := int(count)
 	var sections **C.IMAGE_SECTION_HEADER = C.pe_sections(&ctx)
-	sliceV := (*[1 << 30](*C.IMAGE_SECTION_HEADER))(unsafe.Pointer(sections))[:length:length]
+	
+	arr_sec_hdr := arr_of_sec_hdr(sections, length)
+	
+	// arr_sec_hdr := (*[1 << 30](*C.IMAGE_SECTION_HEADER))(unsafe.Pointer(sections))[:length:length]
 	if sections == nil {
-		return &Result{} // return empty result
+		return temp_result // return empty result
 	}
 	type tagKbdInput struct {
 		typ uint32
@@ -835,16 +748,13 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.Sections = make([]*Section, length)
 	for i := 0; i < length; i++ {
 		temp_result.Sections[i] = &Section{
-			Name:                fmt.Sprintf("%s", sliceV[i].Name),
-			VirtualAddress:      fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
-			PointerToRawData:    fmt.Sprintf("%X", int(sliceV[i].PointerToRawData)),
-			NumberOfRelocations: int(sliceV[i].NumberOfRelocations),
-			Characteristics:     fmt.Sprintf("%X", int(sliceV[i].VirtualAddress)),
-			//VirtualSize:          ,
-			SizeOfRawData: int(sliceV[i].SizeOfRawData),
+			Name:                fmt.Sprintf("%s", arr_sec_hdr[i].Name),
+			VirtualAddress:      fmt.Sprintf("%X", int(arr_sec_hdr[i].VirtualAddress)),
+			PointerToRawData:    fmt.Sprintf("%X", int(arr_sec_hdr[i].PointerToRawData)),
+			NumberOfRelocations: int(arr_sec_hdr[i].NumberOfRelocations),
+			Characteristics:     fmt.Sprintf("%X", int(arr_sec_hdr[i].VirtualAddress)),
+			SizeOfRawData: int(arr_sec_hdr[i].SizeOfRawData),
 		}
-		//fmt.Println((*tagKbdInput)(unsafe.Pointer(sliceV[i])).va)
-
 	}
 
 	return temp_result
@@ -860,4 +770,58 @@ func getTimestamp(unixtime int) string {
 	tm := time.Unix(i, 0)
 	timestamp := fmt.Sprintf("%s", tm.String())
 	return timestamp
+}
+
+// converting c array into Go slices
+// https://github.com/golang/go/wiki/cgo#turning-c-arrays-into-go-slices
+
+func arr_of_resourceDirectory(resourcesDirectory *C.type_RDT_RESOURCE_DIRECTORY, count int) []C.type_RDT_RESOURCE_DIRECTORY {
+	_resourcesDirectory := (*[1 << 30](C.type_RDT_RESOURCE_DIRECTORY))(unsafe.Pointer(resourcesDirectory))[:count:count]
+	fmt.Println(reflect.TypeOf(_resourcesDirectory))
+	return _resourcesDirectory
+}
+
+func arr_of_directoryEntry(directoryEntry *C.type_RDT_DIRECTORY_ENTRY, count int ) []C.type_RDT_DIRECTORY_ENTRY {
+	_directoryEntry := (*[1 << 30](C.type_RDT_DIRECTORY_ENTRY))(unsafe.Pointer(directoryEntry))[:count:count]
+	return _directoryEntry
+}
+	
+func arr_of_dataString(dataString *C.type_RDT_DATA_STRING, count int) []C.type_RDT_DATA_STRING {
+	_dataString := (*[1 << 30](C.type_RDT_DATA_STRING))(unsafe.Pointer(dataString))[:count:count]
+	return _dataString
+}
+
+func arr_of_dataEntry(dataEntry *C.type_RDT_DATA_ENTRY, count int) []C.type_RDT_DATA_ENTRY {
+	_dataEntry := (*[1 << 30](C.type_RDT_DATA_ENTRY))(unsafe.Pointer(dataEntry))[:count:count]
+	return _dataEntry
+}
+
+func arr_of_dlls(dlls *C.pe_imported_dll_t, count int) []C.pe_imported_dll_t {
+	_dlls := (*[1 << 30](C.pe_imported_dll_t))(unsafe.Pointer(dlls))[:count:count]
+	return _dlls
+}
+
+func arr_of_dll_functions(functions *C.pe_imported_function_t, count int) []C.pe_imported_function_t {
+	_dll_functions := (*[1 << 30](C.pe_imported_function_t))(unsafe.Pointer(functions))[:count:count]
+	return _dll_functions
+}
+
+func arr_of_exports_functions(functions *C.pe_exported_function_t, count int) []C.pe_exported_function_t {
+	_exports_functions := (*[1 << 30](C.pe_exported_function_t))(unsafe.Pointer(functions))[:count:count]
+	return _exports_functions
+}
+
+func arr_of_hdr_directories(directories **C.IMAGE_DATA_DIRECTORY, count int) []*C.IMAGE_DATA_DIRECTORY{
+	_arr_directories := (*[1 << 30](*C.IMAGE_DATA_DIRECTORY))(unsafe.Pointer(directories))[:count:count]
+	return _arr_directories
+}
+
+func arr_of_hash(hash_sections *C.pe_hash_t, count int) []C.pe_hash_t {
+	_arr_hash := (*[1 << 30](C.pe_hash_t))(unsafe.Pointer(hash_sections))[:count:count] // converting c array into Go slices
+	return _arr_hash
+}
+
+func arr_of_sec_hdr(sec_hdr **C.IMAGE_SECTION_HEADER, count int) []*C.IMAGE_SECTION_HEADER {
+	_sec_hdr := (*[1 << 30](*C.IMAGE_SECTION_HEADER))(unsafe.Pointer(sec_hdr))[:count:count]
+	return _sec_hdr
 }

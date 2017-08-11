@@ -374,7 +374,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 }
 
 func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	
+
 	resources_count := C.get_resources_count(&ctx)
 	resources := C.get_resources(&ctx)
 	defer C.pe_dealloc_peres(resources)
@@ -806,8 +806,8 @@ func arr_of_dll_functions(functions *C.pe_imported_function_t, count int) []C.pe
 	return _dll_functions
 }
 
-func arr_of_exports_functions(functions *C.pe_exported_function_t, count int) []C.pe_exported_function_t {
-	_exports_functions := (*[1 << 30](C.pe_exported_function_t))(unsafe.Pointer(functions))[:count:count]
+func arr_of_exports_functions(functions *C.pe_exported_function_t, count int) []*C.pe_exported_function_t {
+	_exports_functions := (*[1 << 30](*C.pe_exported_function_t))(unsafe.Pointer(functions))[:count:count]
 	return _exports_functions
 }
 

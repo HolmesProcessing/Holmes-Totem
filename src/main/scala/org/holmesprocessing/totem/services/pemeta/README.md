@@ -4,6 +4,22 @@
 
 This service extracts meta information about a Windows Portable Executable file. The analyser library used in PEV's [libpe](https://github.com/merces/libpe). PEV is PE file analysis toolkit. Its feature rich, fast and is written C Programing langauge. This pemeta services wraps all the features of PEV's libpe using golang's cgo.
 
+## Performance Comparison
+
+| sha2 (last 8 chars) | Name | PEMETA | PEINFO (v1) | PEINFO (v2) |
+| --- | --- | --- | --- | --- |
+|c3597767 | umss.exe | 57.7ms | 413.4 ms | 87.2ms |
+|bb30af68|EXE.exe| 751.2ms |4340.1ms |832.3ms|
+|81faa32e|_isdel.exe |21.6ms |243.4ms |error (exports)|
+|56254abc| ccsetup514.exe| 1001.0ms | 6267.8 ms |764.6 ms|
+|73da12d8| chkdsk.exe| 21.8ms | 758.3ms |92.9ms|
+|9b7dd7e8| cipher.exe |31.4ms |730.3 ms |error|
+|084409a0| bfsvc.exe |58.3ms |error |77.1ms|
+|ec479399| autoconv.exe |295.4ms |1404.9ms |382.6ms|
+|acb8d3da| ARP.exe |  15.8ms |635.1ms |54.8ms|
+|44bd81cb|7z1514.exe| 249.04ms |1261.5ms |133.9ms|
+|Average||250.1ms|2232.3ms|242.5ms|
+
 ### Output
 
 ```json

@@ -16,7 +16,7 @@ RUN apk add --no-cache \
         build-base \
         openssl-dev \
 	    make \
-        && git clone https://github.com/boddumanohar/libpe.git \
+        && git clone https://github.com/merces/libpe.git \
         && rm -rf /var/cache/apk/*
 
 # Clean Up
@@ -28,8 +28,8 @@ RUN apk del --purge \
 ENV CFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
 
 # Making quick changes. REMOVING PRAGMA VALUES FOR THE SAKE OF GETTING OPTIONAL HEADERS.
-RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/hdr_optional.h
-RUN sed -i 's/.*pack(pop).*//g' /service/libpe/hdr_optional.h
+RUN sed -i 's/.*pack(push, 1).*//g' /service/libpe/include/libpe/hdr_optional.h
+RUN sed -i 's/.*pack(pop).*//g' /service/libpe/include/libpe/hdr_optional.h
 
 # Installing Libpe (- PEV's library)
 RUN cd /service/libpe \

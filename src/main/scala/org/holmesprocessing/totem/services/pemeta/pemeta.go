@@ -1,11 +1,11 @@
 package main
 
-// #include <libpe/pe.h>
-// #include <libpe/hashes.h>
-// #include <libpe/misc.h>
-// #include <libpe/imports.h>
-// #include <libpe/exports.h>
-// #include <libpe/peres.h>
+// #include <libpe/include/libpe/pe.h>
+// #include <libpe/include/libpe/hashes.h>
+// #include <libpe/include/libpe/misc.h>
+// #include <libpe/include/libpe/imports.h>
+// #include <libpe/include/libpe/exports.h>
+// #include <libpe/include/libpe/peres.h>
 // #cgo LDFLAGS: -lpe -lssl -lcrypto -lm
 // #cgo CFLAGS: -std=c99
 import "C"
@@ -23,8 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"unsafe"
-
-	"sync"
 
 	//Imports for serving on a socket and handling routing of incoming request.
 	"encoding/json"
@@ -342,84 +340,88 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 	}
 
 	result := &Result{}
-	wg := &sync.WaitGroup{}
-	wg.Add(15)
+	// wg := &sync.WaitGroup{}
+	// wg.Add(15)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result = header_coff(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result = header_dos(ctx, result)
-	}(wg)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// }(wg)
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result = header_optional(ctx, result) //cannot support optional headers because Golang reject incompactable field allignment.
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result.Directories_count = header_directories_count(ctx)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result = header_directories(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result = header_sections(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result.Sections_count = header_sections_count(ctx)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
+		// fmt.Println("hashes here")
 		result = get_hashes(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
+		// fmt.Println("exports here");
 		result = get_exports(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
+		// fmt.Println("imports here")
 		result = get_imports(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
+		// fmt.Println("resources here")
 		result = get_resources(ctx, result)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result.Entrophy = get_entrophy_file(ctx)
-	}(wg)
-
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// }(wg)
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
+	fmt.Println("getting fpu trick");
 		result.FPUTrick = get_fputrick(ctx)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result.CPLAnalysis = get_cpl_analysis(ctx)
-	}(wg)
+	// }(wg)
 
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
+	// go func(wg *sync.WaitGroup) {
+		// defer wg.Done()
 		result.CheckFakeEntryPoint = check_fake_entrypoint(ctx)
-	}(wg)
+	// }(wg)
 
-	wg.Wait()
+	// wg.Wait()
 
 	f_response.Header().Set("Content-Type", "text/json; charset=utf-8")
 	json2http := json.NewEncoder(f_response)
@@ -439,14 +441,14 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	resources_count := C.get_resources_count(&ctx)
 
 	resources := C.get_resources(&ctx)
-	defer C.pe_dealloc_peres(&resources)
+	defer C.pe_dealloc_peres(resources)
 
 	res_count := int(resources_count.resourcesDirectory)
 	dirEntry_count := int(resources_count.directoryEntry)
 	dataString_count := int(resources_count.dataString)
 	dataEntry_count := int(resources_count.dataEntry)
 
-	if resources.err != C.LIBPE_E_PERES_OK {
+	if resources.err != C.LIBPE_E_OK {
 		// TODO:Return an error code?? So that totem get notified about this particular error?
 		return temp_result;
 	}
@@ -502,37 +504,38 @@ func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	return temp_result
 }
 func get_imports(ctx C.pe_ctx_t, temp_result *Result) *Result {
-	imports := C.get_imports(&ctx)
-	defer C.dealloc_imports(imports);
+	imports := C.pe_get_imports(&ctx)
+	defer C.pe_dealloc_imports(imports);
 
-	if imports.err != C.LIBPE_E_IMPORTS_OK {
+	if imports.err != C.LIBPE_E_OK {
 		//TODO: Return a error code so that TOTEM gets notifed about this  particular error
 		return temp_result;
 	}
 
 	dll_count := int(imports.dll_count)
-	//fmt.Printf("Dll count %d\n", dll_count)
 	if dll_count == 0 {
-		//fmt.Println(" Exports count 0 ")
 		return temp_result
 	}
+	fmt.Println(dll_count)
+	dlls := (*[1 << 30](C.pe_imported_dll_t))(unsafe.Pointer(imports.dlls))[:dll_count:dll_count]
+
 	temp_result.Imports = make([]Import, dll_count)
 
 	// converting c array into Go slices because indexing of C arrays in not possible in Go.
-	dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.dllNames))[:dll_count:dll_count]
+	///dllnames := (*[1 << 30](*C.char))(unsafe.Pointer(imports.dlls.name))[:dll_count:dll_count]
 	for i := 0; i < dll_count; i++ {
 
-		temp_result.Imports[i].Dllname = C.GoString(dllnames[i])
+		temp_result.Imports[i].Dllname = C.GoString(dlls[i].name)
 
-		dllname_functions := (*[1 << 30](C.function_t))(unsafe.Pointer(imports.functions))[:dll_count:dll_count]
-
-		functions_count := int(dllname_functions[i].count)
-		function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dllname_functions[i].functions))[:functions_count:functions_count]
+		functions_count := int(dlls[i].functions_count)
+		dll_functions := (*[1 << 30](C.pe_imported_function_t))(unsafe.Pointer(dlls[i].functions))[:functions_count:functions_count]
+		// function_names := (*[1 << 30](*C.char))(unsafe.Pointer(dll_functions[i].name))[:functions_count:functions_count]
 
 		temp_result.Imports[i].Functions = make([]string, functions_count)
+		
 		for j := 0; j < functions_count; j++ {
 
-			temp_result.Imports[i].Functions[j] = C.GoString(function_names[j])
+			temp_result.Imports[i].Functions[j] = C.GoString(dll_functions[j].name)
 
 		}
 	}
@@ -545,46 +548,45 @@ func check_fake_entrypoint(ctx C.pe_ctx_t) int {
 }
 
 func get_cpl_analysis(ctx C.pe_ctx_t) int {
-	cpl := C.get_cpl_analysis(&ctx)
+	cpl := C.pe_get_cpl_analysis(&ctx)
 	return int(cpl)
 }
 
 func get_fputrick(ctx C.pe_ctx_t) bool {
-	detected := C.fpu_trick(&ctx)
+	detected := C.pe_fpu_trick(&ctx)
 	return bool(detected)
 }
 func get_entrophy_file(ctx C.pe_ctx_t) float32 {
 
 	info.Println("calculating entrophy")
-	entrophy := C.calculate_entropy_file(&ctx)
+	entrophy := C.pe_calculate_entropy_file(&ctx)
 
 	return float32(entrophy)
 }
 
 func get_exports(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
-	exports := C.get_exports(&ctx)
-	count := C.get_exports_functions_count(&ctx)
-	defer C.pe_dealloc_exports(exports.exports,count)
+	exports := C.pe_get_exports(&ctx)
+	functions_count := int(exports.functions_count)
+	defer C.pe_dealloc_exports(exports)
 
-	if exports.err != C.LIBPE_E_EXPORTS_OK {
+	if exports.err != C.LIBPE_E_OK {
 		// TODO: Return an HTTP error code so that totem gets notifed about the error?
 		return temp_result
 	}
 
-	length := int(count)
-	if length == 0 {
+	if functions_count == 0 {
 		return temp_result
 	}
 
-	sliceV := (*[1 << 30](C.exports_t))(unsafe.Pointer(exports.exports))[:length:length] // converting c array into Go slices
-	temp_result.Exports = make([]*Export, length)
+	exports_functions := (*[1 << 30](*C.pe_exported_function_t))(unsafe.Pointer(exports.functions))[:functions_count:functions_count] // converting c array into Go slices
+	temp_result.Exports = make([]*Export, functions_count)
 
-	for i := 0; i < length; i++ {
+	for i := 0; i < functions_count; i++ {
 
 		temp_result.Exports[i] = &Export{
-			Addr:         fmt.Sprintf("%X", sliceV[i].addr),
-			FunctionName: C.GoString(sliceV[i].function_name),
+			Addr:         fmt.Sprintf("%X", exports_functions[i].addr),
+			FunctionName: C.GoString(exports_functions[i].name),
 		}
 	}
 	return temp_result
@@ -746,9 +748,9 @@ func header_sections_count(ctx C.pe_ctx_t) int {
 func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	// File Hash
 	file_hash := C.get_file_hash(&ctx)
-	defer C.dealloc_filehash(file_hash)
+	defer C.pe_dealloc_filehash(file_hash)
 
-	if file_hash.err != C.LIBPE_E_HASHES_OK {
+	if file_hash.err != C.LIBPE_E_OK {
 		return temp_result
 	}
 	temp_result.PEHashes.FileHash.Name = fmt.Sprintf("%s", C.GoString(file_hash.name))
@@ -757,16 +759,16 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	temp_result.PEHashes.FileHash.Sha256 = fmt.Sprintf("%s", C.GoString(file_hash.sha256))
 	temp_result.PEHashes.FileHash.Ssdeep = fmt.Sprintf("%s", C.GoString(file_hash.ssdeep))
 
-	imphash := C.imphash(&ctx, 2)
+	imphash := C.pe_imphash(&ctx, 2)
 	temp_result.PEHashes.Imphash = C.GoString(imphash)
 	fmt.Println(C.GoString(imphash))
 
 	// Section Hash
-	var sections C.hash_section_t = C.get_sections_hash(&ctx)
-	defer C.dealloc_sections_hashes(sections)
+	var sections C.pe_hash_section_t = C.get_sections_hash(&ctx)
+	defer C.pe_dealloc_sections_hashes(sections)
 	//count := C.pe_sections_count(&ctx)
 	length := int(sections.count)
-	sliceV := (*[1 << 30](C.hash_t))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
+	sliceV := (*[1 << 30](C.pe_hash_t))(unsafe.Pointer(sections.sections))[:length:length] // converting c array into Go slices
 	temp_result.PEHashes.Sections = make([]*Hash, length)
 	for i := 0; i < length; i++ {
 		temp_result.PEHashes.Sections[i] = &Hash{
@@ -780,8 +782,8 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	// Header Hash
 	headers := C.get_headers_hash(&ctx)
-	defer C.dealloc_hdr_hashes(headers)
-	if headers.err != C.LIBPE_E_HASHES_OK {
+	defer C.pe_dealloc_hdr_hashes(headers)
+	if headers.err != C.LIBPE_E_OK {
 		return temp_result
 	}
 	//temp_result.PEHashes.Headers = make([]*Hash, 4);  // only 3 headers : dos, coff, optional
@@ -811,15 +813,6 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 }
 
-/*func union_to_guint32_ptr(cbytes [8]byte) (result *_Ctype_uint32_t) {
-    buf := bytes.NewBuffer(cbytes[:])
-	var ptr uint64
-    if err := binary.Read(buf, binary.LittleEndian, &ptr); err == nil {
-    return (*_Ctype_guint32)(unsafe.Pointer(ptr))
-	}
-  return nil
-}*/
-
 func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	count := C.pe_sections_count(&ctx)
 	if int(count) == 0 {
@@ -846,7 +839,7 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 			//VirtualSize:          ,
 			SizeOfRawData: int(sliceV[i].SizeOfRawData),
 		}
-		fmt.Println((*tagKbdInput)(unsafe.Pointer(sliceV[i])).va)
+		//fmt.Println((*tagKbdInput)(unsafe.Pointer(sliceV[i])).va)
 
 	}
 
@@ -857,6 +850,7 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 func getTimestamp(unixtime int) string {
 	i, err := strconv.ParseInt("956165981", 10, 64)
 	if err != nil {
+		fmt.Println("panic error")
 		panic(err)
 	}
 	tm := time.Unix(i, 0)

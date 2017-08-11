@@ -1,3 +1,5 @@
 {
-	"HTTPBinding": ":8080"
+	"settings":{
+		"HTTPBinding": ":8080"
+	}
 }

@@ -199,7 +199,6 @@ type Hashes struct {
 	Imphash  string  `json"Imphash"`
 }
 
-// config structs
 type Metadata struct {
 	Name        string
 	Version     string
@@ -208,8 +207,13 @@ type Metadata struct {
 	License     string
 }
 
+// config structs
+type Setting struct {
+	HTTPBinding string `json:"HTTPBinding"`
+}
+
 type Config struct {
-	HTTPBinding string
+	Settings Setting `json:"settings"`
 }
 
 var (
@@ -247,8 +251,8 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	info.Printf("Binding to %s\n", config.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }
 
 // Parse a configuration file into a Config structure.

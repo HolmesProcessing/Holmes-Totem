@@ -1,5 +1,4 @@
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.2")
+addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "5.2.2")
 
-addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.4.0")
-
-addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
+//No SBT 1.0 or 1.0.1 compatible version
+//addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")

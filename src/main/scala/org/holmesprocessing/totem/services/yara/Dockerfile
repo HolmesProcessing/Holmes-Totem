@@ -12,6 +12,7 @@ WORKDIR /service
 ###
 
 # get dependencies
+RUN apk update && apk add ca-certificates wget && update-ca-certificates
 RUN apk add --no-cache \
 		autoconf \
 		automake \

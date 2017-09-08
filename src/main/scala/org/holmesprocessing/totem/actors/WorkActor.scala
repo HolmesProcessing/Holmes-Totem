@@ -91,6 +91,7 @@ class WorkActor(deliverytag: Long, filename: String, hashfilename: String, downl
   val httpconfig = new AsyncHttpClientConfig.Builder()
     //TODO: set config for maxconnections
     .setRequestTimeout( downloadconfig.request_timeout )
+    .setReadTimeout( downloadconfig.request_timeout )
     .setExecutorService(execServ)
     .setAllowPoolingConnections( downloadconfig.connection_pooling )
     .setConnectTimeout( downloadconfig.connect_timeout )

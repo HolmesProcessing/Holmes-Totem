@@ -38,6 +38,7 @@ class TempAnalysisFile(object):
 
 class LargeFileReader (object):
     """
+    FOr mapping file to virtual memory. 
     File-like (read-only) object trimmed for low memory footprint.
     Reading and finding does not advance the offset.
     Usage:
@@ -72,6 +73,7 @@ class LargeFileReader (object):
     
     # provide base functionality
     def read (self, start, stop):
+    # def read(self):
         if start is None or start < 0:
             start = 0
         if stop is None or stop > self.size:
@@ -102,7 +104,7 @@ class LargeFileReader (object):
         return result
     
     def startswith (self, needle):
-        return self[0:len(needle)] == needle
+        return self[0:len(needle)].decode('UTF-8') == needle
     
     # extended slicing
     def __getitem__ (self, key):

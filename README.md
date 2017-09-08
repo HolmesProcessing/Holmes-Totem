@@ -16,7 +16,8 @@ Holmes-Totem is pre-packaged with with a number of static analysis and query Ser
 | GoGadget | Binary Executable | Extracts the major gadgets of an executable |
 | Objdump | Binary Executables | Provides a parsed version of the objdump output |
 | PEiD | File | Provides PEiD information (packer, compiler, etc) for files |
-| PEInfo | PE32 | Custom version of CRITs' PEInfo. Includes Rich Header parsing |
+| PEInfo | PE32 | Extracts information about PE file and is based on [pefile](https://github.com/erocarrera/pefile). Most of the information contained in the PE headers is accessible as well as all sections' details and their data. |
+| PEMeta | PE32 | Extracts information about PE file and is based on [PEV](github.com/merces/pev).|
 | RichHeader | PE32 | Rich Header extraction for PE32 files |
 | VirusTotal | Binary | Returns available [VirusTotal](https://www.virustotal.com/) information with a public or private key |
 | Yara | File | Performs [Yara signature](http://virustotal.github.io/yara/) matching with a default rule pack or custom rule |

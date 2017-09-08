@@ -2,7 +2,7 @@
 
 ## Description
 
-This service extracts meta information about a Windows Portable Executable file. The analyser library used in PEV's [libpe](https://github.com/merces/libpe). PEV is PE file analysis toolkit. Its feature rich, fast and is written C Programing langauge. This pemeta services wraps all the features of PEV's libpe using golang's cgo.
+This service requires basic understanding of the layout of PE file. This service extracts meta information about a Windows Portable Executable file. The analyser library used in PEV's [libpe](https://github.com/merces/libpe). PEV is PE file analysis toolkit. Its feature rich, fast and is written C Programing langauge. This pemeta services wraps all the features of PEV's libpe using golang's cgo.
 
 ## Performance Comparison
 

@@ -17,6 +17,8 @@ RUN apk add --no-cache \
         openssl-dev \
 	    make \
         && git clone https://github.com/merces/libpe.git \
+		&& cd libpe \
+		&& git checkout ccd907e86f931a5d66b5f6ce592b953e9f056596 \
         && rm -rf /var/cache/apk/*
 
 # Clean Up

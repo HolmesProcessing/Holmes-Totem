@@ -22,37 +22,39 @@ This service extracts meta information about a Windows Portable Executable file.
 
 ### Output
 
+Here is the sample output of pemeta. For further details on the output, please refer to the [official documentation](http://pev.readthedocs.io/projects/libpe/en/latest/) of libpe.
+
 ```json
 	{
     "Headers": {
         "Optional": {
             "Magic": 267,
-            "MajorLinkerVersion": 96,
+            "MajorLinkerVersion": 5,
             "MinorLinkerVersion": 0,
-            "SizeOfCode": 0,
-            "AddressOfEntryPoint": 0,
-            "BaseOfCode": 0,
-            "ImageBase": 68719476736,
-            "SectionAlignment": 1223574136,
-            "FileAlignment": 32641,
-            "MajorOperatingSystemVersion": 64800,
-            "MinorOperatingSystemVersion": 18811,
-            "MajorImageVersion": 32641,
+            "SizeOfCode": 1609728,
+            "AddressOfEntryPoint": 6156,
+            "BaseOfCode": 4096,
+            "ImageBase": 4194304,
+            "SectionAlignment": 4096,
+            "FileAlignment": 512,
+            "MajorOperatingSystemVersion": 4,
+            "MinorOperatingSystemVersion": 0,
+            "MajorImageVersion": 0,
             "MinorImageVersion": 0,
-            "MajorSubsystemVersion": 8,
+            "MajorSubsystemVersion": 4,
             "MinorSubsystemVersion": 0,
             "Reserved1": 0,
-            "SizeOfImage": 1223574264,
-            "SizeOfHeaders": 32641,
-            "CheckSum": 1232862656,
-            "Subsystem": 32641,
+            "SizeOfImage": 2867200,
+            "SizeOfHeaders": 1536,
+            "CheckSum": 0,
+            "Subsystem": 2,
             "DllCharacteristics": 0,
-            "SizeOfStackReserve": 6156,
-            "SizeOfStackCommit": 4194304,
-            "SizeOfHeapReserve": 0,
-            "SizeOfHeapCommit": 0,
+            "SizeOfStackReserve": 1048576,
+            "SizeOfStackCommit": 8192,
+            "SizeOfHeapReserve": 1048576,
+            "SizeOfHeapCommit": 4096,
             "LoaderFlags": 0,
-            "NumberOfRvaAndSizes": 0
+            "NumberOfRvaAndSizes": 16
         },
         "DosHeaders": {
             "e_magic": 23117,
@@ -84,21 +86,23 @@ This service extracts meta information about a Windows Portable Executable file.
         }
     },
     "directories": [
+        
         {
-            "Name": "",
-            "VirtualAddress": "20C000",
-            "Size": 14590
+            "Name": "IMAGE_DIRECTORY_RESERVED",
+            "VirtualAddress": "0",
+            "Size": 0
         }
     ],
     "directories_count": 16,
     "sections": [
         {
-            "Name": ".text",
-            "VirtualAddress": "1000",
-            "PointerToRawData": "600",
-            "PointerToRelocations": "0",
+            "Name": ".reloc\u0000\u0000",
+            "VirtualAddress": "2A6000",
+            "PointerToRawData": "290000",
             "NumberOfRelocations": 0,
-            "Characteristics": "1000"
+            "Characteristics": "2A6000",
+            "VirtualSize": 0,
+            "SizeOfRawData": 89600
         }
     ],
     "sectionscount": 8,
@@ -110,29 +114,16 @@ This service extracts meta information about a Windows Portable Executable file.
                 "sha1": "59f2f44c0d6df8465359958aff23fef97118e6a9",
                 "sha256": "4e51005c4ea922fd4f85bbf58b26d793087a1b6b8f29fdeb1761407e5865394d",
                 "ssdeep": "3:MpPqt/Vn:Mx2"
-            },
-            {
-                "Name": "IMAGE_COFF_HEADER",
-                "md5": "b81a2fa472779c7241ee68a95b79da2a",
-                "sha1": "49a1f407f7acd8adb8768a050c775a3b69b24105",
-                "sha256": "ba592cf9fe462d4f3fc358459c200aa79c50e9fe338e391d9647f516776c7189",
-                "ssdeep": "3:C2z4l/bmn:B4In"
-            },
-            {
-                "Name": "IMAGE_OPTIONAL_HEADER",
-                "md5": "e094f1e3e73f20671a78fb25075cce6f",
-                "sha1": "101a6f69213568e8206503cad86d8eac2a5a7588",
-                "sha256": "0a41bdeaafd23ec6650239bb036ae1503b6c421f59b01bc10609214867168372",
-                "ssdeep": "3:hTt:hT"
             }
         ],
         "Sections": [
+            
             {
-                "Name": ".text",
-                "md5": "3d6de590c61d5e2dcd9626833944b8b3",
-                "sha1": "9b40ec9a51ddeec244aea011644b51d97393732d",
-                "sha256": "47007d116179cef542abfd080cd8a447f35573d141ff0dfb088fee7709f12446",
-                "ssdeep": "49152:JtiTejYz4wu4C3SFHL7/SfQIx3lLwEabyNpWeX/4tz5mW/If6F+/uwEfaeXiGGL:zclLsmEHaZrzRv"
+                "Name": ".reloc",
+                "md5": "b7db981289a3526eef8e94c17753acb2",
+                "sha1": "59d5592afb6da7298f2086d3deef68ab28836fa4",
+                "sha256": "b3a6f96c1d025d705f4470a578630bfef2cdebaad47b5b403870de061f740850",
+                "ssdeep": "1536:BPzyqpZ3Axt7inBN1i4iIA2cBrn6Ev00IHEJdWJXbYpfQUXYK8kZVgvE/icEJPi:1zpyt7iB6LIa0XGWJUWK8kZaGicUioD"
             }
         ],
         "PEFile": {
@@ -141,21 +132,73 @@ This service extracts meta information about a Windows Portable Executable file.
             "sha1": "71bd001116bdc71d336b838b4206b2ba08a31d0f",
             "sha256": "287e051fc76e37286d88530e2e33494b6a9507fd356ed2cc8046b6f9c8ff328a",
             "ssdeep": "49152:7tiTejYz4wu4C3SFHL7/SfQIx3lLwEabyNpWeX/4tz5mW/If6F+/uwEfaeXiGGL:ZclLsmEHaZrzRvCz"
-        }
-    },
-    "Exports": [
-        {
-            "Addr": "0x1865",
-            "FunctionName": "���\u0001"
         },
-       ....
-
+        "Imphash": ""
+    },
+    "Exports": null,
+    "Imports": [
+        {
+            "DllName": "rtl60.bpl",
+            "Functions": [
+                "@$xp$14System@TObject",
+                "@System@TObject@",
+                "@$xp$13System@String",
+                "@$xp$14System@Integer",
+                "@$xp$14System@Boolean"
+            ]
+        },
+        {
+            "DllName": "rtl60.bpl",
+            "Functions": [
+                "@Types@initialization$qqrv",
+                "@Types@Finalization$qqrv",
+                "@Types@IsRectEmpty$qqrrx11Types@TRect"
+            ]
+        }
+        
     ],
+    "resources": {
+        "RESOURCE_DIRECTORY": [
+            {
+                "NodeType": 3,
+                "Characteristics": 0,
+                "TimeDateStamp": 1049598396,
+                "MajorVersion": 0,
+                "MinorVersion": 0,
+                "NumberOfNamedEntries": 0,
+                "NumberOfIdEntries": 1
+            }
+        ],
+        "DIRECTORY_ENTRY": [
+            {
+                "NodeType": 3,
+                "NameOffset": 1049,
+                "NameIsString": 0,
+                "OffsetIsDirectory": 2688,
+                "DataIsDirectory": 0
+            }
+        ],
+        "DATA_STRING": [
+            {
+                "NodeType": 3,
+                "Strlen": 0,
+                "String": 24576
+            }
+        ],
+        "DATA_ENTRY": [
+            {
+                "NodeType": 3,
+                "OffsetToData": 2774036,
+                "Size": 561,
+                "CodePage": 0,
+                "Reserved": 0
+            }
+        ]
+    },
     "Entrophy": 6.1526246,
     "FPUtrick": true,
     "CPLAnalysis": -1,
     "CheckFakeEntrypoint": 0
-}
 }
 ```
 

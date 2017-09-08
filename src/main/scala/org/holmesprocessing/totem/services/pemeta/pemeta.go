@@ -757,11 +757,6 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 }
 
 func getTimestamp(unixtime int64) string {
-	//i, err := strconv.ParseInt("956165981", 10, 64)
-	///if err != nil {
-	//	fmt.Println("panic error")
-	//	panic(err)
-	//}
 	tm := time.Unix(unixtime, 0)
 	timestamp := fmt.Sprintf("%s", tm.String())
 	return timestamp

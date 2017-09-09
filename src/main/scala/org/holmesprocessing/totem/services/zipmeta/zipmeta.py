@@ -68,6 +68,7 @@ class ZipMetaProcess(tornado.web.RequestHandler):
             data.close()
             
             # fetch result
+            resultset["filecount"] = len(parsedZip)
             for centralDirectory in parsedZip:
                 zipfilename = centralDirectory["ZipFileName"]
                 zipentry = {}

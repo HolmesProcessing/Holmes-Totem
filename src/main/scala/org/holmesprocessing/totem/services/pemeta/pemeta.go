@@ -1,11 +1,7 @@
 package main
 
 // #include <libpe/include/libpe/pe.h>
-// #include <libpe/include/libpe/hashes.h>
-// #include <libpe/include/libpe/misc.h>
-// #include <libpe/include/libpe/imports.h>
-// #include <libpe/include/libpe/exports.h>
-// #include <libpe/include/libpe/peres.h>
+// #include <libpe/include/libpe/error.h>
 // #cgo LDFLAGS: -lpe -lssl -lcrypto -lm
 // #cgo CFLAGS: -std=c99
 import "C"
@@ -21,7 +17,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"unsafe"
 
@@ -375,9 +370,9 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 func get_resources(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
-	resources_count := C.get_resources_count(&ctx)
-	resources := C.get_resources(&ctx)
-	defer C.pe_dealloc_peres(resources)
+	resources_count := C.pe_get_resources_count(&ctx)
+	resources := C.pe_get_resources(&ctx)
+	defer C.pe_dealloc_resources(resources)
 
 	res_count := int(resources_count.resourcesDirectory)
 	dirEntry_count := int(resources_count.directoryEntry)
@@ -519,7 +514,7 @@ func header_coff(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 	temp_result.Headers.Coff.Machine = fmt.Sprintf("%X", int(coff.Machine))
 	temp_result.Headers.Coff.NumberOfSections = fmt.Sprintf("%X", int(coff.NumberOfSections))
-	timestamp := getTimestamp(int(coff.TimeDateStamp))
+	timestamp := getTimestamp(int64(coff.TimeDateStamp))
 	temp_result.Headers.Coff.TimeDateStamp = fmt.Sprintf("%s", timestamp)
 	temp_result.Headers.Coff.PointerToSymbolTable = fmt.Sprintf("%X", int(coff.PointerToSymbolTable))
 	temp_result.Headers.Coff.NumberOfSymbols = fmt.Sprintf("%X", int(coff.NumberOfSymbols))
@@ -663,8 +658,8 @@ func header_sections_count(ctx C.pe_ctx_t) int {
 
 func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	// File Hash
-	file_hash := C.get_file_hash(&ctx)
-	defer C.pe_dealloc_filehash(file_hash)
+	file_hash := C.pe_get_file_hash(&ctx)
+	defer C.pe_dealloc_hashes(file_hash)
 
 	if file_hash.err != C.LIBPE_E_OK {
 		return temp_result
@@ -678,7 +673,7 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	imphash := C.pe_imphash(&ctx, 2)
 	temp_result.PEHashes.Imphash = C.GoString(imphash)
 
-	sections := C.get_sections_hash(&ctx)
+	sections := C.pe_get_sections_hash(&ctx)
 	defer C.pe_dealloc_sections_hashes(sections)
 	length := int(sections.count)
 	
@@ -696,8 +691,8 @@ func get_hashes(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 
 	// Header Hash
-	headers := C.get_headers_hash(&ctx)
-	defer C.pe_dealloc_hdr_hashes(headers)
+	headers := C.pe_get_headers_hashes(&ctx)
+	defer C.pe_dealloc_headers_hashes(headers)
 	if headers.err != C.LIBPE_E_OK {
 		return temp_result
 	}
@@ -734,9 +729,9 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 	}
 	length := int(count)
 	var sections **C.IMAGE_SECTION_HEADER = C.pe_sections(&ctx)
-	
+
 	arr_sec_hdr := arr_of_sec_hdr(sections, length)
-	
+
 	// arr_sec_hdr := (*[1 << 30](*C.IMAGE_SECTION_HEADER))(unsafe.Pointer(sections))[:length:length]
 	if sections == nil {
 		return temp_result // return empty result
@@ -761,13 +756,8 @@ func header_sections(ctx C.pe_ctx_t, temp_result *Result) *Result {
 
 }
 
-func getTimestamp(unixtime int) string {
-	i, err := strconv.ParseInt("956165981", 10, 64)
-	if err != nil {
-		fmt.Println("panic error")
-		panic(err)
-	}
-	tm := time.Unix(i, 0)
+func getTimestamp(unixtime int64) string {
+	tm := time.Unix(unixtime, 0)
 	timestamp := fmt.Sprintf("%s", tm.String())
 	return timestamp
 }
@@ -785,7 +775,7 @@ func arr_of_directoryEntry(directoryEntry *C.type_RDT_DIRECTORY_ENTRY, count int
 	_directoryEntry := (*[1 << 30](C.type_RDT_DIRECTORY_ENTRY))(unsafe.Pointer(directoryEntry))[:count:count]
 	return _directoryEntry
 }
-	
+
 func arr_of_dataString(dataString *C.type_RDT_DATA_STRING, count int) []C.type_RDT_DATA_STRING {
 	_dataString := (*[1 << 30](C.type_RDT_DATA_STRING))(unsafe.Pointer(dataString))[:count:count]
 	return _dataString

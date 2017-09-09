@@ -157,13 +157,13 @@ services:
     volumes:
      - /tmp:/tmp:ro
 
-#  pemeta:
-#    build:
-#      context: ../src/main/scala/org/holmesprocessing/totem/services/pemeta
-#      args:
-#        conf: ${CONFSTORAGE_PEMETA}service.conf
-#    ports:
-#      - "7810:8080"
-#    restart: unless-stopped
-#    volumes:
-#      - /tmp:/tmp:ro
+  pemeta:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/pemeta
+      args:
+        conf: ${CONFSTORAGE_PEMETA}service.conf
+    ports:
+      - "7810:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro

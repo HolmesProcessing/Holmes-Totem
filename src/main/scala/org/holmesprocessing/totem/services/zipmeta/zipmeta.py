@@ -11,8 +11,7 @@ from os import path
 import ZipParser
 ZipParser = ZipParser.ZipParser
 
-# imports for services
-# from holmeslibrary.services import ServiceRequestError, ServiceResultSet
+# imports for largefile reader
 from holmeslibrary.files    import LargeFileReader
 
 import json

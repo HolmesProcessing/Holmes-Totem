@@ -1,8 +1,21 @@
 #!/usr/bin/env python3
 
+HAVE_PIDS = True
+
 import sys, struct
+try:
+    import prodids
+except:
+    print("[.] Could not find product ID database.")
+    HAVE_PIDS = False
+
+class FileSizeError(Exception):
+    pass
 
 class MZSignatureError(Exception):
+    pass
+
+class MZPointerError(Exception):
     pass
 
 class PESignatureError(Exception):
@@ -14,7 +27,7 @@ class RichSignatureError(Exception):
 class DanSSignatureError(Exception):
     pass
 
-class PaddingError(Exception):
+class HeaderPaddingError(Exception):
     pass
 
 class RichLengthError(Exception):
@@ -25,12 +38,15 @@ class FileReadError(Exception):
 
 def err2str(code):
     return{
-        -2: "MZ signature not found",
-        -3: "PE signature not found",
-        -4: "Rich signature not found. This file probably has no Rich header.",
-        -5: "DanS signature not found. Rich header corrupt.",
-        -6: "Wrong header padding behind DanS signature. Rich header corrupt.",
-        -7: "Rich data length not a multiple of 8. Rich header corrupt.",
+        -1: "Could not open file.",
+        -2: "File too small to contain required headers.",
+        -3: "MZ signature not found.",
+        -4: "MZ Header pointing beyond end of file.",
+        -5: "PE signature not found",
+        -6: "Rich signature not found. This file probably has no Rich header.",
+        -7: "DanS signature not found. Rich header corrupt.",
+        -8: "Wrong header padding behind DanS signature. Rich header corrupt.",
+        -9: "Rich data length not a multiple of 8. Rich header corrupt.",
         }[code]
 
 class RichLibrary:
@@ -60,13 +76,21 @@ class RichLibrary:
         return csum & 0xffffffff
 
     def parse(self):
-        dat = open(self.fname, 'rb').read()
+        dat = bytearray(open(self.fname, 'rb').read()[:0x1000])
 
         ## Do basic sanity checks on the PE
+        dat_len = len(dat)
+        if dat_len < self.SIZE_DOS_HEADER:
+            raise FileSizeError()
+
         if dat[0:][:2] != b'MZ':
             raise MZSignatureError()
 
-        e_lfanew = self.__u32(dat[0x3c:][:4])
+        e_lfanew = self.__u32(dat[self.POS_E_LFANEW:][:4])
+
+        if e_lfanew + 1 > dat_len:
+            raise MZPointerError()
+
         if dat[e_lfanew:][:2] != b'PE':
             raise PESignatureError()
 
@@ -95,7 +119,7 @@ class RichLibrary:
 
         ## DanS is _always_ followed by three zero dwords
         if not all([upack[i] == 0 for i in range(1, 4)]):
-            raise PaddingError()
+            raise HeaderPaddingError()
 
         upack = upack[4:]
 
@@ -107,6 +131,7 @@ class RichLibrary:
             cmpids.append({
                 'mcv': (upack[i + 0] >>  0) & 0xffff,
                 'pid': (upack[i + 0] >> 16) & 0xffff,
+                'compid': upack[i + 0],
                 'cnt': (upack[i + 1] >>  0)
             })
 
@@ -117,29 +142,40 @@ class RichLibrary:
                 'offset': dans}
 
     def __pprint_cmpids(self, cmpids):
-        print("-" * (20 + 16 + 16))
-        print("{:>20s}{:>16s}{:>16s}".format("Compiler Version", "Product ID",
-            "Count"))
-        print("-" * (20 + 16 + 16))
+        print("-" * (20 + 16 + 16 + 32 + 39))
+        print("{:>20s}{:>16s}{:>16s} {:>16s} {:>32s}{:>39s}".format("Compiler Patchlevel", "Product ID", "Lib Comp ID",
+            "Count", "MS Internal Name", "Visual Studio Release"))
+        print("-" * (20 + 16 + 16 + 32 + 39))
 
         for e in cmpids:
-            print("{:>20s}{:>16s}{:>16s}".format(
+            if HAVE_PIDS:
+                try:
+                    int_name = prodids.int_names[e['pid']]
+                except:
+                    int_name = '<unknown>'
+                vs_version = prodids.vs_version(e['pid'])
+
+            print("{:>20s}{:>16s}{:>16s}{:>16s}{:>32s}{:>39s}".format(
                 "{:5d}".format(e['mcv']),
                 "0x{:04x}".format(e['pid']),
-                "0x{:08x}".format(e['cnt'])))
-        print("-" * (20 + 16 + 16))
+                "0x{0:02x}".format(e['compid']),
+                "0x{:08x}".format(e['cnt']),
+                "{}".format(int_name),
+                "{:18s} ({})".format(*vs_version)))
+        print("-" * (20 + 16 + 16 + 32 + 39))
 
     def pprint_header(self, data):
         self.__pprint_cmpids(data['cmpids'])
-        if rich['csum_calc'] == rich['csum_file']:
-            print("\x1b[32mChecksums match! (0x{:08x})".format(rich['csum_calc']))
+        if data['csum_calc'] == data['csum_file']:
+            print("\x1b[32mChecksums match! (0x{:08x})".format(data['csum_calc']))
         else:
             print("\x1b[33mChecksum corrupt! (calc 0x{:08x}, file "
-            "0x{:08x})".format(rich['csum_calc'], rich['csum_file']))
-        print("\x1b[39m" + "-" * (20 + 16 + 16))
+            "0x{:08x})".format(data['csum_calc'], data['csum_file']))
+        print("\x1b[39m" + "-" * (20 + 16 + 16 + 32 + 39))
 
     def __init__(self, path):
         self.data = {}
         self.SIZE_DOS_HEADER = 0x40
+        self.POS_E_LFANEW = 0x3c
 
         self.fname = path

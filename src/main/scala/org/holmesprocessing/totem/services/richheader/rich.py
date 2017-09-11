@@ -9,6 +9,7 @@ from os import path
 
 # imports for rich
 import richlibrary
+import richfuncfinder
 
 #imports for reading configuration file
 import json
@@ -38,14 +39,16 @@ def RichHeaderRun(objpath):
     parser = richlibrary.RichLibrary(objpath)
     return parser.parse()
 
+def RichFunctionsRun(objpath, rich, nThreads):
+    parser = richfuncfinder.RichFuncFinder(objpath, rich, nThreads)
+    return  parser.parse()
 
 class Service(tornado.web.RequestHandler):
     def get(self):
         try:
             filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp/', filename)
-            data = RichHeaderRun(fullPath)
-            self.write(data)
+            rich_data = RichHeaderRun(fullPath)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
         except richlibrary.MZSignatureError:
@@ -63,6 +66,20 @@ class Service(tornado.web.RequestHandler):
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
+        try:
+            func_data = RichFunctionsRun(fullPath, rich_data, 4)
+        except richfuncfinder.MachineVersionError:
+            self.write({'error'}: richfuncfinder.err2str(-1))
+        except richfuncfinder.NoMatchingSignatures:
+            self.write({'error'}: richfuncfinder.err2str(-2))
+        except richfuncfinder.UnknownRelocationError:
+            self.write({'error'}: richfuncfinder.err2str(-3))
+        except Exception as e:
+            self.write({"error": traceback.format_exc(e)})
+
+        full_data = rich_data.append(func_data)
+        
+        self.write(full_data)
 
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics

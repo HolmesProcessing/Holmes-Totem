@@ -13,46 +13,46 @@ The Rich Header service extracts the Rich Header from PE32 files. The resulting 
 {
     "richheader":
         {
-        "compids": [
-            {
-                "mcv": "<str>",
-                "pid": "<str>",
-                "cnt": "<str>",
-            }
-        ],
-        "compids_dup": "<boolean>",
-        "csum_calc": "<int>",
-        "csum_file": "<int>",
-        "csum_valid": "<boolean>",
-        "error": "<int>",
-        "offset": "<int>"
+            "compids": [
+                {
+                    "mcv": "<str>",
+                    "pid": "<str>",
+                    "cnt": "<str>",
+                }
+            ],
+            "compids_dup": "<boolean>",
+            "csum_calc": "<int>",
+            "csum_file": "<int>",
+            "csum_valid": "<boolean>",
+            "error": "<int>",
+            "offset": "<int>",
         },
 
     "richfunctions":
         {
             "functions": [
                 {
-                'virtAddr': <int>,
-                'name': <str>,
-                'compid': <int>
+                    "virtAddr": "<int>",
+                    "name": "<str>",
+                    "compid": "<int>",
                 }
             ],
             "relocations": [
                 {
-                'name': <str>,
-                'virtAddr': <int>,
-                'type': <int>,
-                'call_target': <int>
+                    "name": "<str>",
+                    "virtAddr": "<int>",
+                    "type": "<int>",
+                    "call_target": "<int>",
                 }
             ],
             "confirmed": [
                 {
-                'virtAddr': <int>,
-                'name': <str>,
-                'compid': <int>
+                    "virtAddr": "<int>",
+                    "name": "<str>",
+                    "compid": "<int>",
                 }
             ],
-            "error": <int>
+            "error": "<int>"
         }
 }
 ```

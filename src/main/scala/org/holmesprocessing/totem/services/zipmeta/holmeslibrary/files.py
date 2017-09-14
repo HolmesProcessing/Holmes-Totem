@@ -1,43 +1,11 @@
 import mmap
-import tempfile
-import shutil
-import os
-
-
-
-class TempAnalysisFile(object):
-    """
-    Temporary Analysis File class.
-    """
-
-    def __init__(self, obj):
-        self.obj = obj
-        #print(obj)
-
-    def __enter__(self):
-        """
-        Create the temporary file on disk.
-        """
-
-        tempdir = tempfile.mkdtemp()
-        self.directory = tempdir
-        tfile = os.path.join(tempdir, self.obj)
-        with open(tfile, "wb") as f:
-            f.write(open(self.obj).read().encode())
-        return tfile
-
-    def __exit__(self, type, value, traceback):
-        """
-        Cleanup temporary file on disk.
-        """
-
-        if os.path.isdir(self.directory):
-            shutil.rmtree(self.directory)
-
-
+# import tempfile
+# import shutil
+# import os
 
 class LargeFileReader (object):
     """
+    FOr mapping file to virtual memory. 
     File-like (read-only) object trimmed for low memory footprint.
     Reading and finding does not advance the offset.
     Usage:
@@ -72,6 +40,7 @@ class LargeFileReader (object):
     
     # provide base functionality
     def read (self, start, stop):
+    # def read(self):
         if start is None or start < 0:
             start = 0
         if stop is None or stop > self.size:
@@ -102,7 +71,7 @@ class LargeFileReader (object):
         return result
     
     def startswith (self, needle):
-        return self[0:len(needle)] == needle
+        return self[0:len(needle)].decode('UTF-8') == needle
     
     # extended slicing
     def __getitem__ (self, key):

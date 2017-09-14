@@ -112,7 +112,7 @@ class ZipParser():
             2:    "control field records precede logical records",  # pkware reserved
             3:    "unused"
         }
-        if bit in xrange(3, 16):
+        if bit in range(3, 16):
             return internalNames[3]
         elif bit in internalNames:
             return internalNames[bit]
@@ -122,7 +122,7 @@ class ZipParser():
     def getInternalAttributes(self):
         internalAttributes = struct.unpack("<H", self.centralDirectory[36:38])[0]
         setAttributes = []
-        for bit in xrange(0, 16):
+        for bit in range(0, 16):
             if internalAttributes & (2**bit) > 0:
                 setAttributes.append(self.getInternalAttributeNames(bit))
         if not setAttributes:
@@ -207,7 +207,7 @@ class ZipParser():
     def getFlags(self):
         flags = struct.unpack("<H", self.centralDirectory[8:10])[0]
         setFlags = []
-        for i in xrange(0, 16):
+        for i in range(0, 16):
             if (flags & (2**i)):
                 setFlags.append(self.getFlagNames(i))
         if not setFlags:
@@ -241,7 +241,8 @@ class ZipParser():
             19 :"OS/X (Darwin)",
             20 :"unused",
         }
-        if highByte in xrange(20, 256):
+        # if highByte in xrange(20, 256):
+        if highByte in range(20, 256):
             return versionNameDict[20]
         elif highByte in versionNameDict:
             return versionNameDict[highByte]
@@ -250,7 +251,9 @@ class ZipParser():
 
     def getVersionMadeBy(self):  # MOD THIS FOR MINOR
         versionBytes = (struct.unpack("<BB", self.centralDirectory[4:6]))
-        return self.getVersionMadeByName(versionBytes[1]), (float(versionBytes[0]) * .1)
+        getit = float(versionBytes[0]) * .1
+        self.getVersionMadeByName(versionBytes[1]), (float(versionBytes[0]) * .1)
+        return 
 
     def parseCentralDirectory(self):
         centralDirectory = {
@@ -265,7 +268,7 @@ class ZipParser():
             "InternalAttributes"        :self.getInternalAttributes(),
             "ExternalAttributes"        :self.getFileExternalAttributes(),
             "RelativeOffset"            :self.getRelativeOffset(),
-            "ZipFileName"               :self.getFileName(),
+            "ZipFileName"               :self.getFileName().decode('UTF-8'),
             "ZipModifyDate"             :self.getModifyDate(),
             "ZipExtraField"             :self.getExtraField(),
             "ZipComments"               :self.getFileComment()
@@ -281,10 +284,11 @@ class ZipParser():
         start = 0
         parsedFiles = []
         while start >= 0:
+
             self.centralDirectory.seek_relative(start)
             parsedFiles.append(self.parseCentralDirectory())
             self.centralDirectory.seek_relative(1)
-            start = self.centralDirectory.find(self.zipCDMagic)
+            start = self.centralDirectory.find(self.zipCDMagic.encode('UTF-8'))
         return parsedFiles
 
 #***************************END**DIRECTORY**PARSING*****************************
@@ -321,7 +325,7 @@ class ZipParser():
         return struct.unpack("<H", self.endDirectory[4:6])[0]
 
     def parseEndDirectory(self):
-        start = self.data.find("\x50\x4b\x05\x06")
+        start = self.data.find(b'\x50\x4b\x05\x06')
         self.endDirectory = self.data.subfile(start)
         endDirectoryDict = {
             "NumberOfDisk"     : self.getNumberOfDisk(),

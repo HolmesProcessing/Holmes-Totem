@@ -8,6 +8,7 @@ try:
 except:
     print("[.] Could not find product ID database.")
     HAVE_PIDS = False
+    raise ProdIDError()
 
 class FileSizeError(Exception):
     pass
@@ -33,7 +34,7 @@ class HeaderPaddingError(Exception):
 class RichLengthError(Exception):
     pass
 
-class FileReadError(Exception):
+class ProdIDError(Exception):
     pass
 
 def err2str(code):
@@ -47,6 +48,7 @@ def err2str(code):
         -7: "DanS signature not found. Rich header corrupt.",
         -8: "Wrong header padding behind DanS signature. Rich header corrupt.",
         -9: "Rich data length not a multiple of 8. Rich header corrupt.",
+        -10:"No Product ID Database found.",
         }[code]
 
 class RichLibrary:

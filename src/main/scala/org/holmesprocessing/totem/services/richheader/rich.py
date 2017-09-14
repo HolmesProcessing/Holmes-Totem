@@ -51,35 +51,40 @@ class Service(tornado.web.RequestHandler):
             rich_data = RichHeaderRun(fullPath)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
-        except richlibrary.MZSignatureError:
+        except richlibrary.FileSizeError:
             self.write({'error': richlibrary.err2str(-2)})
-        except richlibrary.PESignatureError:
+        except richlibrary.MZSignatureError:
             self.write({'error': richlibrary.err2str(-3)})
-        except richlibrary.RichSignatureError:
+        except richlibrary.MZPointerError:
             self.write({'error': richlibrary.err2str(-4)})
-        except richlibrary.DanSSignatureError:
+        except richlibrary.PESignatureError:
             self.write({'error': richlibrary.err2str(-5)})
-        except richlibrary.PaddingError:
+        except richlibrary.RichSignatureError:
             self.write({'error': richlibrary.err2str(-6)})
-        except richlibrary.RichLengthError:
+        except richlibrary.DanSSignatureError:
             self.write({'error': richlibrary.err2str(-7)})
+        except richlibrary.HeaderPaddingError:
+            self.write({'error': richlibrary.err2str(-8)})
+        except richlibrary.RichLengthError:
+            self.write({'error': richlibrary.err2str(-9)})
+        except richlibrary.ProdIDError:
+            self.write({'error': richlibrary.err2str(-10)})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
         try:
             func_data = RichFunctionsRun(fullPath, rich_data, 4)
         except richfuncfinder.MachineVersionError:
-            self.write({'error'}: richfuncfinder.err2str(-1))
+            self.write({'error': richfuncfinder.err2str(-1)})
         except richfuncfinder.NoMatchingSignatures:
-            self.write({'error'}: richfuncfinder.err2str(-2))
+            self.write({'error': richfuncfinder.err2str(-2)})
         except richfuncfinder.UnknownRelocationError:
-            self.write({'error'}: richfuncfinder.err2str(-3))
+            self.write({'error': richfuncfinder.err2str(-3)})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 
-        full_data = rich_data.append(func_data)
-        
-        self.write(full_data)
+        #merge results
+        self.write({"richheader": rich_data, "richfunctions": func_data})
 
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics

@@ -18,6 +18,7 @@ COPY README.md /service
 COPY richlibrary.py /service
 COPY richfuncfinder.py /service
 COPY rich.py /service
+COPY prodids.py /service
 COPY ./signatures /service
 # add the configuration file (possibly from a storage uri)
 ARG conf=service.conf

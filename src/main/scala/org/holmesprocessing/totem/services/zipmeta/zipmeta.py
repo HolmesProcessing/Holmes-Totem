@@ -11,8 +11,7 @@ from os import path
 import ZipParser
 ZipParser = ZipParser.ZipParser
 
-# imports for services
-from holmeslibrary.services import ServiceRequestError, ServiceResultSet
+# imports for largefile reader
 from holmeslibrary.files    import LargeFileReader
 
 import json
@@ -38,26 +37,28 @@ Metadata = {
 }
 
 
-class ZipError (ServiceRequestError):
-    pass
+# class ZipError (ServiceRequestError):
+    # pass
 
 class ZipMetaProcess(tornado.web.RequestHandler):
     def get(self):
-        resultset = ServiceResultSet()
+        # resultset = ServiceResultSet()
+        resultset = {}
         try:
             filename = self.get_argument("obj", strip=False)
             # read file
             fullPath = os.path.join('/tmp/', filename)
-            data     = LargeFileReader(fullPath)
-            
+            data     = LargeFileReader(fullPath) # create virtual memory map
             # exclude non-zip
             if len(data) < 4:
                 raise ZipError(400, "Not enough filedata.")
-            if data[:4] not in [ZipParser.zipLDMagic, ZipParser.zipCDMagic]:
+            
+            if data[:4].decode('UTF-8') not in [ZipParser.zipLDMagic, ZipParser.zipCDMagic]:
                 raise ZipError(400, "Not a zip file.")
             
             # parse
             parser    = ZipParser(data)
+
             parsedZip = parser.parseZipFile()
             if not parsedZip:
                 raise ZipError(400, "Could not parse file as a zip file")
@@ -66,41 +67,40 @@ class ZipMetaProcess(tornado.web.RequestHandler):
             data.close()
             
             # fetch result
+            resultset["filecount"] = len(parsedZip)
             for centralDirectory in parsedZip:
                 zipfilename = centralDirectory["ZipFileName"]
-                zipentry = ServiceResultSet()
-                
-                for name, value in centralDirectory.iteritems():
+                zipentry = {}
+
+                # for name, value in centralDirectory.iteritems():
+                for name, value in centralDirectory.items():
                     if name == 'ZipExtraField':
                         continue
                     
                     if type(value) is list or type(value) is tuple:
                         for element in value:
-                            zipentry.add(name, str(element))
+                            zipentry[name]=str(element)
                     
-                    # Add way to handle dictionary.
-                    #if type(value) is dict: ...
                     else:
-                        zipentry.add(name, str(value))
+                        zipentry[name] = str(value)
                     
                 if centralDirectory["ZipExtraField"]:
                     for dictionary in centralDirectory["ZipExtraField"]:
-                        zipextra = ServiceResultSet()
+                        zipextra = {}
                         if dictionary["Name"] == "UnknownHeader":
-                            for name, value in dictionary.iteritems():
+                            for name, value in dictionary.items():
                                 if name == "Data":
                                     value = "Data"
-                                zipextra.add(name, str(value))
+                                zipextra[name] = str(value)
                         else:
-                            for name, value in dictionary.iteritems():
-                                zipextra.add(name, str(value))
-                        zipentry.add(dictionary["Name"], zipextra.data)
+                            for name, value in dictionary.items():
+                                zipextra[name]=str(value)
                 else:
-                    zipentry.add("ZipExtraField", "None")
+                    zipentry["ZipExtraField"] = "None"
                 
-                resultset.add(zipfilename, zipentry.data)
+                resultset[zipfilename]= {**zipentry, **zipextra}
             
-            self.write({"filecount": resultset.size, "files": resultset.data})
+            self.write(resultset)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
         except ZipError as ze:
@@ -152,7 +152,7 @@ class ZipMetaApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(ZipMetaApp())
-    server.listen(Config["settings"]["port"])
+    server.listen(Config["settings"]["httpbinding"])
     try:
         tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:

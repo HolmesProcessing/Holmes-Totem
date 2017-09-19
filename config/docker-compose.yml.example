@@ -135,16 +135,16 @@ services:
     volumes:
      - /tmp:/tmp:ro
 
-  cfg:
-    build:
-      context: ../src/main/scala/org/holmesprocessing/totem/services/cfg
-      args:
-        conf: ${CONFSTORAGE_CFG}service.conf
-    ports:
-      - "7790:8080"
-    restart: unless-stopped
-    volumes:
-     - /tmp:/tmp:ro
+#  cfg:
+#    build:
+#      context: ../src/main/scala/org/holmesprocessing/totem/services/cfg
+#      args:
+#        conf: ${CONFSTORAGE_CFG}service.conf
+#    ports:
+#      - "7790:8080"
+#    restart: unless-stopped
+#    volumes:
+#     - /tmp:/tmp:ro
 
   cfgangr:
     build:
@@ -156,3 +156,14 @@ services:
     restart: unless-stopped
     volumes:
      - /tmp:/tmp:ro
+
+  pemeta:
+    build:
+      context: ../src/main/scala/org/holmesprocessing/totem/services/pemeta
+      args:
+        conf: ${CONFSTORAGE_PEMETA}service.conf
+    ports:
+      - "7810:8080"
+    restart: unless-stopped
+    volumes:
+      - /tmp:/tmp:ro

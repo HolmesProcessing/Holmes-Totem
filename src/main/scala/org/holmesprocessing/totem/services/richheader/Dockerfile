@@ -7,16 +7,8 @@ RUN pip3 install tornado
 RUN mkdir -p /service
 WORKDIR /service
 
-# add holmeslibrary
-RUN apk add --no-cache \
-		wget \
-	&& wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
-	&& tar xf v0.1.tar.gz \
-	&& mv Holmes-Totem-Service* holmeslibrary \
-	&& rm -rf /var/cache/apk/* v0.1.tar.gz
-
 ###
-# Rich Header specific options
+# richheader specific options
 ###
 
 # add the files to the container

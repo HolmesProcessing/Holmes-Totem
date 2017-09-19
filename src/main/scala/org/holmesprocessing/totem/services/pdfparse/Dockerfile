@@ -14,7 +14,7 @@ RUN apk add --no-cache \
 # pdfparse specific options
 ###
 
-# Get Go pdfparse dependencies
+# Get Go and pdfparse dependencies
 RUN apk add --no-cache \
 		bash \
 		build-base \

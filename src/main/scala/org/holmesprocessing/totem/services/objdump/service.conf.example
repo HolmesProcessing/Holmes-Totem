@@ -1,9 +1,9 @@
 {
 	"settings": {
-		"port": ":8080"
+		"HTTPBinding": ":8080"
 	},
 
 	"objdump": {
-		"MaxNumberOfOpcodes" = 10000
+		"MaxNumberOfOpcodes" : 10000
 	}
 }

@@ -60,13 +60,18 @@ type Metadata struct {
 	License     string
 }
 type Settings struct {
-	Port           string
+	Port string
+}
+
+type PassivetotalSettings struct {
 	APIUser        string
 	APIKey         string
 	RequestTimeout int
 }
+
 type Config struct {
-	Settings Settings
+	Setting      Settings
+	Passivetotal PassivetotalSettings
 }
 
 // main logic
@@ -98,8 +103,8 @@ func main() {
 	router := httprouter.New()
 	router.GET("/analyze/", handlerAnalyze)
 	router.GET("/", handlerInfo)
-	infoLogger.Printf("Binding to %s\n", cfg.settings.port)
-	infoLogger.Fatal(http.ListenAndServe(cfg.settings.port, router))
+	infoLogger.Printf("Binding to %s\n", cfg.Setting.Port)
+	infoLogger.Fatal(http.ListenAndServe(cfg.Setting.Port, router))
 }
 
 func handlerInfo(f_response http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -156,9 +161,9 @@ func doPassiveTotalLookup(r *http.Request, p httprouter.Params) (interface{}, in
 	// via the request body into it (all options can be overriden):
 	aqs := &passivetotal.ApiQuerySettings{
 		Object:   obj,
-		Username: cfg.passivetotal.APIUser,
-		ApiKey:   cfg.passivetotal.APIKey,
-		Timeout:  cfg.passivetotal.RequestTimeout,
+		Username: cfg.Passivetotal.APIUser,
+		ApiKey:   cfg.Passivetotal.APIKey,
+		Timeout:  cfg.Passivetotal.RequestTimeout,
 	}
 
 	if r.Body != nil {

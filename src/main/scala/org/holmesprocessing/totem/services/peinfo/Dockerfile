@@ -1,33 +1,26 @@
-FROM python:2-alpine
+FROM python:alpine
 
 # add tornado
-RUN pip install tornado
+RUN pip3 install tornado
 
 # create folder
 RUN mkdir -p /service
 WORKDIR /service
 
-# add holmeslibrary
-RUN apk add --no-cache \
-		wget \
-	&& wget https://github.com/HolmesProcessing/Holmes-Totem-Service-Library/archive/v0.1.tar.gz \
-	&& tar xf v0.1.tar.gz \
-	&& mv Holmes-Totem-Service* holmeslibrary \
-	&& rm -rf /var/cache/apk/* v0.1.tar.gz
-
 ###
-# peid specific options
-###
+# peinfo v2 specific options
+##
 
-RUN pip install pefile bitstring
+# add dependencies for peinfo v2
+RUN pip3 install --upgrade pefile
 
 # add the files to the container
 COPY LICENSE /service
 COPY README.md /service
-COPY peinfo.py /service
+COPY peinfov2.py /service
 
 # add the configuration file (possibly from a storage uri)
 ARG conf=service.conf
 ADD $conf /service/service.conf
 
-CMD ["python", "peinfo.py"]
+CMD ["python3", "peinfov2.py"]

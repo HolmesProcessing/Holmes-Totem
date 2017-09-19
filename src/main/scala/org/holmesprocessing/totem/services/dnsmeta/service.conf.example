@@ -1,6 +1,6 @@
 {
 	"settings": {
-		"port": 8080
+		"httpbinding": 8080
 	},
 	"dnsmeta": {
 		"dns_server": "8.8.8.8",

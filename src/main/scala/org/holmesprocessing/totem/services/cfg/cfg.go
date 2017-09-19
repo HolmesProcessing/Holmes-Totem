@@ -40,9 +40,18 @@ type Result struct {
 	Arcs       []*Arc  `json:"arcs"`
 }
 
+// Config Structs
+type Setting struct {
+	HTTPBinding string `json:"HTTPBinding"`
+}
+
+type CFG struct {
+	MaxNumberOfArcs int `json:"MaxNumberOfArcs"`
+}
+
 type Config struct {
-	HTTPBinding        string
-	MaxNumberOfArcs    int
+	Settings Setting `json:"settings"`
+	Cfg CFG `json:"cfg"`
 }
 
 type Metadata struct {
@@ -115,14 +124,14 @@ func split(r rune) bool {
 func handler_analyze(f_response http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	info.Println("Serving request:", request)
 	start_time := time.Now()
-	
+
 	obj := request.URL.Query().Get("obj")
 	if obj == "" {
 		http.Error(f_response, "Missing argument 'obj'", 400)
 		return
 	}
-	
-	sample_path := "/tmp/" + obj	
+
+	sample_path := "/tmp/" + obj
 	if _, err := os.Stat(sample_path); os.IsNotExist(err) {
 		http.NotFound(f_response, request)
 		info.Printf("Error accessing sample (file: %s):", sample_path)
@@ -132,7 +141,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	dot_path := "/data" + sample_path + ".dot"
 	process := exec.Command(nucleus, "-d", "linear", "-f", "-p", "-e", sample_path, "-g", dot_path)
-	
+
 	// We are not interested in the output of the command, just the errors and the written output in the dot files
 	if _, err := process.CombinedOutput(); err != nil {
 		info.Printf("Error running nucleus sample: %s", err.Error())
@@ -146,7 +155,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 	result := &Result{
 		Truncated: false,
-		Arcs:      make([]*Arc, config.MaxNumberOfArcs),
+		Arcs:      make([]*Arc, config.Cfg.MaxNumberOfArcs),
 	}
 
 	/* Example file
@@ -188,7 +197,7 @@ func handler_analyze(f_response http.ResponseWriter, request *http.Request, para
 
 		counter++
 
-		if counter == config.MaxNumberOfArcs {
+		if counter == config.Cfg.MaxNumberOfArcs {
 			result.Truncated = true
 			break
 		}
@@ -247,6 +256,6 @@ func main() {
 	router.GET("/analyze/", handler_analyze)
 	router.GET("/", handler_info)
 
-	info.Printf("Binding to %s\n", config.HTTPBinding)
-	log.Fatal(http.ListenAndServe(config.HTTPBinding, router))
+	info.Printf("Binding to %s\n", config.Settings.HTTPBinding)
+	log.Fatal(http.ListenAndServe(config.Settings.HTTPBinding, router))
 }

@@ -114,5 +114,9 @@ totem {
       uri = ["http://127.0.0.1:7800/analyze/?obj="]
       resultRoutingKey = "cfgangr.result.static.totem"
     }
-  }
+ 	pemeta {
+      uri = ["http://127.0.0.1:7810/analyze/?obj="]
+      resultRoutingKey = "pemeta.result.static.totem"    
+    }
+   
 }

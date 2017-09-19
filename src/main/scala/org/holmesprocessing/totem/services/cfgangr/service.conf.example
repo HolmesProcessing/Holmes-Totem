@@ -1,5 +1,6 @@
 {
 	"settings": {
-		"port": 8080
+		"port": 8080,
+		"max_size_pe_binary": 900
 	}
 }

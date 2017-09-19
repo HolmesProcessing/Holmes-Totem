@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
-
-HAVE_PIDS = True
-
 import sys, struct
-try:
-    import prodids
-except:
-    print("[.] Could not find product ID database.")
-    HAVE_PIDS = False
-    raise ProdIDError()
+
 
 class FileSizeError(Exception):
     pass
@@ -36,6 +28,15 @@ class RichLengthError(Exception):
 
 class ProdIDError(Exception):
     pass
+
+HAVE_PIDS = True
+
+try:
+    import prodids
+except:
+    print("[.] Could not find product ID database.")
+    HAVE_PIDS = False
+    raise ProdIDError()
 
 def err2str(code):
     return{

@@ -43,7 +43,7 @@ class CFGAngrProcess(tornado.web.RequestHandler):
         try:
             filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp/', filename)
-            data = CFGAngrRun(fullPath)
+            data = CFGAngrRun(fullPath, Config["settings"]["max_size_binary"])
             self.write(data)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)

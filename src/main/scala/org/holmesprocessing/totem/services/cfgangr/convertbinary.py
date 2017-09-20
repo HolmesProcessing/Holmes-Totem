@@ -15,8 +15,8 @@ def generateCFG(binary, max_size, analysisType = 'Fast'):
         project = angr.Project(binary, auto_load_libs=False)
         binary_size = os.stat(binary).st_size
         max_binary_size = int(max_size) * 1024  # Here we will set a limit of binary files in bytes
-        if binary_size > max_binary_size and type(project.loader.main_bin).__name__ == 'PE':
-            response['error'] = 'CFG generation failed because the PE binary size is too big'
+        if binary_size > max_binary_size:
+            response['error'] = 'CFG generation failed because the binary size is too big'
             return json.dumps(response)
         # Create the Control Flow Graph in Fast or Accurate mode.
         if (analysisType == 'Fast'):

@@ -13,7 +13,8 @@ WORKDIR /service
 ###
 
 # add dependencies for cfgangr
-RUN pip2 install angr networkx
+RUN pip2 install angr networkx==1.11 simuvex
+RUN pip2 install -I --no-use-wheel capstone
 
 
 # add the files to the container

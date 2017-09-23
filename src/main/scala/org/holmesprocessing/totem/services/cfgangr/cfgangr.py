@@ -32,9 +32,9 @@ Metadata = {
 }
 
 
-def CFGAngrRun(binary):
+def CFGAngrRun(binary, size):
     # Returns the CFG of a binary in JSON format
-    data = convertbinary.generateCFG(binary)
+    data = convertbinary.generateCFG(binary, size)
     return data
 
 
@@ -91,7 +91,7 @@ class CFGAngrApp(tornado.web.Application):
 
 def main():
     server = tornado.httpserver.HTTPServer(CFGAngrApp())
-    server.listen(Config["settings"]["httpbinding"])
+    server.listen(Config["settings"]["port"])
     try:
         tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:

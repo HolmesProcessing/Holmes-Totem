@@ -26,12 +26,16 @@ def generateCFG(binary, max_size, analysisType = 'Fast'):
         else:
             return
 
-    except simuvex.s_errors.SimSolverModeError:
+    except simuvex.SimSolverModeError:
         response['error'] = 'CFG generation failed because of SimSolverModeError'
         return json.dumps(response)
     except cle.errors.CLECompatibilityError:
         response['error'] = 'CFG generation failed because of unsupported format'
         return json.dumps(response)
+    except AttributeError:
+        response['error'] = 'See https://github.com/angr/angr/issues/288'
+        return json.dumps(response)
+
 
     # Iterate through all nodes, and for each of them, add information for address, mnemonic and operands.
     for node in cfg.nodes_iter():

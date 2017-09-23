@@ -94,4 +94,5 @@ if __name__ == "__main__":
 		sys.exit(-1)
 	for arg in sys.argv[1:]:
 		signatureDB = parse(arg)
+
 	

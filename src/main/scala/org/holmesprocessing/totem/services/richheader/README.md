@@ -64,3 +64,15 @@ Build and start the docker container using the included Dockerfile. Since this c
 `-v /tmp:/tmp:ro`
 
 This allows the container to access /tmp on the local file system in read-only mode.
+
+## Acknowledgement
+This work was created with the blood sweat and tears of mamy people. 
+Thank you
+* Zachary Hanif
+* Julian Kirsch
+* Bojan Kolosnjaji
+* Christian von Pentz
+* Marcel Schumacher
+* George Webster
+* Huang Xiao
+* Timo Geissler

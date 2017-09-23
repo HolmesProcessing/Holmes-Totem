@@ -226,3 +226,4 @@ class richLib():
 				dec = dec * 10 + (byte-48)
 
 		return dec
+

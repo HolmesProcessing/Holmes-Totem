@@ -46,6 +46,8 @@ class Service(tornado.web.RequestHandler):
             self.write(results)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
+        except FileNotFoundError:
+            raise tornado.web.HTTPError(404)
         except richlibrary.FileSizeError:
             self.write({'error': richlibrary.err2str(-2)})
         except richlibrary.MZSignatureError:

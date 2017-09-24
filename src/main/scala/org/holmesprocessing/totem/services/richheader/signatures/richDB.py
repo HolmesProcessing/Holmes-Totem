@@ -1,9 +1,6 @@
-#richDB v0.4
-#Parse a Folder of Microsoft Libraries (.Lib) to build a function db
-#by Timo 'T31M' Geissler
-
-import parselib #by kischju.re
-import richlib #by T31M
+#!/usr/bin/env python3
+import parselib
+import richlib
 
 import sys, os, struct, time, pickle
 from collections import defaultdict
@@ -84,6 +81,15 @@ def parse(path):
 	os.chdir(cwd)
 
 	for cmpid in compid_store:
+		if(os.path.isfile(str(cmpid) + ".pickle")):
+			with open(str(cmpid) + ".pickle", 'rb') as infile:
+				existing = pickle.load(infile)
+				for sig in existing:
+					if sig in compid_store[cmpid]:
+						print("Found existing Signature in Storage")
+					else:
+						compid_store[cmpid].append(sig)
+
 		with open(str(cmpid) + ".pickle", 'wb') as outfile:
 			pickle.dump(compid_store[cmpid], outfile)
 

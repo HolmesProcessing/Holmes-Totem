@@ -64,12 +64,14 @@ class Service(tornado.web.RequestHandler):
             self.write({'error': richlibrary.err2str(-9)})
         except richlibrary.ProdIDError:
             self.write({'error': richlibrary.err2str(-10)})
-        except richlibrary.MachineVersionError:
-            self.write({'error': richlibrary.err2str(-11)})
+        except richlibrary.MachineVersionError: #For the Additional Errors of the Signature Search, we want the richHeader results anyway!
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-11)})
         except richlibrary.NoMatchingSignatures:
-            self.write({'error': richlibrary.err2str(-12)})
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-12)})
         except richlibrary.UnknownRelocationError:
-            self.write({'error': richlibrary.err2str(-13)})
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-13)})
+        except richlibrary.FileTooLargeError:
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-14)})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
 

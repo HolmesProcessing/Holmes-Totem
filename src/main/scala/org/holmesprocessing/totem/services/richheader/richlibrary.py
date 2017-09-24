@@ -43,6 +43,9 @@ class NoMatchingSignatures(Exception):
 class UnknownRelocationError(Exception):
     pass
 
+class FileTooLargeError(Exception):
+    pass
+
 HAVE_PIDS = True
 
 try:
@@ -66,7 +69,8 @@ def err2str(code):
         -10:"No Product ID Database found.",
         -11: "Non x86 PE File",
         -12: "No usable Signatures found (check ./signatures/richDB.py for generating them)",
-        -13: "Unknown / non implemented relocation type found"
+        -13: "Unknown / non implemented relocation type found",
+        -14: "Signature search on >4mb files is too slow, aborted"
         }[code]
 
 class RichLibrary:
@@ -223,7 +227,7 @@ class RichLibrary:
         memranges = sorted(memranges, key = lambda mem: mem[0])
 
         if len(dat) > 1024*1024*4: #4mb will (sadly) take > 5min even with multiple threads
-            return {"error": "Signature search on >4mb files is too slow, aborted"}
+            raise FileTooLargeError()
 
         return (dat, codebase, imagebase, memranges)
 

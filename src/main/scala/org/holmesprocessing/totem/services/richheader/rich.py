@@ -33,36 +33,49 @@ Metadata = {
     "License"     : "./LICENSE"
 }
 
-
 def RichHeaderRun(objpath):
     parser = richlibrary.RichLibrary(objpath)
-    return parser.parse()
-
+    return ({"richheader": parser.parse(), "richfunctions": parser.findSignatures(nthreads=4)})
 
 class Service(tornado.web.RequestHandler):
     def get(self):
         try:
             filename = self.get_argument("obj", strip=False)
             fullPath = os.path.join('/tmp/', filename)
-            data = RichHeaderRun(fullPath)
-            self.write(data)
+            results = RichHeaderRun(fullPath)
+            self.write(results)
         except tornado.web.MissingArgumentError:
             raise tornado.web.HTTPError(400)
-        except richlibrary.MZSignatureError:
+        except FileNotFoundError:
+            raise tornado.web.HTTPError(404)
+        except richlibrary.FileSizeError:
             self.write({'error': richlibrary.err2str(-2)})
-        except richlibrary.PESignatureError:
+        except richlibrary.MZSignatureError:
             self.write({'error': richlibrary.err2str(-3)})
-        except richlibrary.RichSignatureError:
+        except richlibrary.MZPointerError:
             self.write({'error': richlibrary.err2str(-4)})
-        except richlibrary.DanSSignatureError:
+        except richlibrary.PESignatureError:
             self.write({'error': richlibrary.err2str(-5)})
-        except richlibrary.PaddingError:
+        except richlibrary.RichSignatureError:
             self.write({'error': richlibrary.err2str(-6)})
-        except richlibrary.RichLengthError:
+        except richlibrary.DanSSignatureError:
             self.write({'error': richlibrary.err2str(-7)})
+        except richlibrary.HeaderPaddingError:
+            self.write({'error': richlibrary.err2str(-8)})
+        except richlibrary.RichLengthError:
+            self.write({'error': richlibrary.err2str(-9)})
+        except richlibrary.ProdIDError:
+            self.write({'error': richlibrary.err2str(-10)})
+        except richlibrary.MachineVersionError: #For the Additional Errors of the Signature Search, we want the richHeader results anyway!
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-11)})
+        except richlibrary.NoMatchingSignatures:
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-12)})
+        except richlibrary.UnknownRelocationError:
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-13)})
+        except richlibrary.FileTooLargeError:
+            self.write({'richheader': parser.parse(), 'richfunctions': richlibrary.err2str(-14)})
         except Exception as e:
             self.write({"error": traceback.format_exc(e)})
-
 
 class Info(tornado.web.RequestHandler):
     # Emits a string which describes the purpose of the analytics

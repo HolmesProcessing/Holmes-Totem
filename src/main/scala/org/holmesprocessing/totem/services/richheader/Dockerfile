@@ -16,7 +16,6 @@ WORKDIR /service
 COPY LICENSE /service
 COPY README.md /service
 COPY richlibrary.py /service
-COPY richfuncfinder.py /service
 COPY rich.py /service
 COPY prodids.py /service
 COPY ./signatures /service/signatures

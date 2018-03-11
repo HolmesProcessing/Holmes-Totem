@@ -118,6 +118,5 @@ totem {
       uri = ["http://127.0.0.1:7810/analyze/?obj="]
       resultRoutingKey = "pemeta.result.static.totem"    
     }
-   
   }
 }

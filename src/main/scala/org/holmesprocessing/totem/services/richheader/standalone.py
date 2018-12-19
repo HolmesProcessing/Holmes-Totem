@@ -75,7 +75,7 @@ def parse(fname):
     ## Truncate calculated checksum to 32 bit
     chk &= 0xffffffff
 
-    return {'err': 0, 'cmpids': cmpids, 'csum_calc': chk, 'csum_file': csum,
+    return {'err': 0, 'compids': cmpids, 'csum_calc': chk, 'csum_file': csum,
             'offset': dans}
 
 def err2str(code):
@@ -108,7 +108,7 @@ def pprint_cmpids(cmpids):
     print("-" * (20 + 16 + 16))
 
 def pprint_header(data):
-    pprint_cmpids(data['cmpids'])
+    pprint_cmpids(data['compids'])
     if rich['csum_calc'] == rich['csum_file']:
         print("\x1b[32mChecksums match! (0x{:08x})".format(rich['csum_calc']))
     else:
